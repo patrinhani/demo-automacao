@@ -1,272 +1,116 @@
-/* src/App.css */
+/* src/App.css - ATUALIZADO */
 :root {
   --corp-blue: #004a80;
   --corp-dark: #002a4d;
+  --corp-light: #e6f0fa;
   --corp-bg: #f2f4f8;
   --corp-border: #ccd1d9;
   --corp-text: #333333;
   --corp-gold: #e6b800;
+  --success: #28a745;
+  --warning: #ffc107;
 }
 
-/* =========================================
-   ESTILOS GERAIS
-   ========================================= */
 body {
   background-color: var(--corp-bg);
   color: var(--corp-text);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 14px;
-}
-
-.app-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* =========================================
-   TELA DE LOGIN
-   ========================================= */
-.login-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, var(--corp-blue) 0%, var(--corp-dark) 100%);
-}
-
-.login-card {
-  background: white;
-  padding: 40px;
-  border-radius: 4px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
-  color: var(--corp-blue);
-}
-
-.login-header h1 {
   margin: 0;
-  font-size: 1.8rem;
 }
 
-.login-header p {
-  margin: 5px 0 0;
-  color: #666;
-  font-size: 0.9rem;
-}
+.app-container { min-height: 100vh; display: flex; flex-direction: column; }
 
-.login-footer {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.btn-login {
-  width: 100%;
-  padding: 12px;
-  background: var(--corp-blue);
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 3px;
-  margin-top: 10px;
-}
-
-.btn-login:hover {
-  background: var(--corp-dark);
-}
-
-/* =========================================
-   TOP BAR (Usado no Dashboard e Formulário)
-   ========================================= */
+/* --- BARRA SUPERIOR --- */
 .top-bar {
-  background: linear-gradient(to bottom, #005a9c 0%, var(--corp-blue) 100%);
+  background: linear-gradient(to right, var(--corp-dark), var(--corp-blue));
   color: white;
-  padding: 0 20px;
-  height: 50px;
+  padding: 0 25px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 3px solid var(--corp-gold);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 10;
 }
 
-.brand {
-  font-weight: bold;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.brand { font-size: 1.3rem; font-weight: 600; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
+.user-badge { background: rgba(255,255,255,0.1); padding: 6px 15px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
+.user-badge:hover { background: rgba(255,255,255,0.2); }
 
-.user-badge {
-  background-color: rgba(255,255,255,0.15);
-  padding: 5px 12px;
-  border-radius: 2px;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.user-badge:hover {
-  background-color: rgba(255,255,255,0.25);
-}
-
-/* =========================================
-   DASHBOARD / MENU
-   ========================================= */
-.dashboard-wrapper {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 0 20px;
-}
-
-.dashboard-title {
-  color: #333;
-  border-bottom: 2px solid var(--corp-blue);
-  padding-bottom: 10px;
-  margin-bottom: 30px;
-}
+/* --- DASHBOARD REFINADA --- */
+.dashboard-wrapper { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px; }
+.dashboard-title { margin: 0; color: var(--corp-blue); font-size: 1.8rem; }
+.last-login { color: #666; font-size: 0.9rem; }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 25px;
 }
 
 .dashboard-card {
   background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 25px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
-  height: 120px;
+  height: 140px;
+  position: relative;
+  overflow: hidden;
 }
 
 .dashboard-card:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
-}
-
-.dashboard-card.active {
-  border: 2px solid var(--corp-blue);
-  background-color: #f0f8ff;
-}
-
-.dashboard-card.active strong {
-  color: var(--corp-blue);
-}
-
-.icon-large {
-  font-size: 2rem;
-}
-
-/* =========================================
-   FORMULÁRIO (Solicitacao.jsx)
-   ========================================= */
-.main-wrapper {
-  width: 95%;
-  max-width: 1400px;
-  margin: 30px auto;
-  background-color: white;
-  border: 1px solid var(--corp-border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.page-header {
-  background-color: #f8f9fa;
-  padding: 15px 25px;
-  border-bottom: 1px solid var(--corp-border);
-}
-
-.page-header h2 {
-  margin: 0;
-  color: var(--corp-blue);
-  font-size: 1.4rem;
-  font-weight: 500;
-}
-
-.breadcrumbs {
-  font-size: 0.8rem;
-  color: #666;
-  margin-top: 5px;
-}
-
-.form-content { padding: 30px; }
-.form-row { margin-bottom: 20px; display: flex; gap: 20px; }
-.form-group { flex: 1; display: flex; flex-direction: column; }
-.form-group label { font-weight: 600; margin-bottom: 6px; color: #444; }
-
-input, select, textarea {
-  padding: 8px 10px;
-  border: 1px solid #aaa;
-  border-radius: 2px;
-  font-size: 1rem;
-  width: 100%; /* Garante que o input ocupe a div pai */
-  box-sizing: border-box; /* Garante que padding não estoure a largura */
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
   border-color: var(--corp-blue);
-  background-color: #faffff;
 }
 
-.alert-box {
-  margin-bottom: 20px;
-  color: #cc0000;
-  background-color: #ffe6e6;
-  padding: 10px;
-  border: 1px solid #ffcccc;
+.dashboard-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; width: 100%; height: 4px;
+  background: var(--corp-blue);
+  transform: scaleX(0);
+  transition: transform 0.3s;
 }
+.dashboard-card:hover::after { transform: scaleX(1); }
 
-.file-upload-box {
-  background-color: #f0f0f0;
-  border: 2px dashed #ccc;
-  padding: 20px;
-  text-align: center;
-  margin-top: 10px;
-}
+.icon-large { font-size: 2.5rem; margin-bottom: 10px; display: block; }
 
-.actions {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  text-align: right;
-}
+/* --- TABELAS (Para Folha de Ponto) --- */
+.table-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+th { background-color: #f8f9fa; color: var(--corp-blue); font-weight: 600; }
+tr:hover { background-color: #faffff; }
 
-.btn-primary {
-  background: linear-gradient(to bottom, #0066cc 0%, #0052a3 100%);
-  border: 1px solid #004080;
+/* --- DOCUMENTOS (Para Holerite) --- */
+.doc-list { list-style: none; padding: 0; }
+.doc-item { background: white; padding: 20px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.doc-icon { font-size: 1.5rem; margin-right: 15px; color: #d9534f; } /* Cor de PDF */
+.doc-info h4 { margin: 0 0 5px 0; color: #333; }
+.doc-info span { font-size: 0.85rem; color: #777; }
+
+/* --- CARTÃO PLANO SAÚDE --- */
+.health-card {
+  background: linear-gradient(135deg, #004a80 0%, #002a4d 100%);
   color: white;
-  padding: 10px 25px;
-  font-size: 1rem;
-  cursor: pointer;
-  border-radius: 3px;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 400px;
+  margin: 0 auto;
+  box-shadow: 0 10px 20px rgba(0,74,128,0.3);
+  position: relative;
 }
-.btn-primary:hover { background: linear-gradient(to bottom, #0052a3 0%, #003d7a 100%); }
-
-.btn-secondary {
-  background-color: #f5f5f5;
-  border: 1px solid #ccc;
-  color: #333;
-  padding: 10px 20px;
-  margin-right: 10px;
-  cursor: pointer;
-  border-radius: 3px;
-}
+.health-card h3 { margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.card-label { font-size: 0.8rem; opacity: 0.8; display: block; }
+.card-value { font-size: 1.1rem; font-weight: 600; }

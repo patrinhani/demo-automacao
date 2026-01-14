@@ -6,51 +6,56 @@ export default function Dashboard() {
 
   return (
     <div className="app-container">
-      {/* Top Bar */}
       <header className="top-bar">
         <div className="brand">
-          <span>🏢</span>
-          <span>Portal RH | TechCorp Solutions</span>
+          <span>🏢</span> TechCorp Portal
         </div>
-        <div className="user-badge" onClick={() => navigate('/')}>
-          Sair ↪
-        </div>
+        <div className="user-badge" onClick={() => navigate('/')}>Sair ↪</div>
       </header>
 
-      {/* Main Content */}
       <div className="dashboard-wrapper">
-        <h2 className="dashboard-title">
-          Bem-vindo, Colaborador
-        </h2>
+        <div className="dashboard-header">
+          <div>
+            <h2 className="dashboard-title">Olá, Colaborador</h2>
+            <p className="last-login">Último acesso: Hoje às 08:42</p>
+          </div>
+          <div style={{textAlign: 'right'}}>
+            <strong>Matrícula:</strong> 829304<br/>
+            <strong>Cargo:</strong> Analista Pleno
+          </div>
+        </div>
 
         <div className="dashboard-grid">
-          {/* Botões Inativos */}
-          <div className="dashboard-card" onClick={() => alert("Módulo indisponível na demo")}>
-            <span className="icon-large">📅</span>
+          {/* Módulos Funcionais */}
+          <div className="dashboard-card" onClick={() => navigate('/ponto')}>
+            <span className="icon-large">⏰</span>
             <strong>Folha de Ponto</strong>
           </div>
-          <div className="dashboard-card" onClick={() => alert("Módulo indisponível na demo")}>
-            <span className="icon-large">💰</span>
-            <strong>Holerite Online</strong>
+
+          <div className="dashboard-card" onClick={() => navigate('/holerite')}>
+            <span className="icon-large">📄</span>
+            <strong>Meus Holerites</strong>
           </div>
-          <div className="dashboard-card" onClick={() => alert("Módulo indisponível na demo")}>
+
+          <div className="dashboard-card" onClick={() => navigate('/plano')}>
             <span className="icon-large">🏥</span>
             <strong>Plano de Saúde</strong>
           </div>
 
-          {/* Botão REAL (Ativo) */}
-          <div className="dashboard-card active" onClick={() => navigate('/solicitacao')}>
+          <div className="dashboard-card" onClick={() => navigate('/solicitacao')} style={{border: '1px solid #004a80'}}>
             <span className="icon-large">📝</span>
-            <strong>Reembolso de Despesas</strong>
+            <strong style={{color: '#004a80'}}>Novo Reembolso</strong>
           </div>
 
-          <div className="dashboard-card" onClick={() => alert("Módulo indisponível na demo")}>
+           {/* Módulos de "Enfeite" (sem página ainda, mas podem ter) */}
+          <div className="dashboard-card" onClick={() => alert('Sem permissão de acesso.')}>
             <span className="icon-large">✈️</span>
-            <strong>Viagens Corp.</strong>
+            <strong>Gestão de Viagens</strong>
           </div>
-          <div className="dashboard-card" onClick={() => alert("Módulo indisponível na demo")}>
-            <span className="icon-large">🔒</span>
-            <strong>Alterar Senha</strong>
+          
+          <div className="dashboard-card" onClick={() => alert('Sistema de férias em manutenção.')}>
+            <span className="icon-large">🏖️</span>
+            <strong>Férias</strong>
           </div>
         </div>
       </div>

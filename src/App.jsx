@@ -1,22 +1,24 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Solicitacao from './pages/Solicitacao';
+import FolhaPonto from './pages/FolhaPonto'; // Importe as novas páginas
+import Holerite from './pages/Holerite';
+import PlanoSaude from './pages/PlanoSaude';
 import './App.css';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Caminho Raiz -> Tela de Login */}
         <Route path="/" element={<Login />} />
-        
-        {/* Caminho /dashboard -> Menu Principal */}
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Caminho /solicitacao -> O Formulário (Antigo App) */}
+        {/* Novas Rotas */}
         <Route path="/solicitacao" element={<Solicitacao />} />
+        <Route path="/ponto" element={<FolhaPonto />} />
+        <Route path="/holerite" element={<Holerite />} />
+        <Route path="/plano" element={<PlanoSaude />} />
       </Routes>
     </BrowserRouter>
   );
