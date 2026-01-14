@@ -1,21 +1,35 @@
-// src/pages/Solicitacao.jsx
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../components/Logo';
 import '../App.css'; 
 
-// Em breve: import BotAutomacao from '../components/BotAutomacao';
+// Em breve importaremos o robô aqui
+// import BotAutomacao from '../components/BotAutomacao';
 
 export default function Solicitacao() {
   const navigate = useNavigate();
   const formRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const formData = new FormData(formRef.current);
-    const dados = Object.fromEntries(formData.entries());
-    console.log("Enviado:", dados);
-    alert(`Solicitação enviada com sucesso!`);
-    navigate('/dashboard'); // Volta pro menu ao terminar
+    setLoading(true);
+
+    // Captura os dados apenas para passar para a tela de recibo
+    // O robô vai preencher isso visualmente, mas aqui pegamos o valor final
+    const form = formRef.current;
+    
+    // Gera dados fictícios para o comprovante
+    const dadosEnvio = {
+      protocolo: `REQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000)}`,
+      valor: '150,00', // Valor fixo para a demo ou poderia vir do input se fosse controlado
+      data: new Date().toLocaleDateString()
+    };
+
+    // Simula tempo de processamento do servidor (SAP/ERP)
+    setTimeout(() => {
+      navigate('/status-reembolso', { state: dadosEnvio });
+    }, 1500);
   };
 
   return (
@@ -23,8 +37,7 @@ export default function Solicitacao() {
       {/* BARRA DE TOPO */}
       <header className="top-bar">
         <div className="brand">
-          <span>🏢</span>
-          <span>Portal RH | TechCorp Solutions</span>
+          <Logo />
         </div>
         <div className="user-badge" onClick={() => navigate('/dashboard')}>
           Voltar ao Menu ↩
@@ -40,7 +53,7 @@ export default function Solicitacao() {
 
         <div className="form-content">
           <div className="alert-box">
-            ⚠ <strong>Atenção:</strong> O preenchimento incorreto pode acarretar no bloqueio do centro de custo.
+            ⚠ <strong>Atenção:</strong> O preenchimento incorreto pode acarretar no bloqueio do centro de custo. Anexe sempre o comprovante fiscal legível.
           </div>
 
           <form ref={formRef} onSubmit={handleSubmit}>
@@ -55,6 +68,7 @@ export default function Solicitacao() {
                   id="campo_matricula" 
                   placeholder="Ex: 8000XXXX"
                   defaultValue="" 
+                  required
                 />
               </div>
               <div className="form-group" style={{flex: 2}}>
@@ -64,6 +78,7 @@ export default function Solicitacao() {
                   name="nome" 
                   id="campo_nome" 
                   defaultValue="" 
+                  required
                 />
               </div>
             </div>
@@ -72,11 +87,12 @@ export default function Solicitacao() {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="campo_centro_custo">Centro de Custo *</label>
-                <select name="centro_custo" id="campo_centro_custo" defaultValue="">
+                <select name="centro_custo" id="campo_centro_custo" defaultValue="" required>
                   <option value="">-- Selecione --</option>
                   <option value="CC_TI_DEV">1020 - TI Desenvolvimento</option>
                   <option value="CC_RH_ADM">3040 - RH Administrativo</option>
                   <option value="CC_FIN_CORP">5000 - Financeiro Corporativo</option>
+                  <option value="CC_COMERCIAL">6000 - Comercial / Vendas</option>
                 </select>
               </div>
               <div className="form-group">
@@ -86,6 +102,7 @@ export default function Solicitacao() {
                   name="data" 
                   id="campo_data" 
                   defaultValue="" 
+                  required
                 />
               </div>
             </div>
@@ -97,8 +114,9 @@ export default function Solicitacao() {
                 name="motivo" 
                 id="campo_motivo" 
                 rows="4" 
-                placeholder="Descreva detalhadamente o motivo da despesa..."
+                placeholder="Descreva detalhadamente o motivo da despesa (transporte, alimentação, etc)..."
                 defaultValue=""
+                required
               ></textarea>
             </div>
 
@@ -106,22 +124,40 @@ export default function Solicitacao() {
             <div className="form-group" style={{marginTop: '20px'}}>
               <label htmlFor="campo_arquivo">Comprovante Fiscal (PDF/XML) *</label>
               <div className="file-upload-box">
-                <input type="file" name="arquivo" id="campo_arquivo" />
-                <p style={{fontSize: '0.8rem', color: '#666', marginTop: '5px'}}>Tamanho máximo: 2MB</p>
+                <input type="file" name="arquivo" id="campo_arquivo" required />
+                <p style={{fontSize: '0.8rem', color: '#666', marginTop: '10px'}}>
+                  Formatos aceitos: PDF, JPG, PNG. Tamanho máximo: 5MB.
+                </p>
               </div>
             </div>
 
             {/* BOTÕES */}
             <div className="actions">
-              <button type="button" className="btn-secondary" onClick={() => formRef.current.reset()}>Limpar</button>
-              <button type="submit" className="btn-primary">Enviar Solicitação</button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={() => formRef.current.reset()}
+                disabled={loading}
+              >
+                Limpar
+              </button>
+              
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={loading}
+                style={{minWidth: '150px'}}
+              >
+                {loading ? 'Processando...' : 'Enviar Solicitação'}
+              </button>
             </div>
 
           </form>
         </div>
       </div>
       
-      {/* <BotAutomacao /> será colocado aqui em breve */}
+      {/* O Robô entrará aqui depois */}
+      {/* <BotAutomacao /> */}
     </div>
   );
 }

@@ -1,5 +1,7 @@
+
 /* src/App.css - VERSÃO FINAL COMPLETA */
 
+@import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&display=swap');
 /* =========================================
    1. VARIÁVEIS E GERAL
    ========================================= */
@@ -581,21 +583,17 @@ tr:hover td {
   text-align: left;
 }
 
-/* Código de Barras Falso (CSS Puro) */
+
+/* Código de Barras Falso - Versão Otimizada para PDF */
 .barcode {
-  height: 50px;
-  width: 100%;
-  background-image: linear-gradient(to right, 
-    black 10%, white 10%, 
-    white 20%, black 20%, 
-    black 30%, white 30%, 
-    white 40%, black 40%, 
-    black 50%, white 50%, 
-    white 60%, black 60%, 
-    black 70%, white 70%, 
-    white 80%, black 80%, 
-    black 90%, white 90%);
+  font-family: 'Libre Barcode 39 Text', cursive; /* Fonte que transforma texto em barras */
+  font-size: 52px; /* Tamanho grande */
+  color: #000;
+  text-align: center;
   margin-top: 20px;
+  background-image: none; /* Removemos o gradiente antigo */
+  white-space: nowrap;
+  line-height: 1;
 }
 
 /* src/App.css */

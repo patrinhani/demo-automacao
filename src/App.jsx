@@ -6,6 +6,7 @@ import FolhaPonto from './pages/FolhaPonto'; // Importe as novas páginas
 import Holerite from './pages/Holerite';
 import PlanoSaude from './pages/PlanoSaude';
 import GeradorNota from './pages/GeradorNota';
+import StatusReembolso from './pages/StatusReembolso';
 import './App.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/holerite" element={<Holerite />} />
         <Route path="/plano" element={<PlanoSaude />} />
         <Route path="/gerador-nota" element={<GeradorNota />} />
+        <Route path="/status-reembolso" element={<StatusReembolso />} />
       </Routes>
     </BrowserRouter>
   );
