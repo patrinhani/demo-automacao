@@ -1,30 +1,44 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Solicitacao from './pages/Solicitacao';
-import FolhaPonto from './pages/FolhaPonto'; // Importe as novas páginas
+import FolhaPonto from './pages/FolhaPonto'; 
 import Holerite from './pages/Holerite';
-import Ferias from './pages/Ferias';
+// import Ferias from './pages/Ferias'; // Comentado pois ainda não criamos o arquivo
 import PlanoSaude from './pages/PlanoSaude';
 import GeradorNota from './pages/GeradorNota';
 import StatusReembolso from './pages/StatusReembolso';
+import GestaoViagens from './pages/GestaoViagens';
+import Helpdesk from './pages/Helpdesk';
 import './App.css';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Rota Inicial */}
         <Route path="/" element={<Login />} />
+        
+        {/* Menu Principal */}
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Novas Rotas */}
+        {/* Módulos Financeiros */}
         <Route path="/solicitacao" element={<Solicitacao />} />
-        <Route path="/ponto" element={<FolhaPonto />} />
-        <Route path="/holerite" element={<Holerite />} />
-        <Route path="/ferias" element={<Ferias />} />
-        <Route path="/plano" element={<PlanoSaude />} />
-        <Route path="/gerador-nota" element={<GeradorNota />} />
         <Route path="/status-reembolso" element={<StatusReembolso />} />
+        <Route path="/gerar-nota" element={<GeradorNota />} /> {/* Ajustado para /gerar-nota */}
+        <Route path="/holerite" element={<Holerite />} />
+
+        {/* Módulos RH */}
+        <Route path="/folha-ponto" element={<FolhaPonto />} /> {/* Ajustado de /ponto para /folha-ponto */}
+        <Route path="/plano-saude" element={<PlanoSaude />} /> {/* Ajustado de /plano para /plano-saude */}
+        {/* <Route path="/ferias" element={<Ferias />} /> */}
+
+        {/* Módulos de Serviços */}
+        <Route path="/viagens" element={<GestaoViagens />} /> {/* Ajustado de /gestao-viagens para /viagens */}
+        <Route path="/helpdesk" element={<Helpdesk />} />
+        
+        {/* Redirecionamento para evitar 404 em rotas desconhecidas */}
+        <Route path="*" element={<Navigate to="/" />} />
         
       </Routes>
     </BrowserRouter>
