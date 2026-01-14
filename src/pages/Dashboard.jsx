@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
+import Logo from '../components/Logo';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -7,9 +8,9 @@ export default function Dashboard() {
   return (
     <div className="app-container">
       <header className="top-bar">
-        <div className="brand">
-          <span>🏢</span> TechCorp Portal
-        </div>
+       <div className="brand">
+  <Logo />
+</div>
         <div className="user-badge" onClick={() => navigate('/')}>Sair ↪</div>
       </header>
 
@@ -56,6 +57,11 @@ export default function Dashboard() {
           <div className="dashboard-card" onClick={() => alert('Sistema de férias em manutenção.')}>
             <span className="icon-large">🏖️</span>
             <strong>Férias</strong>
+          </div>
+          
+          <div className="dashboard-card" onClick={() => navigate('/gerador-nota')}>
+            <span className="icon-large">🧾</span>
+            <strong>Emissor de Notas</strong>
           </div>
         </div>
       </div>
