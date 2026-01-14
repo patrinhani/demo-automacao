@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Solicitacao from './pages/Solicitacao';
 import FolhaPonto from './pages/FolhaPonto'; // Importe as novas páginas
 import Holerite from './pages/Holerite';
+import Ferias from './pages/Ferias';
 import PlanoSaude from './pages/PlanoSaude';
 import GeradorNota from './pages/GeradorNota';
 import StatusReembolso from './pages/StatusReembolso';
@@ -20,7 +21,7 @@ function App() {
         <Route path="/solicitacao" element={<Solicitacao />} />
         <Route path="/ponto" element={<FolhaPonto />} />
         <Route path="/holerite" element={<Holerite />} />
-        
+        <Route path="/ferias" element={<Ferias />} />
         <Route path="/plano" element={<PlanoSaude />} />
         <Route path="/gerador-nota" element={<GeradorNota />} />
         <Route path="/status-reembolso" element={<StatusReembolso />} />
