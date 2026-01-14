@@ -114,3 +114,139 @@ tr:hover { background-color: #faffff; }
 .card-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
 .card-label { font-size: 0.8rem; opacity: 0.8; display: block; }
 .card-value { font-size: 1.1rem; font-weight: 600; }
+
+/* =========================================
+   ESTILOS FALTANTES ADICIONADOS
+   (Login, Formulários e Botões)
+   ========================================= */
+
+/* --- TELA DE LOGIN --- */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--corp-dark), var(--corp-blue));
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.login-header h1 { color: var(--corp-blue); margin-bottom: 10px; font-size: 1.8rem; }
+.login-header p { color: #777; margin-bottom: 30px; }
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: var(--corp-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-login:hover { background: var(--corp-dark); }
+.login-footer { margin-top: 25px; font-size: 0.8rem; color: #aaa; }
+
+
+/* --- FORMULÁRIOS (Página Solicitação) --- */
+.main-wrapper {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.page-header { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+.page-header h2 { margin: 0; color: var(--corp-blue); }
+.breadcrumbs { font-size: 0.85rem; color: #888; margin-top: 5px; }
+
+.form-row { display: flex; gap: 20px; margin-bottom: 15px; }
+
+/* Importante para alinhar Label e Input verticalmente */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Faz ocupar espaço igual na linha */
+}
+
+.form-group label { font-weight: 600; margin-bottom: 5px; color: #444; }
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--corp-blue);
+  box-shadow: 0 0 0 2px var(--corp-light);
+}
+
+.alert-box {
+  background: #fff3cd;
+  color: #856404;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 25px;
+  border: 1px solid #ffeeba;
+}
+
+.file-upload-box {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  border-radius: 4px;
+  background: #fafafa;
+  cursor: pointer;
+}
+.file-upload-box:hover { background: #f0f0f0; border-color: #999; }
+
+/* --- BOTÕES PADRÃO (Usados em Holerite, Ponto e Solicitação) --- */
+.actions {
+  display: flex;
+  justify-content: flex-end; /* Alinha botões à direita */
+  gap: 15px;
+  margin-top: 30px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.btn-primary {
+  background: var(--success); /* Verde definido no :root */
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.btn-primary:hover { filter: brightness(0.9); }
+
+.btn-secondary {
+  background: #6c757d; /* Cinza */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+.btn-secondary:hover { background: #5a6268; }
