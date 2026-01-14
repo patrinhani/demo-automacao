@@ -1,37 +1,108 @@
 /* src/App.css */
 :root {
   --corp-blue: #004a80;
+  --corp-dark: #002a4d;
   --corp-bg: #f2f4f8;
   --corp-border: #ccd1d9;
   --corp-text: #333333;
+  --corp-gold: #e6b800;
 }
 
+/* =========================================
+   ESTILOS GERAIS
+   ========================================= */
 body {
   background-color: var(--corp-bg);
   color: var(--corp-text);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
   font-size: 14px;
 }
 
-/* Barra Superior Estilo "Portal" */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+   TELA DE LOGIN
+   ========================================= */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--corp-blue) 0%, var(--corp-dark) 100%);
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--corp-blue);
+}
+
+.login-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.login-header p {
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: var(--corp-blue);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 3px;
+  margin-top: 10px;
+}
+
+.btn-login:hover {
+  background: var(--corp-dark);
+}
+
+/* =========================================
+   TOP BAR (Usado no Dashboard e Formulário)
+   ========================================= */
 .top-bar {
-  background: linear-gradient(to bottom, #005a9c 0%, #004a80 100%);
+  background: linear-gradient(to bottom, #005a9c 0%, var(--corp-blue) 100%);
   color: white;
   padding: 0 20px;
   height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 3px solid #e6b800; /* Aquele detalhe "gold" clássico */
+  border-bottom: 3px solid var(--corp-gold);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .brand {
   font-weight: bold;
   font-size: 1.2rem;
-  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -42,13 +113,75 @@ body {
   padding: 5px 12px;
   border-radius: 2px;
   font-size: 0.85rem;
+  cursor: pointer;
 }
 
-/* Container Principal */
+.user-badge:hover {
+  background-color: rgba(255,255,255,0.25);
+}
+
+/* =========================================
+   DASHBOARD / MENU
+   ========================================= */
+.dashboard-wrapper {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.dashboard-title {
+  color: #333;
+  border-bottom: 2px solid var(--corp-blue);
+  padding-bottom: 10px;
+  margin-bottom: 30px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 120px;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.dashboard-card.active {
+  border: 2px solid var(--corp-blue);
+  background-color: #f0f8ff;
+}
+
+.dashboard-card.active strong {
+  color: var(--corp-blue);
+}
+
+.icon-large {
+  font-size: 2rem;
+}
+
+/* =========================================
+   FORMULÁRIO (Solicitacao.jsx)
+   ========================================= */
 .main-wrapper {
-  /* Mudamos de 900px para 95% ou 1200px para parecer mais "Desktop" */
-  width: 95%; 
-  max-width: 1400px; /* Limite para não ficar esticado demais em telas gigantes */
+  width: 95%;
+  max-width: 1400px;
   margin: 30px auto;
   background-color: white;
   border: 1px solid var(--corp-border);
@@ -74,48 +207,32 @@ body {
   margin-top: 5px;
 }
 
-/* Formulário */
-.form-content {
-  padding: 30px;
-}
+.form-content { padding: 30px; }
+.form-row { margin-bottom: 20px; display: flex; gap: 20px; }
+.form-group { flex: 1; display: flex; flex-direction: column; }
+.form-group label { font-weight: 600; margin-bottom: 6px; color: #444; }
 
-.form-row {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 20px;
-}
-
-.form-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #444;
-  font-size: 0.9rem;
-}
-
-/* Inputs com visual "antigo" */
-input[type="text"],
-input[type="date"],
-select,
-textarea {
+input, select, textarea {
   padding: 8px 10px;
   border: 1px solid #aaa;
-  border-radius: 2px; /* Bordas levemente quadradas */
+  border-radius: 2px;
   font-size: 1rem;
-  background-color: #fff;
-  transition: border-color 0.2s;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  width: 100%; /* Garante que o input ocupe a div pai */
+  box-sizing: border-box; /* Garante que padding não estoure a largura */
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--corp-blue);
   background-color: #faffff;
+}
+
+.alert-box {
+  margin-bottom: 20px;
+  color: #cc0000;
+  background-color: #ffe6e6;
+  padding: 10px;
+  border: 1px solid #ffcccc;
 }
 
 .file-upload-box {
@@ -126,7 +243,6 @@ input:focus, select:focus, textarea:focus {
   margin-top: 10px;
 }
 
-/* Botões */
 .actions {
   margin-top: 30px;
   padding-top: 20px;
@@ -142,12 +258,8 @@ input:focus, select:focus, textarea:focus {
   font-size: 1rem;
   cursor: pointer;
   border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-
-.btn-primary:hover {
-  background: linear-gradient(to bottom, #0052a3 0%, #003d7a 100%);
-}
+.btn-primary:hover { background: linear-gradient(to bottom, #0052a3 0%, #003d7a 100%); }
 
 .btn-secondary {
   background-color: #f5f5f5;
