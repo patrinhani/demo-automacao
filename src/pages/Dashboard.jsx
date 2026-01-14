@@ -54,10 +54,10 @@ export default function Dashboard() {
             <strong>Gestão de Viagens</strong>
           </div>
           
-          <div className="dashboard-card" onClick={() => alert('Sistema de férias em manutenção.')}>
-            <span className="icon-large">🏖️</span>
-            <strong>Férias</strong>
-          </div>
+         <div className="dashboard-card" onClick={() => navigate('/ferias')}>
+        <span className="icon-large">🏖️</span>
+        <strong>Férias</strong>
+      </div>
           
           <div className="dashboard-card" onClick={() => navigate('/gerador-nota')}>
             <span className="icon-large">🧾</span>

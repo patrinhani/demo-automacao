@@ -20,9 +20,11 @@ function App() {
         <Route path="/solicitacao" element={<Solicitacao />} />
         <Route path="/ponto" element={<FolhaPonto />} />
         <Route path="/holerite" element={<Holerite />} />
+        
         <Route path="/plano" element={<PlanoSaude />} />
         <Route path="/gerador-nota" element={<GeradorNota />} />
         <Route path="/status-reembolso" element={<StatusReembolso />} />
+        
       </Routes>
     </BrowserRouter>
   );
