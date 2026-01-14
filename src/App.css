@@ -1,42 +1,160 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* src/App.css */
+:root {
+  --corp-blue: #004a80;
+  --corp-bg: #f2f4f8;
+  --corp-border: #ccd1d9;
+  --corp-text: #333333;
+}
+
+body {
+  background-color: var(--corp-bg);
+  color: var(--corp-text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+/* Barra Superior Estilo "Portal" */
+.top-bar {
+  background: linear-gradient(to bottom, #005a9c 0%, #004a80 100%);
+  color: white;
+  padding: 0 20px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid #e6b800; /* Aquele detalhe "gold" clássico */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-badge {
+  background-color: rgba(255,255,255,0.15);
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 0.85rem;
+}
+
+/* Container Principal */
+.main-wrapper {
+  /* Mudamos de 900px para 95% ou 1200px para parecer mais "Desktop" */
+  width: 95%; 
+  max-width: 1400px; /* Limite para não ficar esticado demais em telas gigantes */
+  margin: 30px auto;
+  background-color: white;
+  border: 1px solid var(--corp-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.page-header {
+  background-color: #f8f9fa;
+  padding: 15px 25px;
+  border-bottom: 1px solid var(--corp-border);
+}
+
+.page-header h2 {
+  margin: 0;
+  color: var(--corp-blue);
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.breadcrumbs {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+/* Formulário */
+.form-content {
+  padding: 30px;
+}
+
+.form-row {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #444;
+  font-size: 0.9rem;
+}
+
+/* Inputs com visual "antigo" */
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  padding: 8px 10px;
+  border: 1px solid #aaa;
+  border-radius: 2px; /* Bordas levemente quadradas */
+  font-size: 1rem;
+  background-color: #fff;
+  transition: border-color 0.2s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--corp-blue);
+  background-color: #faffff;
+}
+
+.file-upload-box {
+  background-color: #f0f0f0;
+  border: 2px dashed #ccc;
+  padding: 20px;
   text-align: center;
+  margin-top: 10px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Botões */
+.actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  text-align: right;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.btn-primary {
+  background: linear-gradient(to bottom, #0066cc 0%, #0052a3 100%);
+  border: 1px solid #004080;
+  color: white;
+  padding: 10px 25px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.btn-primary:hover {
+  background: linear-gradient(to bottom, #0052a3 0%, #003d7a 100%);
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.btn-secondary {
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 10px 20px;
+  margin-right: 10px;
+  cursor: pointer;
+  border-radius: 3px;
 }
