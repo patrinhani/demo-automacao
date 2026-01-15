@@ -14,6 +14,7 @@ import ReservaSalas from './pages/ReservaSalas';
 import Comunicacao from './pages/Comunicacao';
 import Carreira from './pages/Carreira';
 import Tarefas from './pages/Tarefas';
+import Perfil from './pages/Perfil';
 import './App.css';
 
 function App() {
@@ -25,6 +26,9 @@ function App() {
         
         {/* Menu Principal */}
         <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Adicione a Rota de Perfil AQUI */}
+        <Route path="/perfil" element={<Perfil />} />
         
         {/* Módulos Financeiros */}
         <Route path="/solicitacao" element={<Solicitacao />} />

@@ -1,165 +1,101 @@
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo';
-import '../App.css';
-import '../Dashboard.css';
+import Sidebar from '../components/Sidebar';
+import '../Dashboard.css'; // Estilos específicos do layout
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // Lista de Módulos do Sistema
-  const modulos = [
-    {
-      titulo: 'Folha de Ponto',
-      desc: 'Registro de entrada/saída, ajustes e espelho de ponto.',
-      icon: '⏰',
-      classeIcone: 'icon-ponto',
-      rota: '/folha-ponto',
-      notificacao: '3 pendências'
-    },
-    {
-      titulo: 'Holerites',
-      desc: 'Consulte seus demonstrativos de pagamento e informes.',
-      icon: '📄',
-      classeIcone: 'icon-holerite',
-      rota: '/holerite',
-      notificacao: null
-    },
-    {
-      titulo: 'Férias', // <--- NOVO
-      desc: 'Planejamento de férias, venda de dias e consulta de período.',
-      icon: '🏖️',
-      classeIcone: 'icon-ferias', // Nota: Pode precisar criar estilo CSS para esta classe ou usar uma genérica
-      rota: '/ferias',
-      notificacao: null
-    },
-    {
-      titulo: 'Solicitar Reembolso',
-      desc: 'Nova solicitação de reembolso e envio de notas fiscais.',
-      icon: '💸',
-      classeIcone: 'icon-reembolso',
-      rota: '/solicitacao',
-      notificacao: null
-    },
-    {
-      titulo: 'Status Reembolsos', // <--- NOVO
-      desc: 'Acompanhe a aprovação e pagamento dos seus pedidos.',
-      icon: '📊',
-      classeIcone: 'icon-reembolso-status',
-      rota: '/status-reembolso',
-      notificacao: null
-    },
-    {
-      titulo: 'Gerador de Nota', // <--- NOVO
-      desc: 'Ferramenta auxiliar para gerar notas de serviço.',
-      icon: '🧾',
-      classeIcone: 'icon-nota',
-      rota: '/gerar-nota',
-      notificacao: null
-    },
-    {
-      titulo: 'Plano de Saúde',
-      desc: 'Carteirinha digital, busca de rede credenciada e extratos.',
-      icon: '❤️',
-      classeIcone: 'icon-saude',
-      rota: '/plano-saude',
-      notificacao: null
-    },
-    {
-      titulo: 'Gestão de Viagens',
-      desc: 'Solicite passagens, hospedagem e adiantamentos corporativos.',
-      icon: '✈️',
-      classeIcone: 'icon-viagem',
-      rota: '/viagens',
-      notificacao: '1 aprovada'
-    },
-    {
-      titulo: 'Helpdesk TI',
-      desc: 'Abra chamados para suporte técnico, acessos e equipamentos.',
-      icon: '🎧',
-      classeIcone: 'icon-ti',
-      rota: '/helpdesk',
-      notificacao: null
-    },
-    {
-     titulo: 'Reserva de Salas',
-     desc: 'Agende salas de reunião e espaços.',
-     icon: '📅',
-    classeIcone: 'icon-reserva', 
-    rota: '/reservas',
-    notificacao: null
-    },
-    {
-    titulo: 'Mural & Avisos',
-    desc: 'Notícias da empresa e aniversariantes do mês.',
-    icon: '📢', // Ou 📰
-    classeIcone: 'icon-comunicacao',
-    rota: '/comunicacao',
-    notificacao: '2 novas' // Para chamar a atenção
-    },
-    {
-    titulo: 'Carreira & Cursos',
-    desc: 'Vagas internas e treinamentos corporativos.',
-    icon: '🚀',
-    classeIcone: 'icon-carreira',
-    rota: '/carreira',
-    notificacao: null
-    },
-    {
-    titulo: 'Minhas Tarefas',
-    desc: 'Kanban pessoal de atividades.',
-    icon: '✅',
-    classeIcone: 'icon-tarefas',
-    rota: '/tarefas',
-    notificacao: null
-     },
+  // Dados mockados para os widgets
+  const notificacoes = [
+    { id: 1, texto: "Sua solicitação de férias foi aprovada.", tipo: "sucesso" },
+    { id: 2, texto: "Envio de Notas Fiscais pendente (Ref: Jan/24).", tipo: "alerta" }
+  ];
+
+  const acessosRapidos = [
+    { titulo: 'Folha de Ponto', desc: '3 ajustes pendentes', icon: '⏰', rota: '/folha-ponto', destaque: true },
+    { titulo: 'Reembolso', desc: 'Status: Em análise', icon: '💸', rota: '/status-reembolso', destaque: false },
+    { titulo: 'Holerite', desc: 'Disponível: Jan/2026', icon: '📄', rota: '/holerite', destaque: false },
+    { titulo: 'Tarefas', desc: '5 pendentes hoje', icon: '✅', rota: '/tarefas', destaque: false },
   ];
 
   return (
-    <div className="app-container">
-      {/* BARRA SUPERIOR */}
-      <header className="top-bar">
-        <div className="brand">
-          <Logo />
-        </div>
-        <div className="user-info">
-          <div className="avatar">GS</div>
-          <span>Guilherme Silva</span>
-        </div>
-      </header>
+    <div className="layout-container">
+      {/* 1. Sidebar Fixa */}
+      <Sidebar />
 
-      <div className="dashboard-container">
+      {/* 2. Área Principal de Conteúdo */}
+      <main className="main-content">
         
-        {/* BOAS VINDAS */}
-        <div className="welcome-section">
-          <div className="welcome-text">
-            <h2>Olá, Guilherme! 👋</h2>
-            <p>Bem-vindo ao Portal do Colaborador TechCorp.</p>
+        {/* Header Superior (Título e Perfil) */}
+        <header className="content-header">
+          <div className="header-title">
+            <h1>Visão Geral</h1>
+            <span className="subtitle">Bem-vindo ao Portal do Colaborador</span>
           </div>
-          <div className="quick-stats">
-            <div className="stat-badge">📅 <span>Hoje: <strong>{new Date().toLocaleDateString()}</strong></span></div>
-            <div className="stat-badge">🏢 <span>Unidade: <strong>Matriz SP</strong></span></div>
-          </div>
-        </div>
-
-        {/* GRID DE MÓDULOS */}
-        <div className="modules-grid">
-          {modulos.map((mod, index) => (
-            <div key={index} className="module-card" onClick={() => navigate(mod.rota)}>
-              {mod.notificacao && <span className="notify-badge">{mod.notificacao}</span>}
-              
-              <div className={`card-icon ${mod.classeIcone}`}>
-                {mod.icon}
-              </div>
-              
-              <h3>{mod.titulo}</h3>
-              <p>{mod.desc}</p>
-              
-              <span className="card-link">Acessar Módulo →</span>
+          
+          <div 
+            className="user-profile-compact" 
+            onClick={() => navigate('/perfil')}
+            title="Acessar meu perfil"
+          >
+            <div className="user-text">
+              <span className="name">Guilherme Silva</span>
+              <span className="role">Analista de Sistemas</span>
             </div>
-          ))}
-        </div>
+            <div className="avatar-small">GS</div>
+          </div>
+        </header>
 
-      </div>
+        {/* Conteúdo Rolável */}
+        <div className="scrollable-content">
+          
+          {/* Banner de Boas-Vindas */}
+          <section className="welcome-banner">
+            <div className="banner-content">
+              <h2>Olá, Guilherme! 👋</h2>
+              <p>Hoje é <strong>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>.</p>
+            </div>
+          </section>
+
+          {/* Widgets e Cards */}
+          <div className="dashboard-grid">
+            
+            {/* Coluna Esquerda: Acessos Rápidos */}
+            <div className="grid-column main-widgets">
+              <h3 className="section-title">Acesso Rápido</h3>
+              <div className="cards-grid">
+                {acessosRapidos.map((card, idx) => (
+                  <div key={idx} className="dash-card" onClick={() => navigate(card.rota)}>
+                    <div className="card-icon-box">{card.icon}</div>
+                    <div className="card-info">
+                      <h4>{card.titulo}</h4>
+                      <p>{card.desc}</p>
+                    </div>
+                    {card.destaque && <span className="notification-dot">!</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Coluna Direita: Notificações */}
+            <div className="grid-column side-widgets">
+              <h3 className="section-title">Avisos Recentes</h3>
+              <div className="notifications-panel">
+                {notificacoes.map((notif) => (
+                  <div key={notif.id} className={`notif-item ${notif.tipo}`}>
+                    <span className="notif-bullet">•</span>
+                    <p>{notif.texto}</p>
+                  </div>
+                ))}
+                <button className="btn-ver-todos" onClick={() => navigate('/comunicacao')}>
+                  Ver Mural Completo →
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo'; // <--- 1. IMPORTAMOS A LOGO DE VOLTA
+import Logo from '../components/Logo';
 
 export default function Ferias() {
   const navigate = useNavigate();
   
-  // --- LÓGICA DO FORMULÁRIO (Mantida Igual) ---
+  // --- LÓGICA ---
   const [dataInicio, setDataInicio] = useState('');
   const [dias, setDias] = useState(30);
   const [venderDias, setVenderDias] = useState(false);
   const [dataFim, setDataFim] = useState('---');
   const [conflito, setConflito] = useState(false);
   const [erroData, setErroData] = useState('');
+  const [showModal, setShowModal] = useState(false); // <--- NOVO ESTADO DO MODAL
+
   const hoje = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
@@ -41,7 +43,14 @@ export default function Ferias() {
     e.preventDefault();
     if (erroData) return alert("Corrija a data antes de continuar.");
     if (conflito) return alert("ERRO DE CONFLITO: O colaborador 'Carlos do TI' já possui férias neste período.");
-    alert("Solicitação gerada! Imprima, assine e leve ao RH (Sala 204).");
+    
+    // EM VEZ DE ALERT, ABRE O MODAL
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    navigate('/dashboard'); // Redireciona após fechar
   };
 
   // --- ESTILOS INTERNOS ---
@@ -119,6 +128,30 @@ export default function Ferias() {
       marginTop: '20px',
       transition: 'background 0.2s',
       letterSpacing: '0.5px'
+    },
+    // --- ESTILOS DO MODAL ---
+    modalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 42, 77, 0.6)', // Azul escuro transparente
+      backdropFilter: 'blur(3px)', // Efeito de desfoque no fundo
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    },
+    modalCard: {
+      background: 'white',
+      padding: '40px',
+      borderRadius: '12px',
+      width: '450px',
+      maxWidth: '90%',
+      textAlign: 'center',
+      boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+      animation: 'fadeIn 0.3s ease-out'
     }
   };
 
@@ -127,12 +160,9 @@ export default function Ferias() {
       
       {/* HEADER */}
       <header style={{background: 'linear-gradient(to right, #002a4d, #004a80)', color: 'white', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #e6b800'}}>
-        
-        {/* <--- 2. AQUI ESTÁ A LOGO DE VOLTA */}
         <div style={{transform: 'scale(0.9)', transformOrigin: 'left'}}> 
            <Logo />
         </div>
-
         <div onClick={() => navigate('/dashboard')} style={{cursor: 'pointer', background: 'rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: '4px', fontSize: '0.9rem', transition: '0.2s'}}>
           Voltar ao Menu ↩
         </div>
@@ -296,9 +326,54 @@ export default function Ferias() {
               * A política da empresa bloqueia férias simultâneas no mesmo squad.
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* --- POPUP (MODAL) --- */}
+      {showModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <div style={{fontSize: '4rem', marginBottom: '20px'}}>✅</div>
+            <h3 style={{color: '#004a80', margin: '0 0 15px 0'}}>Solicitação Realizada!</h3>
+            
+            <p style={{color: '#555', lineHeight: '1.6', marginBottom: '25px'}}>
+              Sua pré-reserva foi enviada para o sistema. <br/>
+              Para efetivar, imprima o formulário abaixo, colete a assinatura do seu gestor e entregue no RH (Sala 204).
+            </p>
+
+            <div style={{display: 'flex', gap: '15px', justifyContent: 'center'}}>
+               <button 
+                 onClick={handleCloseModal}
+                 style={{
+                   padding: '12px 25px', 
+                   background: '#6c757d', 
+                   color: 'white', 
+                   border: 'none', 
+                   borderRadius: '6px', 
+                   cursor: 'pointer'
+                 }}
+               >
+                 Fechar
+               </button>
+               <button 
+                 onClick={() => alert('Simulação: Imprimindo PDF...')}
+                 style={{
+                   padding: '12px 25px', 
+                   background: '#004a80', 
+                   color: 'white', 
+                   border: 'none', 
+                   borderRadius: '6px', 
+                   fontWeight: 'bold',
+                   cursor: 'pointer'
+                 }}
+               >
+                 🖨 Imprimir Formulário
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
