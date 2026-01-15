@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Solicitacao from './pages/Solicitacao';
 import FolhaPonto from './pages/FolhaPonto'; 
 import Holerite from './pages/Holerite';
-// import Ferias from './pages/Ferias'; // Comentado pois ainda não criamos o arquivo
+import Ferias from './pages/Ferias'; 
 import PlanoSaude from './pages/PlanoSaude';
 import GeradorNota from './pages/GeradorNota';
 import StatusReembolso from './pages/StatusReembolso';
@@ -31,7 +31,7 @@ function App() {
         {/* Módulos RH */}
         <Route path="/folha-ponto" element={<FolhaPonto />} /> {/* Ajustado de /ponto para /folha-ponto */}
         <Route path="/plano-saude" element={<PlanoSaude />} /> {/* Ajustado de /plano para /plano-saude */}
-        {/* <Route path="/ferias" element={<Ferias />} /> */}
+        <Route path="/ferias" element={<Ferias />} />
 
         {/* Módulos de Serviços */}
         <Route path="/viagens" element={<GestaoViagens />} /> {/* Ajustado de /gestao-viagens para /viagens */}

@@ -14,22 +14,46 @@ export default function Dashboard() {
       icon: '⏰',
       classeIcone: 'icon-ponto',
       rota: '/folha-ponto',
-      notificacao: '3 pendências' // Simula aviso de ajuste
+      notificacao: '3 pendências'
     },
     {
       titulo: 'Holerites',
-      desc: 'Consulte seus demonstrativos de pagamento e informes de rendimento.',
+      desc: 'Consulte seus demonstrativos de pagamento e informes.',
       icon: '📄',
       classeIcone: 'icon-holerite',
       rota: '/holerite',
       notificacao: null
     },
     {
-      titulo: 'Reembolso',
-      desc: 'Solicite reembolso de despesas, anexe notas e acompanhe status.',
+      titulo: 'Férias', // <--- NOVO
+      desc: 'Planejamento de férias, venda de dias e consulta de período.',
+      icon: '🏖️',
+      classeIcone: 'icon-ferias', // Nota: Pode precisar criar estilo CSS para esta classe ou usar uma genérica
+      rota: '/ferias',
+      notificacao: null
+    },
+    {
+      titulo: 'Solicitar Reembolso',
+      desc: 'Nova solicitação de reembolso e envio de notas fiscais.',
       icon: '💸',
       classeIcone: 'icon-reembolso',
       rota: '/solicitacao',
+      notificacao: null
+    },
+    {
+      titulo: 'Status Reembolsos', // <--- NOVO
+      desc: 'Acompanhe a aprovação e pagamento dos seus pedidos.',
+      icon: '📊',
+      classeIcone: 'icon-reembolso-status',
+      rota: '/status-reembolso',
+      notificacao: null
+    },
+    {
+      titulo: 'Gerador de Nota', // <--- NOVO
+      desc: 'Ferramenta auxiliar para gerar notas de serviço.',
+      icon: '🧾',
+      classeIcone: 'icon-nota',
+      rota: '/gerar-nota',
       notificacao: null
     },
     {
