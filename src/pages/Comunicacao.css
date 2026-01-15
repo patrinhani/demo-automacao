@@ -1,0 +1,333 @@
+.comunicacao-container {
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 0 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 2 partes para notícias, 1 para sidebar */
+  gap: 30px;
+}
+
+/* --- Filtros --- */
+.news-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.filter-badge {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.filter-badge:hover {
+  background: #f0f0f0;
+}
+
+.filter-badge.active {
+  background: #1a237e;
+  color: white;
+  border-color: #1a237e;
+}
+
+/* --- Cards de Notícias --- */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.news-card {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+  border-left: 4px solid #ccc;
+  transition: transform 0.2s;
+}
+
+.news-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.news-card.highlight {
+  border-left-color: #ff9800; /* Laranja para destaque */
+  background: #fffcf5;
+}
+
+.news-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.category-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #eee;
+  color: #555;
+}
+
+/* Cores por Categoria */
+.category-tag.rh { background: #e3f2fd; color: #1565c0; }
+.category-tag.ti { background: #e8eaf6; color: #283593; }
+.category-tag.eventos { background: #fce4ec; color: #c2185b; }
+
+.news-date {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.news-card h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.news-card p {
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.read-more {
+  background: none;
+  border: none;
+  color: #1a237e;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.read-more:hover {
+  text-decoration: underline;
+}
+
+/* --- Sidebar (Aniversariantes) --- */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.birthdays-card, .quick-links-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+}
+
+.birthdays-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.birthdays-card h3, .quick-links-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a237e;
+}
+
+.birthday-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.birthday-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.birthday-item:last-child {
+  border-bottom: none;
+}
+
+.bday-avatar {
+  font-size: 1.5rem;
+}
+
+.bday-info {
+  flex: 1;
+}
+
+.bday-info strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.bday-info span {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.bday-date {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.btn-send-congrats {
+  width: 100%;
+  margin-top: 15px;
+  background: #1a237e;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-send-congrats:hover {
+  background: #283593;
+}
+
+/* Links Rápidos */
+.quick-links-card ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+
+.quick-links-card li {
+  margin-bottom: 8px;
+}
+
+.quick-links-card a {
+  text-decoration: none;
+  color: #555;
+  font-size: 0.9rem;
+  display: block;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.quick-links-card a:hover {
+  background: #f5f5f5;
+  color: #1a237e;
+}
+
+/* ... MANTENHA O CÓDIGO ANTERIOR ATÉ A LINHA "Mobile" ... */
+
+/* --- Estilos para o botão Ler Mais e Conteúdo --- */
+.news-content p {
+  transition: all 0.3s ease;
+}
+
+.read-more {
+  background: none;
+  border: none;
+  color: #1a237e;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 0;
+  margin-top: 5px;
+  display: inline-block;
+  transition: color 0.2s;
+}
+
+.read-more:hover {
+  color: #0d47a1;
+  text-decoration: underline;
+}
+
+/* --- ANIMAÇÃO DE PARABÉNS (OVERLAY) --- */
+.celebration-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo escuro transparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Fica acima de tudo */
+  backdrop-filter: blur(4px);
+}
+
+.celebration-content {
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito de 'pulo' */
+  border: 4px solid #1a237e;
+}
+
+.emojis {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  animation: shake 1.5s infinite;
+}
+
+.celebration-content h3 {
+  margin: 0 0 10px 0;
+  color: #1a237e;
+  font-size: 1.5rem;
+}
+
+.celebration-content p {
+  color: #666;
+  margin: 0;
+}
+
+/* Animação de Entrada (Pop In) */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animação de Agitar os Emojis */
+@keyframes shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .celebration-content {
+    width: 80%;
+  }
+}

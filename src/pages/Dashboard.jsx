@@ -79,7 +79,23 @@ export default function Dashboard() {
       classeIcone: 'icon-ti',
       rota: '/helpdesk',
       notificacao: null
-    }
+    },
+    {
+     titulo: 'Reserva de Salas',
+     desc: 'Agende salas de reunião e espaços.',
+     icon: '📅',
+    classeIcone: 'icon-reserva', 
+    rota: '/reservas',
+    notificacao: null
+    },
+    {
+    titulo: 'Mural & Avisos',
+    desc: 'Notícias da empresa e aniversariantes do mês.',
+    icon: '📢', // Ou 📰
+    classeIcone: 'icon-comunicacao',
+    rota: '/comunicacao',
+    notificacao: '2 novas' // Para chamar a atenção
+    },
   ];
 
   return (

@@ -10,6 +10,8 @@ import GeradorNota from './pages/GeradorNota';
 import StatusReembolso from './pages/StatusReembolso';
 import GestaoViagens from './pages/GestaoViagens';
 import Helpdesk from './pages/Helpdesk';
+import ReservaSalas from './pages/ReservaSalas';
+import Comunicacao from './pages/Comunicacao';
 import './App.css';
 
 function App() {
@@ -36,6 +38,12 @@ function App() {
         {/* Módulos de Serviços */}
         <Route path="/viagens" element={<GestaoViagens />} /> {/* Ajustado de /gestao-viagens para /viagens */}
         <Route path="/helpdesk" element={<Helpdesk />} />
+
+        {/* Módulos de Facilities */}
+        <Route path="/reservas" element={<ReservaSalas />} /> 
+
+        {/* Módulos de Comunicação */}
+        <Route path="/comunicacao" element={<Comunicacao />} />
         
         {/* Redirecionamento para evitar 404 em rotas desconhecidas */}
         <Route path="*" element={<Navigate to="/" />} />
