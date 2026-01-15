@@ -9,6 +9,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr; /* 2 partes para notícias, 1 para sidebar */
   gap: 30px;
+  padding-top : 10px
 }
 
 /* --- Filtros --- */

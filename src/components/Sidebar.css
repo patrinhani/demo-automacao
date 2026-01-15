@@ -1,37 +1,74 @@
+/* src/components/Sidebar.css */
+
 .sidebar {
   width: 260px;
-  background: #1a237e; /* Azul Escuro Corporativo */
+  
+  /* --- MUDANÇA PRINCIPAL: FUNDO --- */
+  /* Removemos a cor sólida e usamos o mesmo tom semi-transparente do Dashboard */
+  background: rgba(15, 23, 42, 0.4); 
+  backdrop-filter: blur(12px); /* Efeito de vidro */
+  -webkit-backdrop-filter: blur(12px);
+  
+  /* Borda sutil apenas para separar levemente */
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  
   color: #fff;
   display: flex;
   flex-direction: column;
   height: 100vh;
   position: sticky;
   top: 0;
-  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
-  flex-shrink: 0; /* Impede que encolha */
+  flex-shrink: 0;
   z-index: 100;
+  transition: all 0.3s ease;
 }
 
 .sidebar-header {
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  /* Fundo levemente mais claro no header para destaque sutil */
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .sidebar-nav {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* Permite rolagem */
   padding: 1rem 0;
+  
+  /* Firefox Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
+/* --- ESTILIZAÇÃO DA BARRA DE ROLAGEM (Chrome/Edge/Safari) --- */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px; /* Bem fininha */
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent; /* Fundo invisível */
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15); /* Cor da barra suave */
+  border-radius: 10px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3); /* Mais clara ao passar o mouse */
+}
+/* ----------------------------------------------------------- */
+
 .nav-divider {
-  padding: 1rem 1.5rem 0.5rem;
-  font-size: 0.75rem;
+  padding: 1.2rem 1.5rem 0.5rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 700;
   letter-spacing: 1px;
 }
 
@@ -40,42 +77,46 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.8rem 1.5rem;
+  padding: 0.85rem 1.5rem;
   background: none;
   border: none;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.7); /* Texto cinza claro */
   cursor: pointer;
   text-align: left;
   font-size: 0.95rem;
   transition: all 0.2s;
-  border-left: 4px solid transparent;
+  border-left: 3px solid transparent;
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   color: #fff;
+  padding-left: 1.8rem; /* Efeito de slide leve */
 }
 
 .nav-item.active {
-  background: rgba(255,255,255,0.1);
+  background: rgba(59, 130, 246, 0.15); /* Azul Neon bem suave no fundo */
   color: #fff;
-  border-left-color: #4caf50; /* Destaque verde */
+  border-left-color: #3b82f6; /* Borda Azul Neon */
   font-weight: 600;
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.05);
 }
 
 .nav-icon {
   font-size: 1.2rem;
   width: 24px;
   text-align: center;
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
 }
 
 .sidebar-footer {
   padding: 1rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .nav-item.logout {
-  color: #ff8a80;
+  color: #fda4af; /* Rosa claro */
 }
 .nav-item.logout:hover {
   background: rgba(255, 68, 68, 0.1);

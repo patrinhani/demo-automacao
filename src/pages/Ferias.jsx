@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
 
 export default function Ferias() {
   const navigate = useNavigate();
   
+  // Ref para o documento que será impresso
+  const formRef = useRef();
+
   // --- LÓGICA ---
   const [dataInicio, setDataInicio] = useState('');
   const [dias, setDias] = useState(30);
@@ -12,7 +17,8 @@ export default function Ferias() {
   const [dataFim, setDataFim] = useState('---');
   const [conflito, setConflito] = useState(false);
   const [erroData, setErroData] = useState('');
-  const [showModal, setShowModal] = useState(false); // <--- NOVO ESTADO DO MODAL
+  const [showModal, setShowModal] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
 
   const hoje = new Date().toISOString().split('T')[0];
 
@@ -44,13 +50,41 @@ export default function Ferias() {
     if (erroData) return alert("Corrija a data antes de continuar.");
     if (conflito) return alert("ERRO DE CONFLITO: O colaborador 'Carlos do TI' já possui férias neste período.");
     
-    // EM VEZ DE ALERT, ABRE O MODAL
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    navigate('/dashboard'); // Redireciona após fechar
+    navigate('/dashboard');
+  };
+
+  // --- FUNÇÃO PARA GERAR O PDF ---
+  const gerarPDF = async () => {
+    setLoadingPDF(true);
+
+    setTimeout(async () => {
+      const element = formRef.current;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true 
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const nomeArquivo = `Solicitacao_Ferias_${dataInicio}.pdf`;
+      pdf.save(nomeArquivo);
+
+      setLoadingPDF(false);
+      alert("Formulário baixado! Não esqueça de assinar.");
+    }, 500);
   };
 
   // --- ESTILOS INTERNOS ---
@@ -129,15 +163,14 @@ export default function Ferias() {
       transition: 'background 0.2s',
       letterSpacing: '0.5px'
     },
-    // --- ESTILOS DO MODAL ---
     modalOverlay: {
       position: 'fixed',
       top: 0,
       left: 0,
       width: '100%',
       height: '100%',
-      background: 'rgba(0, 42, 77, 0.6)', // Azul escuro transparente
-      backdropFilter: 'blur(3px)', // Efeito de desfoque no fundo
+      background: 'rgba(0, 42, 77, 0.6)',
+      backdropFilter: 'blur(3px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -158,7 +191,6 @@ export default function Ferias() {
   return (
     <div className="app-container">
       
-      {/* HEADER */}
       <header style={{background: 'linear-gradient(to right, #002a4d, #004a80)', color: 'white', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #e6b800'}}>
         <div style={{transform: 'scale(0.9)', transformOrigin: 'left'}}> 
            <Logo />
@@ -199,7 +231,6 @@ export default function Ferias() {
         {/* GRID DE DUAS COLUNAS */}
         <div style={styles.grid}>
           
-          {/* COLUNA ESQUERDA: FORMULÁRIO */}
           <div style={styles.card}>
             <h4 style={{marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px', color: '#333'}}>
               Configurar Solicitação
@@ -267,7 +298,6 @@ export default function Ferias() {
             </form>
           </div>
 
-          {/* COLUNA DIREITA: AGENDA E CONFLITOS */}
           <div style={{...styles.card, height: 'fit-content'}}>
             <h4 style={{marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px', color: '#333'}}>
               Escala da Equipe
@@ -296,7 +326,6 @@ export default function Ferias() {
                 </div>
                 <span style={styles.badge('ferias')}>FÉRIAS (JAN)</span>
               </li>
-
               <li style={styles.teamItem}>
                 <div>
                   <strong style={{display: 'block', fontSize: '0.9rem'}}>Duda (Design)</strong>
@@ -304,7 +333,6 @@ export default function Ferias() {
                 </div>
                 <span style={styles.badge('ferias')}>FÉRIAS (JUL)</span>
               </li>
-
               <li style={styles.teamItem}>
                 <div>
                   <strong style={{display: 'block', fontSize: '0.9rem'}}>Ana (Gerente)</strong>
@@ -312,7 +340,6 @@ export default function Ferias() {
                 </div>
                 <span style={styles.badge('presente')}>PRESENTE</span>
               </li>
-
               <li style={{...styles.teamItem, borderBottom: 'none', opacity: 0.5}}>
                 <div>
                   <strong style={{display: 'block', fontSize: '0.9rem'}}>Você</strong>
@@ -321,10 +348,6 @@ export default function Ferias() {
                 <span style={{fontSize: '0.8rem'}}>---</span>
               </li>
             </ul>
-
-            <div style={{marginTop: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '4px', fontSize: '0.75rem', color: '#666', lineHeight: '1.4', fontStyle: 'italic'}}>
-              * A política da empresa bloqueia férias simultâneas no mesmo squad.
-            </div>
           </div>
         </div>
       </div>
@@ -344,35 +367,104 @@ export default function Ferias() {
             <div style={{display: 'flex', gap: '15px', justifyContent: 'center'}}>
                <button 
                  onClick={handleCloseModal}
-                 style={{
-                   padding: '12px 25px', 
-                   background: '#6c757d', 
-                   color: 'white', 
-                   border: 'none', 
-                   borderRadius: '6px', 
-                   cursor: 'pointer'
-                 }}
+                 disabled={loadingPDF}
+                 style={{padding: '12px 25px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer'}}
                >
                  Fechar
                </button>
                <button 
-                 onClick={() => alert('Simulação: Imprimindo PDF...')}
-                 style={{
-                   padding: '12px 25px', 
-                   background: '#004a80', 
-                   color: 'white', 
-                   border: 'none', 
-                   borderRadius: '6px', 
-                   fontWeight: 'bold',
-                   cursor: 'pointer'
-                 }}
+                 onClick={gerarPDF}
+                 disabled={loadingPDF}
+                 style={{padding: '12px 25px', background: '#004a80', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', opacity: loadingPDF ? 0.7 : 1}}
                >
-                 🖨 Imprimir Formulário
+                 {loadingPDF ? 'Gerando...' : '🖨 Imprimir Formulário'}
                </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* =======================================================
+          TEMPLATE OCULTO DO FORMULÁRIO (PARA O PDF)
+          Este HTML não aparece na tela, mas é usado pelo JS
+          ======================================================= */}
+      <div style={{position: 'absolute', top: '-10000px', left: 0}}>
+         <div ref={formRef} style={{
+            width: '210mm', minHeight: '297mm', background: 'white', padding: '20mm', boxSizing: 'border-box',
+            fontFamily: 'Times New Roman, serif', color: 'black', border: '1px solid black'
+         }}>
+            
+            {/* CABEÇALHO DO PDF (Agora Limpo, só com Logo) */}
+            <div style={{textAlign: 'center', borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '20px'}}>
+               {/* Logo Centralizada e Aumentada */}
+               <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px', transform: 'scale(1.5)'}}>
+                  <Logo lightMode={true} />
+               </div>
+
+               <h2 style={{fontSize: '14pt', margin: '5px 0', fontWeight: 'normal'}}>DEPARTAMENTO DE RECURSOS HUMANOS</h2>
+               <h3 style={{fontSize: '16pt', marginTop: '20px', textDecoration: 'underline'}}>SOLICITAÇÃO DE FÉRIAS</h3>
+            </div>
+
+            {/* DADOS DO COLABORADOR */}
+            <div style={{marginBottom: '30px'}}>
+               <p style={{borderBottom: '1px solid #ccc', paddingBottom: '5px'}}><strong>NOME:</strong> YAN RODRIGUES</p>
+               <p style={{borderBottom: '1px solid #ccc', paddingBottom: '5px'}}><strong>CARGO:</strong> ANALISTA PLENO</p>
+               <p style={{borderBottom: '1px solid #ccc', paddingBottom: '5px'}}><strong>DEPARTAMENTO:</strong> TECNOLOGIA DA INFORMAÇÃO</p>
+               <p><strong>MATRÍCULA:</strong> 829304</p>
+            </div>
+
+            {/* DETALHES DAS FÉRIAS */}
+            <div style={{marginBottom: '30px', border: '1px solid black', padding: '15px'}}>
+               <h4 style={{marginTop: 0, backgroundColor: '#eee', padding: '5px'}}>DETALHES DA SOLICITAÇÃO</h4>
+               
+               <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '10px'}}>
+                 <tbody>
+                    <tr>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}><strong>DATA DE INÍCIO:</strong></td>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}>{new Date(dataInicio).toLocaleDateString('pt-BR')}</td>
+                    </tr>
+                    <tr>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}><strong>QUANTIDADE DE DIAS:</strong></td>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}>{dias} DIAS</td>
+                    </tr>
+                    <tr>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}><strong>DATA DE RETORNO:</strong></td>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}>{dataFim}</td>
+                    </tr>
+                    <tr>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}><strong>ABONO PECUNIÁRIO (VENDA):</strong></td>
+                       <td style={{padding: '8px', borderBottom: '1px solid #999'}}>{venderDias ? 'SIM (10 DIAS)' : 'NÃO'}</td>
+                    </tr>
+                 </tbody>
+               </table>
+            </div>
+
+            {/* TERMO DE ACEITE */}
+            <div style={{fontSize: '10pt', textAlign: 'justify', marginBottom: '40px', lineHeight: '1.5'}}>
+               Declaro estar ciente de que a concessão das férias acima solicitadas está sujeita à aprovação da gerência, 
+               respeitando a escala do setor e as disposições da CLT. Comprometo-me a não iniciar o gozo das férias 
+               antes da assinatura oficial do Aviso de Férias.
+            </div>
+
+            {/* ASSINATURAS */}
+            <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '80px'}}>
+               <div style={{textAlign: 'center', width: '40%'}}>
+                  <div style={{borderTop: '1px solid black', paddingTop: '5px'}}>ASSINATURA DO COLABORADOR</div>
+                  <div style={{fontSize: '9pt', marginTop: '5px'}}>Data: ____/____/______</div>
+               </div>
+
+               <div style={{textAlign: 'center', width: '40%'}}>
+                  <div style={{borderTop: '1px solid black', paddingTop: '5px'}}>APROVAÇÃO DO GESTOR</div>
+                  <div style={{fontSize: '9pt', marginTop: '5px'}}>Data: ____/____/______</div>
+               </div>
+            </div>
+
+            <div style={{marginTop: '50px', fontSize: '8pt', textAlign: 'center', color: '#666'}}>
+               TechCorp Solutions - Documento Interno v2.4 - Gerado via Portal do Colaborador
+            </div>
+
+         </div>
+      </div>
 
     </div>
   );
