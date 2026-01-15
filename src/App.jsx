@@ -12,6 +12,8 @@ import GestaoViagens from './pages/GestaoViagens';
 import Helpdesk from './pages/Helpdesk';
 import ReservaSalas from './pages/ReservaSalas';
 import Comunicacao from './pages/Comunicacao';
+import Carreira from './pages/Carreira';
+import Tarefas from './pages/Tarefas';
 import './App.css';
 
 function App() {
@@ -44,6 +46,12 @@ function App() {
 
         {/* Módulos de Comunicação */}
         <Route path="/comunicacao" element={<Comunicacao />} />
+
+        {/* Módulos de RH Estratégico */}
+        <Route path="/Carreira" element={<Carreira />} />
+
+        {/* Módulos de Produtividade */}
+        <Route path="/tarefas" element={<Tarefas />} />
         
         {/* Redirecionamento para evitar 404 em rotas desconhecidas */}
         <Route path="*" element={<Navigate to="/" />} />

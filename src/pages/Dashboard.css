@@ -1,0 +1,201 @@
+/* src/Dashboard.css */
+
+/* Layout Principal */
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  box-sizing: border-box; /* Garante que padding não estoure largura */
+}
+
+/* Banner de Boas Vindas */
+.welcome-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border-left: 5px solid #004a80;
+}
+
+.welcome-banner h2 { margin: 0; color: #004a80; font-size: 1.8rem; }
+.welcome-banner p { margin: 5px 0 0 0; color: #666; }
+
+.date-badge {
+  background: #e8eaf6;
+  color: #004a80;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* --- DESTAQUES (Cards Grandes Coloridos) --- */
+.highlights-grid {
+  display: grid;
+  /* Cria colunas automáticas de no mínimo 300px */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-bottom: 50px;
+}
+
+.highlight-card {
+  background: linear-gradient(135deg, #004a80 0%, #002a4d 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(0, 74, 128, 0.2);
+  display: flex;
+  flex-direction: column;
+  min-height: 180px; /* Altura mínima para não achatar */
+  position: relative;
+}
+
+.highlight-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 74, 128, 0.35);
+}
+
+.highlight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.highlight-icon { font-size: 2.2rem; }
+
+.notify-pill {
+  background: #ff5252;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-radius: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.highlight-card h3 { margin: 0 0 8px 0; font-size: 1.3rem; font-weight: 600; }
+.highlight-card p { margin: 0; font-size: 0.95rem; opacity: 0.9; line-height: 1.4; flex: 1; }
+
+.highlight-footer {
+  margin-top: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8c9eff;
+  align-self: flex-end; /* Empurra para a direita */
+}
+
+/* --- SEÇÕES E GRIDS SECUNDÁRIOS --- */
+.sections-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
+  gap: 40px;
+  align-items: start;
+}
+
+.dashboard-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #888;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.modules-grid {
+  display: grid;
+  /* Colunas pequenas para os cards menores */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+/* Card Pequeno (Secundário) */
+.module-card.small-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.2s;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.module-card.small-card:hover {
+  border-color: #004a80;
+  transform: translateX(3px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  background: #fbfbfb;
+}
+
+.module-card .card-icon {
+  font-size: 1.5rem;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  flex-shrink: 0; /* Não deixa o ícone esmagar */
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-info h4 { margin: 0 0 3px 0; font-size: 0.95rem; color: #333; font-weight: 600; }
+.card-info p { margin: 0; font-size: 0.8rem; color: #777; line-height: 1.2; }
+
+/* Cores específicas para os ícones secundários */
+.icon-holerite { background: #e3f2fd !important; color: #1565c0; }
+.icon-ferias { background: #fff3e0 !important; color: #ef6c00; }
+.icon-saude { background: #ffebee !important; color: #c62828; }
+.icon-reembolso { background: #f3e5f5 !important; color: #7b1fa2; }
+.icon-status { background: #e8f5e9 !important; color: #2e7d32; }
+.icon-nota { background: #fff8e1 !important; color: #fbc02d; }
+.icon-ti { background: #eceff1 !important; color: #455a64; }
+.icon-viagem { background: #e0f7fa !important; color: #006064; }
+.icon-reserva { background: #e8eaf6 !important; color: #3f51b5; }
+.icon-carreira { background: #fce4ec !important; color: #880e4f; }
+
+/* Responsividade */
+@media (max-width: 900px) {
+  .sections-container {
+    grid-template-columns: 1fr; /* Vira uma coluna só em telas médias */
+    gap: 30px;
+  }
+  
+  .welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .highlights-grid {
+    grid-template-columns: 1fr; /* Cards de destaque ocupam largura total no celular */
+  }
+}

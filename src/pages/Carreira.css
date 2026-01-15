@@ -1,0 +1,554 @@
+.carreira-container {
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 0 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- VAGAS --- */
+.vagas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.vaga-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.vaga-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-color: #1a237e;
+}
+
+.vaga-card.vaga-aplicada {
+  background: #f8f9fa;
+  border-color: #2e7d32;
+}
+
+.vaga-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.vaga-tag {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-aplicado {
+  font-size: 0.7rem;
+  color: #2e7d32;
+  font-weight: bold;
+  background: #e8f5e9;
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+
+.vaga-card h3 {
+  margin: 10px 0 5px 0;
+  color: #333;
+}
+
+.vaga-local {
+  color: #777;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+.vaga-reqs {
+  flex: 1; /* Empurra o botão para baixo */
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.vaga-reqs strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.vaga-reqs ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.btn-vaga {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #1a237e;
+  color: white;
+  transition: background 0.2s;
+}
+
+.btn-vaga:disabled {
+  background: #a5d6a7;
+  color: #1b5e20;
+  cursor: default;
+}
+
+.btn-vaga:hover:not(:disabled) {
+  background: #283593;
+}
+
+/* --- CURSOS & LMS --- */
+.learning-stats {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-box {
+  background: white;
+  flex: 1;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  text-align: center;
+  border-bottom: 3px solid #ccc;
+}
+
+.stat-box.completed {
+  border-bottom-color: #2e7d32;
+}
+
+.stat-box strong {
+  display: block;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.stat-box span {
+  font-size: 0.85rem;
+  color: #777;
+  text-transform: uppercase;
+}
+
+.cursos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.curso-card {
+  background: white;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 1px solid #eee;
+}
+
+.curso-card:hover {
+  transform: translateX(5px);
+  border-color: #1a237e;
+}
+
+.curso-icon {
+  font-size: 2.5rem;
+  margin-right: 20px;
+  width: 60px;
+  text-align: center;
+}
+
+.curso-info {
+  flex: 1;
+}
+
+.curso-cat {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  display: inline-block;
+}
+
+.curso-cat.obrigatório { background: #ffebee; color: #c62828; }
+.curso-cat.técnico { background: #e3f2fd; color: #1565c0; }
+.curso-cat.soft { background: #fff3e0; color: #ef6c00; } /* soft skills */
+
+.curso-info h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+/* Barra de Progresso */
+.progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a237e, #3949ab);
+  border-radius: 4px;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: bold;
+  width: 35px;
+  text-align: right;
+}
+
+.curso-action {
+  font-size: 1.5rem;
+  margin-left: 20px;
+  color: #ccc;
+}
+
+.curso-card:hover .curso-action {
+  color: #1a237e;
+}
+
+@media (max-width: 600px) {
+  .learning-stats {
+    flex-wrap: wrap;
+  }
+  .curso-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  .curso-icon { margin: 0 0 10px 0; }
+  .curso-action { display: none; }
+  .progress-wrapper { width: 100%; }
+}
+
+/* ... MANTENHA O CSS ANTERIOR DO ARQUIVO ... */
+/* Adicione o código abaixo no final do arquivo Carreira.css */
+
+/* --- MODAL BASE --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- ESTILOS DO TRACKING (Acompanhamento) --- */
+.tracking-modal {
+  width: 100%;
+  max-width: 600px;
+  padding: 30px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.tracking-subtitle {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.timeline-container {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin: 40px 0;
+  padding: 0 10px;
+}
+
+.progress-line-bg {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  z-index: 0;
+}
+
+.progress-line-fill {
+  height: 100%;
+  background: #2e7d32;
+  transition: width 0.5s ease;
+}
+
+.timeline-step {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  width: 80px;
+}
+
+.step-circle {
+  width: 34px;
+  height: 34px;
+  background: #e0e0e0;
+  color: #777;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  font-weight: bold;
+  border: 3px solid white; /* Borda para separar da linha */
+}
+
+.timeline-step.active .step-circle {
+  background: #2e7d32;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.timeline-step.active .step-label {
+  color: #2e7d32;
+}
+
+.history-logs {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.history-logs h5 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.history-logs ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-logs li {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.log-date {
+  color: #1a237e;
+  font-weight: bold;
+  min-width: 80px;
+}
+
+/* --- ESTILOS DO CERTIFICADO --- */
+.certificate-modal {
+  width: 900px; /* Largura fixa para simular paisagem */
+  background: #555; /* Fundo escuro para destacar o papel */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.certificate-paper {
+  background: white;
+  width: 100%;
+  aspect-ratio: 1.414; /* Proporção A4 Paisagem */
+  padding: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.certificate-border {
+  border: 10px double #daa520; /* Dourado */
+  height: 100%;
+  padding: 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 4px;
+  background-image: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(250,248,240,1) 100%);
+}
+
+.cert-header h1 {
+  font-family: 'Times New Roman', serif;
+  color: #1a237e;
+  margin: 20px 0;
+  font-size: 2.5rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #daa520;
+  padding-bottom: 10px;
+}
+
+.cert-body p {
+  font-size: 1.2rem;
+  color: #555;
+  font-family: 'Georgia', serif;
+  margin: 10px 0;
+}
+
+.cert-body h2 {
+  font-family: 'Great Vibes', cursive, 'Brush Script MT', cursive; /* Fonte manuscrita se disponível */
+  font-size: 3.5rem;
+  color: #333;
+  margin: 10px 0;
+  font-weight: normal;
+}
+
+.cert-body h3 {
+  font-size: 1.8rem;
+  color: #1a237e;
+  margin: 10px 0 20px;
+}
+
+.cert-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  padding-top: 40px;
+}
+
+.signature {
+  text-align: center;
+}
+
+.sig-line {
+  width: 200px;
+  height: 1px;
+  background: #333;
+  margin-bottom: 8px;
+}
+
+.cert-code {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 15px;
+}
+
+.btn-primary {
+  background: #1a237e;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-secondary {
+  background: #eee;
+  color: #333;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Esconde botões na impressão */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .certificate-paper, .certificate-paper * {
+    visibility: visible;
+  }
+  .certificate-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+  }
+  .modal-overlay {
+    background: white;
+    position: absolute;
+  }
+  .modal-actions {
+    display: none;
+  }
+}

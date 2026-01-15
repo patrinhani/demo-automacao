@@ -96,6 +96,22 @@ export default function Dashboard() {
     rota: '/comunicacao',
     notificacao: '2 novas' // Para chamar a atenção
     },
+    {
+    titulo: 'Carreira & Cursos',
+    desc: 'Vagas internas e treinamentos corporativos.',
+    icon: '🚀',
+    classeIcone: 'icon-carreira',
+    rota: '/carreira',
+    notificacao: null
+    },
+    {
+    titulo: 'Minhas Tarefas',
+    desc: 'Kanban pessoal de atividades.',
+    icon: '✅',
+    classeIcone: 'icon-tarefas',
+    rota: '/tarefas',
+    notificacao: null
+     },
   ];
 
   return (
