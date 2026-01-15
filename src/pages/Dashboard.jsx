@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import '../App.css';
-import './Dashboard.css';
+import '../Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
