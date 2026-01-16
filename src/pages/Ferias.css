@@ -14,7 +14,6 @@
   --error-red: #ef4444;
 
   background-color: var(--bg-dark);
-  /* min-height: 100vh; */
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   position: relative;
