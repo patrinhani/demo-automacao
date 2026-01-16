@@ -1,0 +1,178 @@
+/* =========================================
+   LOGIN TECHCORP - ESTILO DARK/GLASS
+   ========================================= */
+
+/* Definindo as variáveis APENAS para o escopo do Login 
+   (para garantir que funcione independente do App.css) */
+.login-container {
+  /* Paleta de Cores Tech */
+  --bg-dark: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.7); /* Vidro mais escuro e legível */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  
+  --neon-blue: #3b82f6;
+  --neon-purple: #8b5cf6;
+  
+  /* Configuração do Container */
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-dark); /* Cor de fundo corrigida */
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+/* --- Luzes de Fundo Animadas --- */
+.ambient-light {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.5;
+  animation: floatLogin 15s infinite ease-in-out alternate;
+}
+
+.light-1 {
+  top: -10%;
+  left: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--neon-blue), transparent 70%);
+}
+
+.light-2 {
+  bottom: -10%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--neon-purple), transparent 70%);
+  animation-delay: -5s;
+}
+
+@keyframes floatLogin {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, 40px) scale(1.1); }
+}
+
+/* --- Cartão de Vidro (Glassmorphism) --- */
+.login-glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); /* Compatibilidade Safari */
+  border: 1px solid var(--glass-border);
+  padding: 3.5rem 3rem;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  z-index: 10;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* Sombra mais suave */
+}
+
+/* --- Header --- */
+.login-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.login-header h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* --- Inputs --- */
+.input-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.glass-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.5); /* Fundo escuro transparente */
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.glass-input:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); /* Glow sutil */
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* --- Botão Neon --- */
+.btn-neon {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-neon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.5);
+  filter: brightness(1.1);
+}
+
+.btn-neon:active {
+  transform: translateY(0);
+}
+
+/* --- Footer --- */
+.login-footer {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.link-highlight {
+  color: var(--neon-blue);
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.link-highlight:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}

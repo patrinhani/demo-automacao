@@ -7,15 +7,14 @@ import './Perfil.css';
 export default function Perfil() {
   const navigate = useNavigate();
 
-  // Estado com dados simulados do usuário
   const [userData, setUserData] = useState({
     nome: 'Guilherme Silva',
     cargo: 'Analista de Sistemas Pleno',
     email: 'guilherme.silva@techcorp.com.br',
     telefone: '(11) 99999-8888',
     nascimento: '1995-05-20',
-    matricula: '123456',
-    unidade: 'Matriz SP',
+    matricula: '829304',
+    unidade: 'Matriz SP - TechHub',
     admissao: '2022-03-15'
   });
 
@@ -29,40 +28,64 @@ export default function Perfil() {
   const handleSalvar = (e) => {
     e.preventDefault();
     setEditando(false);
-    alert('Dados atualizados com sucesso! (Simulação)');
+    // Simulação de salvamento
+    alert('Perfil atualizado com sucesso!');
   };
 
   return (
-    <div className="app-container">
-      {/* Barra Superior Igual ao Dashboard */}
-      <header className="top-bar">
+    <div className="tech-layout-perfil">
+      
+      {/* LUZES DE FUNDO ANIMADAS */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+      
+      {/* HEADER TECH */}
+      <header className="tech-header-glass">
         <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor: 'pointer'}}>
           <Logo />
         </div>
-        <div className="user-info">
-          <div className="avatar">GS</div>
+        <div className="tech-user-badge">
+          <div className="avatar-mini">GS</div>
           <span>{userData.nome}</span>
         </div>
       </header>
 
-      <div className="perfil-container">
-        <div className="perfil-header">
-          <button className="btn-voltar" onClick={() => navigate('/dashboard')}>
-            ← Voltar
+      <div className="perfil-container-tech">
+        
+        <div className="perfil-header-tech">
+          <button className="btn-voltar-tech" onClick={() => navigate('/dashboard')}>
+            ← Voltar ao Dashboard
           </button>
-          <h2>Meu Perfil</h2>
+          <h2 className="titulo-neon">Meu Perfil</h2>
         </div>
 
-        <div className="perfil-card">
-          <div className="perfil-avatar-section">
-            <div className="avatar-large">GS</div>
-            <h3>{userData.nome}</h3>
-            <p className="cargo-badge">{userData.cargo}</p>
+        {/* CARD PRINCIPAL COM EFEITO DE VIDRO */}
+        <div className="perfil-card-glass">
+          
+          {/* COLUNA ESQUERDA (AVATAR) */}
+          <div className="perfil-sidebar-tech">
+            <div className="avatar-large-tech">
+              GS
+              <div className="status-dot"></div>
+            </div>
+            <h3 className="user-name-tech">{userData.nome}</h3>
+            <p className="user-role-tech">{userData.cargo}</p>
+            
+            <div className="info-badges">
+              <span className="badge-tech">Matrícula: {userData.matricula}</span>
+              <span className="badge-tech">Admissão: 2022</span>
+            </div>
           </div>
 
-          <form onSubmit={handleSalvar} className="perfil-form">
-            <div className="form-grid">
-              <div className="form-group">
+          {/* COLUNA DIREITA (FORMULÁRIO) */}
+          <form onSubmit={handleSalvar} className="perfil-form-tech">
+            <div className="form-header">
+              <h3>Dados Pessoais</h3>
+              <p>Gerencie suas informações de contato e cadastro.</p>
+            </div>
+
+            <div className="form-grid-tech">
+              <div className="form-group-tech">
                 <label>Nome Completo</label>
                 <input 
                   type="text" 
@@ -70,21 +93,21 @@ export default function Perfil() {
                   value={userData.nome} 
                   disabled={!editando}
                   onChange={handleChange}
+                  className={editando ? 'editable' : ''}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group-tech">
                 <label>E-mail Corporativo</label>
                 <input 
                   type="email" 
-                  name="email"
                   value={userData.email} 
-                  disabled={true} // E-mail geralmente não é editável
-                  className="input-disabled"
+                  disabled={true} 
+                  className="locked"
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group-tech">
                 <label>Telefone / Celular</label>
                 <input 
                   type="text" 
@@ -92,10 +115,11 @@ export default function Perfil() {
                   value={userData.telefone} 
                   disabled={!editando}
                   onChange={handleChange}
+                  className={editando ? 'editable' : ''}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group-tech">
                 <label>Data de Nascimento</label>
                 <input 
                   type="date" 
@@ -103,33 +127,34 @@ export default function Perfil() {
                   value={userData.nascimento} 
                   disabled={!editando}
                   onChange={handleChange}
+                  className={editando ? 'editable' : ''}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Matrícula</label>
-                <input type="text" value={userData.matricula} disabled className="input-disabled"/>
+              <div className="form-group-tech">
+                <label>Unidade de Lotação</label>
+                <input type="text" value={userData.unidade} disabled className="locked"/>
               </div>
-
-              <div className="form-group">
-                <label>Unidade</label>
-                <input type="text" value={userData.unidade} disabled className="input-disabled"/>
+              
+              <div className="form-group-tech">
+                <label>Cargo Atual</label>
+                <input type="text" value={userData.cargo} disabled className="locked"/>
               </div>
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions-tech">
               {editando ? (
                 <>
-                  <button type="button" className="btn-cancelar" onClick={() => setEditando(false)}>
+                  <button type="button" className="btn-cancelar-tech" onClick={() => setEditando(false)}>
                     Cancelar
                   </button>
-                  <button type="submit" className="btn-salvar">
+                  <button type="submit" className="btn-salvar-tech">
                     Salvar Alterações
                   </button>
                 </>
               ) : (
-                <button type="button" className="btn-editar" onClick={() => setEditando(true)}>
-                  Editar Dados
+                <button type="button" className="btn-editar-tech" onClick={() => setEditando(true)}>
+                  ✎ Editar Informações
                 </button>
               )}
             </div>

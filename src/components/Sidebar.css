@@ -2,69 +2,64 @@
 
 .sidebar {
   width: 260px;
-  
-  /* --- MUDANÇA PRINCIPAL: FUNDO --- */
-  /* Removemos a cor sólida e usamos o mesmo tom semi-transparente do Dashboard */
   background: rgba(15, 23, 42, 0.4); 
-  backdrop-filter: blur(12px); /* Efeito de vidro */
+  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   
-  /* Borda sutil apenas para separar levemente */
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  /* Borda direita contínua */
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   
   color: #fff;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh; /* Garante altura total */
   position: sticky;
   top: 0;
   flex-shrink: 0;
   z-index: 100;
-  transition: all 0.3s ease;
 }
 
 .sidebar-header {
-  padding: 1.5rem;
-  /* Fundo levemente mais claro no header para destaque sutil */
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
+  /* --- CORREÇÃO DE ALINHAMENTO --- */
+  height: 80px; /* Mesma altura exata do .tech-header do Dashboard */
+  box-sizing: border-box; /* Garante que padding não aumente a altura */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* Mesma cor de borda do header */
+  
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .sidebar-nav {
   flex: 1;
-  overflow-y: auto; /* Permite rolagem */
-  padding: 1rem 0;
+  overflow-y: auto;
+  padding: 1.5rem 0;
   
-  /* Firefox Scrollbar */
+  /* Scrollbar Fina (Firefox) */
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-/* --- ESTILIZAÇÃO DA BARRA DE ROLAGEM (Chrome/Edge/Safari) --- */
+/* Scrollbar Fina (Chrome/Edge) */
 .sidebar-nav::-webkit-scrollbar {
-  width: 4px; /* Bem fininha */
+  width: 4px;
 }
-
 .sidebar-nav::-webkit-scrollbar-track {
-  background: transparent; /* Fundo invisível */
+  background: transparent;
 }
-
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15); /* Cor da barra suave */
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
 }
-
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3); /* Mais clara ao passar o mouse */
+  background: rgba(255, 255, 255, 0.3);
 }
-/* ----------------------------------------------------------- */
 
+/* Divisores e Itens */
 .nav-divider {
-  padding: 1.2rem 1.5rem 0.5rem;
+  padding: 1rem 1.5rem 0.5rem;
   font-size: 0.7rem;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
@@ -80,7 +75,7 @@
   padding: 0.85rem 1.5rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7); /* Texto cinza claro */
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   text-align: left;
   font-size: 0.95rem;
@@ -91,15 +86,14 @@
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  padding-left: 1.8rem; /* Efeito de slide leve */
+  padding-left: 1.8rem;
 }
 
 .nav-item.active {
-  background: rgba(59, 130, 246, 0.15); /* Azul Neon bem suave no fundo */
+  background: rgba(59, 130, 246, 0.15);
   color: #fff;
-  border-left-color: #3b82f6; /* Borda Azul Neon */
+  border-left-color: #3b82f6;
   font-weight: 600;
-  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.05);
 }
 
 .nav-icon {
@@ -111,12 +105,12 @@
 
 .sidebar-footer {
   padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.2);
 }
 
 .nav-item.logout {
-  color: #fda4af; /* Rosa claro */
+  color: #fda4af;
 }
 .nav-item.logout:hover {
   background: rgba(255, 68, 68, 0.1);

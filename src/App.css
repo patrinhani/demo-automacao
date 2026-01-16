@@ -1,4 +1,3 @@
-
 /* src/App.css - VERSÃO FINAL COMPLETA */
 
 @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&display=swap');
@@ -25,6 +24,8 @@ body {
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Container principal que empurra o rodapé (se houver) */

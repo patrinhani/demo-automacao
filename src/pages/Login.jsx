@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import '../App.css'; 
-
+import Logo from '../components/Logo';
+import '../App.css'; // ou './Login.css' se preferir separar
+import './Login.css';
 export default function Login() {
   const navigate = useNavigate();
 
@@ -10,31 +11,36 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className="login-container">
+      {/* Fundo Animado */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+
+      <div className="login-glass-card">
         <div className="login-header">
-          <h1>TechCorp Solutions</h1>
-          <p>Portal do Colaborador</p>
+          <Logo />
+          <h2>Bem-vindo de volta</h2>
+          <p>Acesse sua conta corporativa</p>
         </div>
 
-        <form onSubmit={handleLogin}>
-          <div className="form-group" style={{marginBottom: '15px'}}>
-            <label>Usuário de Rede</label>
-            <input type="text" placeholder="ex: br.joao.silva" />
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="input-group">
+            <label>E-mail Corporativo</label>
+            <input type="email" placeholder="usuario@techcorp.com" className="glass-input" />
           </div>
 
-          <div className="form-group" style={{marginBottom: '25px'}}>
+          <div className="input-group">
             <label>Senha</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" placeholder="••••••••" className="glass-input" />
           </div>
 
-          <button type="submit" className="btn-login">
-            ACESSAR SISTEMA
+          <button type="submit" className="btn-neon">
+            Entrar no Sistema
           </button>
         </form>
-        
+
         <div className="login-footer">
-          © 2024 TechCorp Internal Systems v4.2
+          <p>Esqueceu sua senha? <span className="link-highlight">Recuperar acesso</span></p>
         </div>
       </div>
     </div>

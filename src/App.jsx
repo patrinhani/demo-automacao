@@ -15,6 +15,7 @@ import Comunicacao from './pages/Comunicacao';
 import Carreira from './pages/Carreira';
 import Tarefas from './pages/Tarefas';
 import Perfil from './pages/Perfil';
+import PortalCliente from './pages/PortalCliente';
 import './App.css';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
 
         {/* Módulos de Comunicação */}
         <Route path="/comunicacao" element={<Comunicacao />} />
+        <Route path="/portal-cliente" element={<PortalCliente />} />
 
         {/* Módulos de RH Estratégico */}
         <Route path="/Carreira" element={<Carreira />} />

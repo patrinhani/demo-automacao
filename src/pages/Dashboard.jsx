@@ -1,28 +1,97 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { db } from '../firebase'; // Importando o banco de dados
+import { ref, onValue } from 'firebase/database'; // Importando funções de leitura
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // Dados Simulados (Stats)
+  // --- ESTADO PARA OS DADOS REAIS (KPIs) ---
+  const [kpis, setKpis] = useState({
+    tarefas: 0,
+    solicitacoes: 0,
+    ferias: '---'
+  });
+
+  // --- EFEITO PARA BUSCAR DADOS DO FIREBASE EM TEMPO REAL ---
+  useEffect(() => {
+    // 1. Ouvinte de Tarefas
+    const tarefasRef = ref(db, 'tarefas');
+    const unsubscribeTarefas = onValue(tarefasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Conta quantas tarefas existem (pode filtrar por status se quiser)
+        // Exemplo: Object.values(data).filter(t => t.status === 'pendente').length
+        setKpis(prev => ({ ...prev, tarefas: Object.keys(data).length }));
+      } else {
+        setKpis(prev => ({ ...prev, tarefas: 0 }));
+      }
+    });
+
+    // 2. Ouvinte de Solicitações (Reembolsos)
+    const solicitacoesRef = ref(db, 'reembolsos');
+    const unsubscribeSolicitacoes = onValue(solicitacoesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setKpis(prev => ({ ...prev, solicitacoes: Object.keys(data).length }));
+      } else {
+        setKpis(prev => ({ ...prev, solicitacoes: 0 }));
+      }
+    });
+
+    // 3. Ouvinte de Férias (Lê uma data específica ou calcula)
+    const feriasRef = ref(db, 'ferias/proximoPeriodo'); // Ex: estrutura { inicio: "20/11/2026" }
+    const unsubscribeFerias = onValue(feriasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.inicio) {
+        // Formata para mostrar Mês/Ano ou Dia/Mês (ex: "Nov/26")
+        const dateObj = new Date(data.inicio);
+        const mesAno = dateObj.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        setKpis(prev => ({ ...prev, ferias: mesAno }));
+      } else {
+        // Fallback se não tiver data marcada
+        setKpis(prev => ({ ...prev, ferias: 'A definir' }));
+      }
+    });
+
+    // Limpa os ouvintes ao sair da tela para não pesar a memória
+    return () => {
+      unsubscribeTarefas();
+      unsubscribeSolicitacoes();
+      unsubscribeFerias();
+    };
+  }, []);
+
+  // --- DADOS DO UI CONECTADOS AO ESTADO ---
   const stats = [
-    { titulo: 'Tarefas Pendentes', valor: '5', icon: '⚡', cor: 'var(--neon-blue)' },
-    { titulo: 'Solicitações', valor: '2', icon: '📂', cor: 'var(--neon-purple)' },
-    { titulo: 'Próx. Férias', valor: 'Nov/26', icon: '🌴', cor: 'var(--neon-green)' },
+    { 
+      titulo: 'Tarefas Pendentes', 
+      valor: kpis.tarefas.toString(), // Usa o valor do estado
+      icon: '⚡', 
+      cor: 'var(--neon-blue)' 
+    },
+    { 
+      titulo: 'Solicitações', 
+      valor: kpis.solicitacoes.toString(), // Usa o valor do estado
+      icon: '📂', 
+      cor: 'var(--neon-purple)' 
+    },
+    { 
+      titulo: 'Próx. Férias', 
+      valor: kpis.ferias, // Usa o valor do estado
+      icon: '🌴', 
+      cor: 'var(--neon-green)' 
+    },
   ];
 
-  // Lista de Acessos com os ITENS FALTANTES readicionados
   const acessos = [
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
-    
-    // --- VOLTARAM AQUI ---
     { titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },
     { titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },
-    // ---------------------
-    
     { titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
     { titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },
     { titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
@@ -42,7 +111,7 @@ export default function Dashboard() {
         <header className="tech-header">
           <div className="header-content">
             <h1>Visão Geral</h1>
-            <p>Bem-vindo ao <strong>TechPortal </strong></p>
+            <p>Bem-vindo ao <strong>TechPortal</strong></p>
           </div>
           
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
@@ -55,7 +124,7 @@ export default function Dashboard() {
         </header>
 
         <div className="tech-scroll-content">
-          {/* Cards de Estatísticas */}
+          {/* Cards de Estatísticas com Dados Reais */}
           <section className="stats-row">
             {stats.map((stat, i) => (
               <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor }}>
