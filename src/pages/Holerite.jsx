@@ -1,3 +1,4 @@
+// src/pages/Holerite.jsx
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
@@ -9,26 +10,22 @@ import './Holerite.css';
 export default function Holerite() {
   const navigate = useNavigate();
   
-  // Estados da Página
+  // Estados
   const [anoSelecionado, setAnoSelecionado] = useState('2024');
   const [valoresVisiveis, setValoresVisiveis] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
   
-  // Estados do Modal
   const [modalAberto, setModalAberto] = useState(false);
   const [holeriteSelecionado, setHoleriteSelecionado] = useState(null);
-
-  // NOVO: Estado para o PDF oculto
   const [holeriteParaImpressao, setHoleriteParaImpressao] = useState(null);
+  
   const printRef = useRef();
 
-  // Mock de Dados Completo (com bases de cálculo para o PDF)
+  // Dados Mockados
   const holerites = [
     { 
-      id: 1, 
-      ano: '2024', mes: 'Outubro', tipo: 'Folha Mensal', 
-      data_credito: '30/10/2024', valor_liquido: '3.450,00', status: 'PAGO',
-      // Dados específicos para o PDF
+      id: 1, ano: '2024', mes: 'Outubro', tipo: 'Folha Mensal', 
+      data_credito: '30/10/2024', valor_liquido: '3.450,00', status: 'PAGO', cssClass: 'mensal',
       bases: { sal_base: '4.000,00', base_inss: '4.150,00', base_fgts: '4.150,00', fgts_mes: '332,00', base_irrf: '3.700,00', faixa_irrf: '7.5%' },
       detalhes: [
         { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
@@ -39,8 +36,7 @@ export default function Holerite() {
       ]
     },
     { 
-      id: 2, 
-      ano: '2024', mes: 'Outubro', tipo: 'Adiantamento Quinzenal', 
+      id: 2, ano: '2024', mes: 'Outubro', tipo: 'Adiantamento Quinzenal', 
       data_credito: '15/10/2024', valor_liquido: '1.600,00', status: 'PAGO', cssClass: 'adiantamento',
       bases: { sal_base: '4.000,00', base_inss: '0,00', base_fgts: '0,00', fgts_mes: '0,00', base_irrf: '0,00', faixa_irrf: '0%' },
       detalhes: [
@@ -48,9 +44,8 @@ export default function Holerite() {
       ]
     },
     { 
-      id: 3, 
-      ano: '2024', mes: 'Setembro', tipo: 'Folha Mensal', 
-      data_credito: '30/09/2024', valor_liquido: '3.400,00', status: 'PAGO',
+      id: 3, ano: '2024', mes: 'Setembro', tipo: 'Folha Mensal', 
+      data_credito: '30/09/2024', valor_liquido: '3.400,00', status: 'PAGO', cssClass: 'mensal',
       bases: { sal_base: '4.000,00', base_inss: '4.000,00', base_fgts: '4.000,00', fgts_mes: '320,00', base_irrf: '3.550,00', faixa_irrf: '7.5%' },
       detalhes: [
         { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
@@ -64,15 +59,13 @@ export default function Holerite() {
 
   const handleDownload = async (id, nomeArquivo) => {
     setDownloadingId(id);
-    
-    // 1. Seleciona o holerite para preencher o template oculto
     const holeriteParaBaixar = holerites.find(h => h.id === id);
     setHoleriteParaImpressao(holeriteParaBaixar);
 
-    // 2. Aguarda renderização e gera o PDF
     setTimeout(async () => {
       if (printRef.current) {
         const element = printRef.current;
+        // Configuração mantida: Fundo branco explícito
         const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', logging: false });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -82,9 +75,8 @@ export default function Holerite() {
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(nomeArquivo);
       }
-      
       setDownloadingId(null);
-      setHoleriteParaImpressao(null); // Limpa o template
+      setHoleriteParaImpressao(null);
     }, 800);
   };
 
@@ -94,24 +86,39 @@ export default function Holerite() {
   };
 
   return (
-    <div className="app-container">
-      <header className="top-bar">
-        <div className="brand"><Logo /></div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>Voltar ao Menu ↩</div>
+    <div className="tech-holerite-layout">
+      
+      {/* Luzes de Fundo */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+
+      {/* Header */}
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Meus Documentos</span>
+        </div>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
+          Voltar ao Menu ↩
+        </button>
       </header>
 
-      <div className="dashboard-wrapper">
-        <div className="holerite-header">
-          <div>
+      <div className="holerite-container-tech">
+        
+        {/* Topo da Página */}
+        <div className="page-header-row">
+          <div className="page-header-tech">
             <h2>Meus Holerites</h2>
-            <div className="breadcrumbs">Financeiro &gt; Documentos &gt; Consulta</div>
+            <p>Financeiro &gt; Demonstrativos de Pagamento</p>
           </div>
-          <button className="privacy-toggle" onClick={() => setValoresVisiveis(!valoresVisiveis)}>
+          <button className="privacy-toggle-tech" onClick={() => setValoresVisiveis(!valoresVisiveis)}>
             {valoresVisiveis ? '👁️ Ocultar Valores' : '🙈 Mostrar Valores'}
           </button>
         </div>
 
-        <div className="filter-bar">
+        {/* Filtros Glass */}
+        <div className="filter-bar-tech">
           <div className="filter-group">
             <label>Ano Competência</label>
             <select value={anoSelecionado} onChange={(e) => setAnoSelecionado(e.target.value)}>
@@ -126,23 +133,30 @@ export default function Holerite() {
           </div>
         </div>
 
+        {/* Lista de Cards */}
         <div className="holerite-list">
           {listaFiltrada.map((item) => (
-            <div key={item.id} className={`holerite-card ${item.cssClass || ''}`}>
+            <div key={item.id} className={`holerite-card-tech ${item.cssClass || ''}`}>
               <div className="card-info">
                 <h4>{item.tipo} - {item.mes}/{item.ano}</h4>
                 <span>Disponibilizado em: <strong>{item.data_credito}</strong></span>
-                <span style={{display: 'inline-block', marginTop: '5px', padding: '2px 8px', borderRadius: '4px', background: item.status === 'PAGO' ? '#e8f5e9' : '#fff3cd', color: item.status === 'PAGO' ? '#2e7d32' : '#856404', fontWeight: 'bold', fontSize: '0.7rem'}}>
+                <span className={`status-badge ${item.status === 'PAGO' ? 'pago' : ''}`}>
                   {item.status}
                 </span>
               </div>
+              
               <div className="card-values">
-                <small>VALOR LÍQUIDO</small>
-                <div className={`valor ${!valoresVisiveis ? 'blurred' : ''}`}>R$ {item.valor_liquido}</div>
+                <small>LÍQUIDO A RECEBER</small>
+                <div className={`valor ${!valoresVisiveis ? 'blurred' : ''}`}>
+                   R$ {item.valor_liquido}
+                </div>
               </div>
+              
               <div className="card-actions">
-                <button className="btn-icon view" title="Visualizar" onClick={() => abrirDetalhes(item)}>📄</button>
-                <button className="btn-icon download" title="Baixar PDF" onClick={() => handleDownload(item.id, `Holerite_${item.mes}_${item.ano}.pdf`)}>
+                <button className="btn-icon-tech" title="Visualizar Detalhes" onClick={() => abrirDetalhes(item)}>
+                   📄
+                </button>
+                <button className="btn-icon-tech" title="Baixar PDF Oficial" onClick={() => handleDownload(item.id, `Holerite_${item.mes}_${item.ano}.pdf`)}>
                   {downloadingId === item.id ? '⏳' : '⬇'}
                 </button>
               </div>
@@ -151,36 +165,49 @@ export default function Holerite() {
         </div>
       </div>
 
-      {/* MODAL (Mantido igual) */}
+      {/* MODAL DETALHES (Estilo Tech) */}
       {modalAberto && holeriteSelecionado && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{maxWidth: '700px'}}>
-            <div className="modal-header"><h3>Detalhes</h3><button className="modal-close" onClick={() => setModalAberto(false)}>×</button></div>
-            <div style={{background: '#f8f9fa', padding: '15px', marginBottom: '20px', borderRadius: '4px'}}>
-                <strong>{holeriteSelecionado.tipo}</strong> <br/>Competência: {holeriteSelecionado.mes}/{holeriteSelecionado.ano}
+          <div className="modal-content-tech">
+            <div className="modal-header-tech">
+              <h3>Detalhes do Holerite</h3>
+              <button className="modal-close-tech" onClick={() => setModalAberto(false)}>×</button>
             </div>
-            <table className="payslip-table">
-                <thead><tr><th style={{width: '40%'}}>Descrição</th><th>Ref.</th><th className="text-right">Vencimentos</th><th className="text-right">Descontos</th></tr></thead>
+            
+            <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px'}}>
+                <strong style={{color: '#fff'}}>{holeriteSelecionado.tipo}</strong> <br/>
+                <span style={{color: '#94a3b8'}}>Competência: {holeriteSelecionado.mes}/{holeriteSelecionado.ano}</span>
+            </div>
+
+            <table className="payslip-table-tech">
+                <thead><tr><th>Descrição</th><th>Ref.</th><th className="text-right">Vencimentos</th><th className="text-right">Descontos</th></tr></thead>
                 <tbody>
                     {holeriteSelecionado.detalhes.map((linha, idx) => (
-                        <tr key={idx}><td>{linha.desc}</td><td>{linha.ref}</td><td className="text-right text-success">{linha.venc !== '0,00' ? linha.venc : ''}</td><td className="text-right text-danger">{linha.desc_val !== '0,00' ? linha.desc_val : ''}</td></tr>
+                        <tr key={idx}>
+                            <td>{linha.desc}</td>
+                            <td>{linha.ref}</td>
+                            <td className="text-right text-success">{linha.venc !== '0,00' ? linha.venc : ''}</td>
+                            <td className="text-right text-danger">{linha.desc_val !== '0,00' ? linha.desc_val : ''}</td>
+                        </tr>
                     ))}
-                    <tr><td colSpan="4" style={{height: '20px'}}></td></tr>
                 </tbody>
             </table>
-            <div className="modal-actions"><button className="btn-secondary" onClick={() => setModalAberto(false)}>Fechar</button></div>
+            
+            <div className="modal-actions-tech">
+                <button className="btn-close-modal" onClick={() => setModalAberto(false)}>Fechar</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* =================================================================
-          TEMPLATE DE IMPRESSÃO (RECIBO DE PAGAMENTO)
-         ================================================================= */}
+         TEMPLATE DE IMPRESSÃO (Mantido Original/Branco para PDF)
+         Esta parte não é visível na tela, apenas para o gerador de PDF.
+         ================================================================= 
+      */}
       <div className="print-hidden-wrapper">
         {holeriteParaImpressao && (
         <div ref={printRef} className="print-holerite-page">
-            
-            {/* CABEÇALHO DO HOLERITE */}
             <div className="holerite-box">
                 <div className="holerite-header-top">
                     <div>
@@ -204,7 +231,6 @@ export default function Holerite() {
                 </div>
             </div>
 
-            {/* TABELA DE VALORES */}
             <table className="holerite-table">
                 <thead>
                     <tr>
@@ -225,30 +251,21 @@ export default function Holerite() {
                             <td style={{textAlign: 'right'}}>{linha.desc_val !== '0,00' ? linha.desc_val : ''}</td>
                         </tr>
                     ))}
-                    {/* Linhas vazias para preencher espaço */}
                     {[...Array(8 - holeriteParaImpressao.detalhes.length)].map((_, i) => (
                         <tr key={`empty-${i}`} style={{height: '20px'}}><td></td><td></td><td></td><td></td><td></td></tr>
                     ))}
                 </tbody>
             </table>
 
-            {/* TOTAIS */}
             <div className="holerite-totals">
                 <div className="holerite-total-box"></div>
                 <div className="holerite-total-box">
                     <span className="total-label">TOTAL VENCIMENTOS</span>
-                    <span className="total-value">
-                        {/* Soma simples dos Vencimentos para demo */}
-                        {holeriteParaImpressao.bases.sal_base && '4.150,00'}
-                        {!holeriteParaImpressao.bases.sal_base && '1.600,00'}
-                    </span>
+                    <span className="total-value">{holeriteParaImpressao.bases.sal_base ? '4.150,00' : '1.600,00'}</span>
                 </div>
                 <div className="holerite-total-box">
                     <span className="total-label">TOTAL DESCONTOS</span>
-                    <span className="total-value">
-                        {holeriteParaImpressao.bases.sal_base && '700,00'}
-                        {!holeriteParaImpressao.bases.sal_base && '0,00'}
-                    </span>
+                    <span className="total-value">{holeriteParaImpressao.bases.sal_base ? '700,00' : '0,00'}</span>
                 </div>
                 <div className="holerite-total-box" style={{background: '#eee'}}>
                     <span className="total-label">LÍQUIDO A RECEBER</span>
@@ -256,7 +273,6 @@ export default function Holerite() {
                 </div>
             </div>
 
-            {/* BASES DE CÁLCULO (RODAPÉ) */}
             <div className="holerite-footer-bases">
                 <div className="base-item"><span className="base-label">SAL. BASE</span><span className="base-value">{holeriteParaImpressao.bases.sal_base}</span></div>
                 <div className="base-item"><span className="base-label">SAL. CONTR. INSS</span><span className="base-value">{holeriteParaImpressao.bases.base_inss}</span></div>
@@ -273,7 +289,6 @@ export default function Holerite() {
             <div className="holerite-sign-area">
                 DATA ___/___/______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ASSINATURA DO FUNCIONÁRIO
             </div>
-
         </div>
         )}
       </div>

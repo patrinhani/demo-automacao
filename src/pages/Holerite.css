@@ -1,211 +1,169 @@
 /* src/pages/Holerite.css */
 
-/* =================================================================
-   1. CABEÇALHO E FILTROS
-   ================================================================= */
-.holerite-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
-}
+/* =========================================
+   HOLERITE - TEMA TECH GLASS
+   ========================================= */
 
-.privacy-toggle {
-  background: none;
-  border: 1px solid #ccc;
-  padding: 8px 15px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #555;
-  transition: all 0.2s;
-}
+.tech-holerite-layout {
+  --bg-dark: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  
+  --neon-blue: #3b82f6;
+  --neon-green: #10b981;
+  --neon-yellow: #f59e0b; /* Para adiantamento */
+  --neon-purple: #8b5cf6;
 
-.privacy-toggle:hover {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.filter-bar {
-  display: flex;
-  gap: 15px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  margin-bottom: 30px;
-  align-items: flex-end;
-}
-
-.filter-group {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.filter-group label {
-  font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 5px;
-  font-weight: bold;
+/* --- LUZES DE FUNDO --- */
+.ambient-light {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: 0;
+  opacity: 0.4;
+  animation: floatHolerite 20s infinite ease-in-out alternate;
+}
+.light-1 { top: 20%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-green), transparent 70%); }
+.light-2 { bottom: -10%; right: -5%; width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-blue), transparent 70%); animation-delay: -5s; }
+
+@keyframes floatHolerite {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -30px) scale(1.1); }
 }
 
+/* --- HEADER --- */
+.tech-header-glass {
+  height: 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  z-index: 10;
+  position: sticky;
+  top: 0;
+}
+
+.header-left { display: flex; align-items: center; gap: 15px; }
+.divider { color: var(--glass-border); font-size: 1.5rem; }
+.page-title { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); letter-spacing: 0.5px; }
+
+.tech-back-btn {
+  background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 20px; border-radius: 50px; cursor: pointer; transition: 0.3s;
+}
+.tech-back-btn:hover { background: var(--neon-blue); color: #fff; border-color: var(--neon-blue); }
+
+/* --- CONTAINER PRINCIPAL --- */
+.holerite-container-tech {
+  flex: 1; max-width: 1000px; margin: 0 auto; padding: 40px 20px; z-index: 1; width: 100%;
+}
+
+.page-header-row {
+  display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;
+}
+.page-header-tech h2 {
+  font-size: 2.2rem; margin: 0 0 5px 0; font-weight: 700;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.page-header-tech p { color: var(--text-secondary); margin: 0; }
+
+/* Botão de Privacidade */
+.privacy-toggle-tech {
+  background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+}
+.privacy-toggle-tech:hover { border-color: var(--neon-blue); color: #fff; background: rgba(59, 130, 246, 0.1); }
+
+/* --- BARRA DE FILTROS --- */
+.filter-bar-tech {
+  background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); padding: 20px; border-radius: 16px; margin-bottom: 30px; display: flex; gap: 20px; align-items: flex-end;
+}
+
+.filter-group label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
 .filter-group select {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  min-width: 150px;
-  font-family: inherit;
+  background: #0f172a; border: 1px solid var(--glass-border); color: #fff; padding: 10px 15px; border-radius: 8px; min-width: 160px; outline: none; transition: 0.3s;
 }
+.filter-group select:focus { border-color: var(--neon-blue); }
 
-/* =================================================================
-   2. LISTA DE HOLERITES (CARDS)
-   ================================================================= */
-.holerite-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+/* --- LISTA DE CARDS --- */
+.holerite-list { display: flex; flex-direction: column; gap: 20px; }
+
+.holerite-card-tech {
+  background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s; position: relative; overflow: hidden;
 }
+.holerite-card-tech:hover { transform: translateX(5px); background: rgba(30, 41, 59, 0.9); border-color: rgba(255,255,255,0.2); }
 
-.holerite-card {
-  background: white;
-  border: 1px solid #eee;
-  border-left: 5px solid var(--corp-blue);
-  border-radius: 6px;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+/* Borda lateral colorida (Indicador de Tipo) */
+.holerite-card-tech::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
 }
+.holerite-card-tech.mensal::before { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+.holerite-card-tech.adiantamento::before { background: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+.holerite-card-tech.decimo::before { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
 
-.holerite-card:hover {
-  transform: translateX(5px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+.card-info h4 { margin: 0 0 5px 0; color: #fff; font-size: 1.1rem; }
+.card-info span { font-size: 0.9rem; color: var(--text-secondary); display: block; }
+
+.status-badge {
+  display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
 }
+.status-badge.pago { background: rgba(16, 185, 129, 0.15); color: var(--neon-green); border: 1px solid rgba(16, 185, 129, 0.3); }
 
-/* Cores por tipo */
-.holerite-card.adiantamento { border-left-color: #ffc107; } /* Amarelo */
-.holerite-card.decimo { border-left-color: #28a745; } /* Verde */
-.holerite-card.ferias { border-left-color: #17a2b8; } /* Ciano */
+/* Valores */
+.card-values { text-align: right; min-width: 140px; }
+.card-values small { display: block; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.card-values .valor { font-size: 1.4rem; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+.card-values .valor.blurred { filter: blur(8px); opacity: 0.7; }
 
-.card-info h4 { margin: 0 0 5px 0; color: #333; font-size: 1.1rem; }
-.card-info span { font-size: 0.85rem; color: #666; display: block; }
-
-.card-values {
-  text-align: right;
-  min-width: 120px;
+/* Botões de Ação */
+.card-actions { display: flex; gap: 10px; }
+.btn-icon-tech {
+  background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); width: 45px; height: 45px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; color: var(--text-secondary);
 }
+.btn-icon-tech:hover { background: var(--neon-blue); color: #fff; border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-.card-values small { display: block; font-size: 0.75rem; color: #888; margin-bottom: 2px; }
-.card-values .valor { font-size: 1.2rem; font-weight: bold; color: #333; }
-
-/* Efeito de Blur para Privacidade */
-.blurred {
-  filter: blur(6px);
-  user-select: none;
-  cursor: default;
-}
-
-.card-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.btn-icon {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.btn-icon:hover { background: #e2e6ea; border-color: #adb5bd; }
-.btn-icon.download { color: var(--corp-blue); }
-.btn-icon.view { color: #555; }
-
-/* =================================================================
-   3. MODAL DE DETALHES
-   ================================================================= */
+/* --- MODAL DETALHES --- */
 .modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(3px);
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
-
-.modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-  animation: slideDown 0.3s ease-out;
-  max-height: 90vh;
-  overflow-y: auto;
+.modal-content-tech {
+  background: #1e293b; border: 1px solid var(--glass-border); border-radius: 20px; padding: 30px; width: 90%; max-width: 700px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); color: #fff; animation: slideIn 0.3s ease-out;
 }
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.modal-header {
-  border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.modal-header h3 { margin: 0; color: var(--corp-blue); }
-.modal-close { cursor: pointer; font-size: 1.5rem; color: #999; border: none; background: none; }
+.modal-header-tech { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+.modal-header-tech h3 { margin: 0; color: var(--neon-blue); }
+.modal-close-tech { background: none; border: none; color: var(--text-secondary); font-size: 2rem; cursor: pointer; line-height: 1; }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 25px;
-  border-top: 1px solid #eee;
-  padding-top: 20px;
-}
-
-/* Tabela dentro do Modal */
-.payslip-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  margin-top: 10px;
-}
-
-.payslip-table th {
-  background: #f1f3f5;
-  padding: 8px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
-}
-
-.payslip-table td {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-}
-
+.payslip-table-tech { width: 100%; border-collapse: collapse; margin-top: 15px; }
+.payslip-table-tech th { text-align: left; padding: 10px; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; text-transform: uppercase; }
+.payslip-table-tech td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
 .text-right { text-align: right; }
-.text-danger { color: #dc3545; }
-.text-success { color: #28a745; }
-.fw-bold { font-weight: bold; }
+.text-success { color: var(--neon-green); }
+.text-danger { color: var(--neon-red); }
 
-.payslip-total-row {
-  background: #f8f9fa;
-  border-top: 2px solid #333;
-}
+.modal-actions-tech { display: flex; justify-content: flex-end; margin-top: 20px; }
+.btn-close-modal { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+.btn-close-modal:hover { border-color: var(--neon-blue); background: rgba(59, 130, 246, 0.1); }
+
 
 /* =================================================================
-   4. ESTILOS DE IMPRESSÃO (TEMPLATE DO PDF OCULTO)
+   ÁREA DE IMPRESSÃO (MANTIDA ORIGINAL - FUNDO BRANCO)
+   Não altere nada aqui para manter o PDF correto.
    ================================================================= */
 .print-hidden-wrapper {
   position: absolute;
@@ -217,124 +175,39 @@
   width: 210mm;
   min-height: 297mm;
   padding: 15mm;
-  background: white;
-  color: black;
-  font-family: 'Courier New', Courier, monospace; /* Fonte mono para parecer matricial */
+  background: white; /* Importante: Fundo branco para PDF */
+  color: black;      /* Importante: Tinta preta */
+  font-family: 'Courier New', Courier, monospace;
   box-sizing: border-box;
   font-size: 10pt;
 }
 
 /* Bordas e Caixas Padrão Holerite */
-.holerite-box {
-  border: 1px solid #000;
-  margin-bottom: 5px;
-  padding: 5px;
-}
-
-.holerite-header-top {
-  display: flex;
-  justify-content: space-between;
-}
-
-.holerite-title {
-  text-align: right;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.holerite-info-row {
-  display: flex;
-  justify-content: space-between;
-}
-
-.holerite-label {
-  font-size: 8pt;
-  font-weight: bold;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.holerite-value {
-  font-size: 10pt;
-  display: block;
-  text-transform: uppercase;
-}
+.holerite-box { border: 1px solid #000; margin-bottom: 5px; padding: 5px; }
+.holerite-header-top { display: flex; justify-content: space-between; }
+.holerite-title { text-align: right; font-weight: bold; text-transform: uppercase; }
+.holerite-info-row { display: flex; justify-content: space-between; }
+.holerite-label { font-size: 8pt; font-weight: bold; display: block; margin-bottom: 2px; }
+.holerite-value { font-size: 10pt; display: block; text-transform: uppercase; }
 
 /* Tabela Principal do PDF */
-.holerite-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 5px;
-  border: 1px solid #000;
-}
-
-.holerite-table th {
-  border-bottom: 1px solid #000;
-  border-right: 1px solid #000;
-  text-align: left;
-  padding: 3px 5px;
-  font-size: 9pt;
-  background: #eee;
-  font-weight: bold;
-}
-
-.holerite-table td {
-  padding: 2px 5px;
-  border-right: 1px solid #000;
-  font-size: 9pt;
-}
-
-.holerite-table td:last-child, .holerite-table th:last-child {
-  border-right: none;
-}
+.holerite-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; border: 1px solid #000; }
+.holerite-table th { border-bottom: 1px solid #000; border-right: 1px solid #000; text-align: left; padding: 3px 5px; font-size: 9pt; background: #eee; font-weight: bold; }
+.holerite-table td { padding: 2px 5px; border-right: 1px solid #000; font-size: 9pt; }
+.holerite-table td:last-child, .holerite-table th:last-child { border-right: none; }
 
 /* Área de Totais do PDF */
-.holerite-totals {
-  display: flex;
-  border: 1px solid #000;
-  margin-bottom: 5px;
-}
-
-.holerite-total-box {
-  flex: 1;
-  padding: 5px;
-  border-right: 1px solid #000;
-  background: #f9f9f9;
-}
-
+.holerite-totals { display: flex; border: 1px solid #000; margin-bottom: 5px; }
+.holerite-total-box { flex: 1; padding: 5px; border-right: 1px solid #000; background: #f9f9f9; }
 .holerite-total-box:last-child { border-right: none; }
 .total-label { font-size: 8pt; font-weight: bold; display: block; }
 .total-value { font-size: 11pt; font-weight: bold; text-align: right; display: block; margin-top: 5px; }
 
-/* Rodapé com Bases de Cálculo */
-.holerite-footer-bases {
-  border: 1px solid #000;
-  display: flex;
-  justify-content: space-between;
-  padding: 5px;
-  margin-bottom: 30px;
-}
-
-.base-item {
-  text-align: right;
-}
-
+/* Rodapé */
+.holerite-footer-bases { border: 1px solid #000; display: flex; justify-content: space-between; padding: 5px; margin-bottom: 30px; }
+.base-item { text-align: right; }
 .base-item span { display: block; }
 .base-label { font-size: 7pt; font-weight: bold; }
 .base-value { font-size: 9pt; }
-
-/* Mensagem e Assinatura */
-.holerite-msg {
-  font-size: 8pt;
-  margin-bottom: 50px;
-  font-style: italic;
-}
-
-.holerite-sign-area {
-  border-top: 1px solid #000;
-  width: 60%;
-  margin: 0 auto;
-  text-align: center;
-  padding-top: 5px;
-  font-size: 9pt;
-}
+.holerite-msg { font-size: 8pt; margin-bottom: 50px; font-style: italic; }
+.holerite-sign-area { border-top: 1px solid #000; width: 60%; margin: 0 auto; text-align: center; padding-top: 5px; font-size: 9pt; }

@@ -1,244 +1,281 @@
 /* src/pages/FolhaPonto.css */
 
-/* =================================================================
-   1. CABEÇALHO E RELÓGIO
-   ================================================================= */
-.ponto-header {
+/* =========================================
+   FOLHA DE PONTO - TEMA TECH GLASS
+   ========================================= */
+
+.tech-ponto-layout {
+  /* Variáveis idênticas ao Dashboard/Férias */
+  --bg-dark: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  
+  --neon-blue: #3b82f6;
+  --neon-cyan: #06b6d4; /* Usado para o relógio */
+  --neon-green: #10b981;
+  --neon-red: #ef4444;
+  --neon-orange: #f59e0b;
+
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- LUZES DE FUNDO (AMBIENT LIGHTS) --- */
+.ambient-light {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: 0;
+  opacity: 0.4;
+  animation: floatPonto 20s infinite ease-in-out alternate;
+}
+
+.light-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-blue), transparent 70%); }
+.light-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-cyan), transparent 70%); animation-delay: -5s; }
+
+@keyframes floatPonto {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(20px, 40px) scale(1.1); }
+}
+
+/* --- HEADER (Padrão das outras telas) --- */
+.tech-header-glass {
+  height: 80px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  padding: 0 40px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  z-index: 10;
+  position: sticky;
+  top: 0;
 }
 
-.clock-container {
-  text-align: right;
-  background: #f8f9fa;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+.header-left { display: flex; align-items: center; gap: 15px; }
+.divider { color: var(--glass-border); font-size: 1.5rem; }
+.page-title { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); letter-spacing: 0.5px; }
+
+.tech-back-btn {
+  background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 20px; border-radius: 50px; cursor: pointer; transition: 0.3s; font-size: 0.9rem;
 }
+.tech-back-btn:hover { background: var(--neon-blue); color: #fff; border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
 
-.clock-label {
-  font-size: 0.7rem;
-  color: #666;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.clock-display {
-  font-size: 2rem;
-  font-weight: bold;
-  font-family: 'Courier New', Courier, monospace;
-  color: var(--corp-blue);
-  line-height: 1;
-  margin-top: 2px;
-}
-
-/* =================================================================
-   2. DASHBOARD (CARDS DE RESUMO)
-   ================================================================= */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background: white;
-  padding: 20px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  border: 1px solid #eee;
-  border-left-width: 5px;
-  border-left-style: solid;
-  transition: transform 0.2s;
-}
-
-.summary-card:hover { transform: translateY(-2px); }
-.summary-card.blue { border-left-color: var(--corp-blue); }
-.summary-card.gray { border-left-color: #6c757d; }
-.summary-card.red { border-left-color: #dc3545; }
-
-.summary-label { display: block; font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; }
-.summary-value { font-size: 1.8rem; font-weight: 800; color: #333; }
-.summary-value.negative { color: #dc3545; }
-.summary-sub { display: block; font-size: 0.75rem; color: #888; margin-top: 5px; }
-.summary-sub.alert { color: #dc3545; font-weight: bold; }
-
-/* =================================================================
-   3. ÁREA DE REGISTRO (BIOMETRIA)
-   ================================================================= */
-.register-area {
-  background-color: #f1f3f5;
-  padding: 30px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-  text-align: center;
-  border: 2px dashed #ccc;
-}
-
-.register-text { margin-bottom: 15px; color: #555; font-size: 1rem; }
-
-.btn-register {
-  font-size: 1.1rem;
-  padding: 12px 40px;
-  min-width: 280px;
-  border-radius: 50px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.btn-register.processing { background-color: #adb5bd; border-color: #adb5bd; cursor: not-allowed; box-shadow: none; }
-
-/* =================================================================
-   4. TABELA E AÇÕES
-   ================================================================= */
-.table-header-actions {
-  padding: 15px 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 4px 4px 0 0;
-}
-
-.date-cell strong { display: block; color: #333; font-size: 0.95rem; }
-.date-cell span { font-size: 0.75rem; color: #888; text-transform: uppercase; }
-
-.status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; display: inline-block; }
-.status-badge.normal { background-color: #e8f5e9; color: #2e7d32; }
-.status-badge.falta { background-color: #ffebee; color: #c62828; }
-.status-badge.atraso { background-color: #fff3cd; color: #856404; }
-
-.btn-adjust {
-  background: white; border: 1px solid #ced4da; color: #495057; padding: 5px 12px;
-  border-radius: 4px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s;
-}
-.btn-adjust:hover { background-color: #e9ecef; border-color: #adb5bd; color: var(--corp-blue); }
-
-.footer-actions { margin-top: 30px; display: flex; gap: 15px; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 20px; }
-
-/* =================================================================
-   5. MODAL DE JUSTIFICATIVA (AVANÇADO)
-   ================================================================= */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(3px);
-}
-
-.modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 600px; /* Mais largo para caber campos lado a lado */
-  box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-  animation: slideDown 0.3s ease-out;
-  max-height: 90vh; /* Se a tela for pequena, permite scroll */
-  overflow-y: auto;
-}
-
-@keyframes slideDown {
-  from { transform: translateY(-50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.modal-header {
-  border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.modal-header h3 { margin: 0; color: var(--corp-blue); }
-.modal-close { cursor: pointer; font-size: 1.5rem; color: #999; border: none; background: none; }
-
-/* Layout do Formulário */
-.modal-form-group { margin-bottom: 15px; text-align: left; }
-.modal-form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #555; }
-
-.modal-form-group select, 
-.modal-form-group textarea, 
-.modal-form-group input[type="text"],
-.modal-form-group input[type="time"],
-.modal-form-group input[type="file"] {
+/* --- CONTAINER PRINCIPAL --- */
+.ponto-container-tech {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  z-index: 1;
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box; /* Importante para inputs lado a lado */
 }
 
-.modal-form-group input:focus, 
-.modal-form-group select:focus, 
-.modal-form-group textarea:focus {
-  border-color: var(--corp-blue);
-  outline: none;
+.page-header-tech { margin-bottom: 40px; }
+.page-header-tech h2 {
+  font-size: 2.2rem; margin: 0 0 10px 0; font-weight: 700;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.page-header-tech p { color: var(--text-secondary); margin: 0; font-size: 1rem; }
+
+/* --- RELÓGIO DIGITAL --- */
+.clock-display-tech {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  padding: 15px 30px;
+  border-radius: 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+  display: inline-block;
+  min-width: 180px;
+  text-align: center;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
 }
 
-/* Grid System para o Modal (Campos Lado a Lado) */
-.modal-row { display: flex; gap: 15px; margin-bottom: 15px; }
-.modal-col { flex: 1; }
-/* Remove margem inferior de grupos dentro de colunas para não duplicar */
-.modal-col .modal-form-group { margin-bottom: 0; } 
-
-/* Área Médica (Destaque Visual) */
-.medico-area {
-  border-left: 4px solid #28a745;
-  background-color: #f9fff9;
-  padding: 15px;
-  border-radius: 0 4px 4px 0;
-  margin-bottom: 15px;
+.top-row-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
-/* Botões de Rádio (Tipo de Abono) */
-.radio-group { display: flex; gap: 20px; margin-top: 5px; }
-.radio-group label {
-  font-weight: normal;
+/* --- CARDS DE RESUMO (KPIs) --- */
+.summary-grid-tech {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.summary-card-tech {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 25px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.summary-card-tech:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+/* Barras laterais coloridas (Glow) */
+.summary-card-tech::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+}
+.summary-card-tech.blue::before { background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
+.summary-card-tech.gray::before { background: #64748b; }
+.summary-card-tech.red::before { background: var(--neon-red); box-shadow: 0 0 15px var(--neon-red); }
+
+.summary-label { display: block; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }
+.summary-value { font-size: 2.2rem; font-weight: 800; color: #fff; }
+.summary-value.negative { color: var(--neon-red); text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+.summary-sub { font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px; display: block; }
+.summary-sub.alert { color: var(--neon-red); font-weight: bold; }
+
+/* --- BOTÃO DE REGISTRO (BIG BUTTON) --- */
+.register-area-tech {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.btn-register-tech {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+  color: white;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: 800;
+  padding: 18px 60px;
+  border-radius: 50px;
   cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.9rem;
-  color: #333;
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  position: relative;
+  overflow: hidden;
 }
-.radio-group input[type="radio"] { width: auto; margin: 0; transform: scale(1.2); }
-
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px; }
-
-/* =================================================================
-   6. ESTILOS DO PDF (IMPRESSÃO) - Classes para o html2canvas
-   ================================================================= */
-.print-hidden-wrapper { position: absolute; top: -10000px; left: 0; }
-
-.print-a4-page {
-  width: 210mm; min-height: 297mm; padding: 20mm;
-  background: white; color: black; font-family: Arial, sans-serif; box-sizing: border-box;
+.btn-register-tech:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.7);
+}
+.btn-register-tech:disabled {
+  background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none;
 }
 
-.print-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid black; padding-bottom: 20px; margin-bottom: 30px; }
-.print-title-box { text-align: right; }
-.print-title-main { font-size: 18px; margin: 0; text-transform: uppercase; font-weight: bold; }
-.print-title-sub { font-size: 12px; margin: 5px 0 0; color: #555; }
+/* --- TABELA DARK GLASS --- */
+.table-glass-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
 
-/* Tabela do PDF */
-.print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px; }
-.print-table thead tr { background: #eee; border-bottom: 2px solid black; }
-.print-table th { padding: 8px; text-align: center; font-weight: bold; }
-.print-table th:first-child { text-align: left; }
-.print-table tbody tr { border-bottom: 1px solid #ddd; }
-.print-table td { padding: 8px; text-align: center; }
-.print-table td:first-child { text-align: left; font-weight: bold; }
+.table-header-actions {
+  padding: 25px 30px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex; justify-content: space-between; align-items: center;
+  color: #fff; font-weight: bold; font-size: 1.1rem;
+}
 
-.print-disclaimer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 8px; color: #999; text-align: center; }
+.tech-table { width: 100%; border-collapse: collapse; }
+.tech-table th {
+  text-align: left; padding: 20px 30px; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--glass-border);
+}
+.tech-table td {
+  padding: 20px 30px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; vertical-align: middle;
+}
+.tech-table tr:last-child td { border-bottom: none; }
+.tech-table tr:hover { background: rgba(255,255,255,0.03); }
+
+/* Badges de Status Neon */
+.status-badge-tech { padding: 6px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
+.status-badge-tech.ok { background: rgba(16, 185, 129, 0.15); color: var(--neon-green); border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 0 10px rgba(16, 185, 129, 0.1); }
+.status-badge-tech.falta { background: rgba(239, 68, 68, 0.15); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
+.status-badge-tech.aberto { background: rgba(6, 182, 212, 0.15); color: var(--neon-cyan); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 0 10px rgba(6, 182, 212, 0.1); }
+.status-badge-tech.intervalo { background: rgba(245, 158, 11, 0.15); color: var(--neon-orange); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+/* Botão de Ajuste Pequeno */
+.btn-adjust-tech {
+  background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 0.85rem; font-weight: 600;
+}
+.btn-adjust-tech:hover { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(59, 130, 246, 0.1); }
+
+/* Rodapé de Ações */
+.footer-actions { margin-top: 40px; display: flex; gap: 20px; justify-content: flex-end; }
+.btn-action-tech {
+  background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border); padding: 12px 25px; border-radius: 10px; cursor: pointer; transition: 0.3s; font-weight: 600;
+}
+.btn-action-tech:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+
+/* --- MODAL DARK --- */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px);
+  display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+
+.modal-content-tech {
+  background: #1e293b; border: 1px solid var(--glass-border); border-radius: 24px;
+  padding: 40px; width: 90%; max-width: 550px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  animation: slideIn 0.3s ease-out;
+  color: #fff;
+  position: relative;
+}
+/* Borda brilhante no topo do modal */
+.modal-content-tech::after {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80%; height: 1px; background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+}
+
+@keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-header-tech { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--glass-border); padding-bottom: 20px; }
+.modal-header-tech h3 { margin: 0; color: var(--neon-cyan); font-size: 1.5rem; }
+.modal-close-tech { background: none; border: none; color: var(--text-secondary); font-size: 2rem; cursor: pointer; line-height: 1; transition: 0.3s; }
+.modal-close-tech:hover { color: #fff; }
+
+/* Inputs do Modal */
+.modal-form-group { margin-bottom: 20px; }
+.modal-form-group label { display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem; font-weight: 600; }
+.modal-form-group input, .modal-form-group select, .modal-form-group textarea {
+  width: 100%; padding: 12px 16px; background: #0f172a; border: 1px solid var(--glass-border); color: #fff; border-radius: 8px; outline: none; transition: 0.3s; font-family: inherit; font-size: 1rem;
+}
+.modal-form-group input:focus, .modal-form-group select:focus, .modal-form-group textarea:focus {
+  border-color: var(--neon-blue); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.medico-area-tech {
+  background: rgba(16, 185, 129, 0.05); border-left: 3px solid var(--neon-green); padding: 20px; margin-bottom: 20px; border-radius: 0 8px 8px 0;
+}
+
+.modal-actions-tech { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; }
+.btn-confirm-tech { background: var(--neon-blue); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+.btn-confirm-tech:hover { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+
+/* Manter estilos de impressão ocultos */
+.print-hidden-wrapper { position: absolute; top: -10000px; }
+.print-a4-page { background: white; color: black; font-family: Arial; padding: 20mm; }
+.print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 10pt; }
