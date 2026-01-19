@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ... (conteúdo existente)
+*.sw?
+
+# Security
+.env
+.env.local
