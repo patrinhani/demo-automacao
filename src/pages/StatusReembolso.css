@@ -131,154 +131,126 @@
 }
 .protocolo-tech strong { color: var(--neon-blue); letter-spacing: 1px; }
 
-/* --- Linha do Tempo (Timeline Tech) - CORRIGIDA --- */
+/* --- Linha do Tempo (Timeline Tech) --- */
 .timeline-tech {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* Alinha tudo ao topo */
-  margin: 60px 0 40px 0;   /* Mais espaço em cima */
+  margin: 40px 0;
   position: relative;
-  padding: 0;              /* Remove padding lateral para alinhar com as pontas */
-  width: 100%;
+  padding: 0 20px;
 }
 
-/* A linha de fundo (Cinza) */
 .timeline-line-bg {
   position: absolute;
-  top: 22px; /* Metade da altura da bolinha (44px / 2) */
-  left: 45px; /* Começa no centro da primeira bolinha (metade da largura do step) */
-  right: 45px; /* Termina no centro da última bolinha */
+  top: 20px;
+  left: 50px;
+  right: 50px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,0.1);
   z-index: 0;
   border-radius: 4px;
 }
 
-/* O preenchimento da linha (Colorido) */
+/* O preenchimento da linha até a etapa 2 */
 .timeline-line-fill {
   position: absolute;
-  top: 22px; /* Mesmo top da linha de fundo */
-  left: 45px; /* Mesmo left */
+  top: 20px;
+  left: 43px;
   height: 4px;
-  /* Largura calculada: 33% vai até o passo 2, 66% passo 3, 100% passo 4 */
-  width: 33%; 
+  width: 33%; /* Ajustado para parar na etapa 2 */
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
   z-index: 0;
-  box-shadow: 0 0 15px var(--neon-orange);
+  box-shadow: 0 0 10px var(--neon-orange);
   border-radius: 4px;
-  transition: width 1s ease-in-out;
 }
 
-/* Container de cada Passo */
 .timeline-step {
   z-index: 1;
-  position: relative;
+  text-align: center;
+  width: 90px;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centraliza horizontalmente */
-  justify-content: flex-start;
-  width: 90px; /* Largura fixa para manter o centro estável */
+  align-items: center;
 }
 
-/* A Bolinha */
 .step-circle {
-  width: 44px;
-  height: 44px;
-  background: #0f172a; /* Cor do fundo do site para "cortar" a linha */
+  width: 44px; height: 44px;
+  background: #0f172a; /* Fundo escuro para cobrir a linha */
   border: 2px solid var(--glass-border);
   color: var(--text-secondary);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 12px; /* Espaço entre bolinha e texto */
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 1rem;
+  margin-bottom: 15px;
   transition: 0.3s;
-  box-sizing: border-box; /* Garante que a borda não aumente o tamanho */
 }
 
-/* Textos */
-.step-label {
-  font-size: 0.9rem;
-  font-weight: bold;
-  color: #fff;
-  margin-bottom: 4px;
-  text-align: center; /* Força o texto a centralizar */
-  white-space: nowrap; /* Evita quebra de linha em telas maiores */
-}
-
-.step-sub {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-/* --- Estados (Cores) --- */
-
-/* Concluído (Passo 1) */
+/* Estados dos Passos */
 .timeline-step.completed .step-circle {
   border-color: var(--neon-blue);
   color: var(--neon-blue);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
-  background: #0f172a;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  margin-bottom: 20px;
 }
 
-/* Ativo (Passo 2) */
 .timeline-step.active .step-circle {
   border-color: var(--neon-orange);
   color: var(--neon-orange);
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
-  transform: scale(1.15); /* Aumenta um pouco */
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  transform: scale(1.1);
   background: #0f172a;
+  margin-bottom: 20px;
 }
 
-/* Pendente (Passos 3 e 4) */
 .timeline-step.pending .step-circle {
-  opacity: 0.4;
-  border-color: #fff;
-}
-.timeline-step.pending .step-label {
   opacity: 0.5;
+  margin-bottom: 20px;
 }
 
-/* Responsividade Mobile */
+.step-label { font-size: 0.9rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
+.step-sub { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* --- Resumo --- */
+.summary-box-tech {
+  background: rgba(0,0,0,0.3);
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.summary-title { display: block; margin-bottom: 15px; color: var(--text-secondary); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; font-weight: bold; }
+
+.summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; color: #fff; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.summary-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+.status-badge-tech {
+  background: rgba(245, 158, 11, 0.15); color: var(--neon-orange); border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;
+}
+
+.info-text { color: var(--text-secondary); font-size: 0.85rem; margin-top: 15px; font-style: italic; }
+
+/* Botões */
+.actions-tech { display: flex; justify-content: center; gap: 20px; }
+
+.btn-primary-tech {
+  background: var(--neon-blue); color: #fff; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s;
+}
+.btn-primary-tech:hover { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+
+.btn-secondary-tech {
+  background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 12px 30px; border-radius: 8px; cursor: pointer; transition: 0.3s;
+}
+.btn-secondary-tech:hover { border-color: #fff; color: #fff; }
+
+/* Mobile */
 @media (max-width: 600px) {
-  .timeline-tech {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-left: 20px;
-    height: auto;
-    margin-bottom: 20px;
-  }
-  
-  /* Transforma a linha em vertical */
-  .timeline-line-bg, .timeline-line-fill {
-    width: 4px;
-    height: 100%; /* Altura total */
-    left: 40px; /* Centralizado na bolinha */
-    top: 20px;
-    right: auto;
-  }
-  
-  .timeline-line-fill {
-    height: 33%; /* Preenchimento vertical */
-    width: 4px;
-  }
-
-  .timeline-step {
-    flex-direction: row;
-    width: 100%;
-    margin-bottom: 30px;
-    align-items: center;
-  }
-
-  .step-circle {
-    margin-bottom: 0;
-    margin-right: 15px;
-  }
-
-  .step-label, .step-sub {
-    text-align: left;
-  }
+  .timeline-tech { flex-direction: column; gap: 20px; align-items: flex-start; padding-left: 20px; }
+  .timeline-line-bg, .timeline-line-fill { left: 41px; top: 20px; width: 4px; height: 100%; }
+  .timeline-step { flex-direction: row; gap: 20px; width: 100%; text-align: left; }
+  .step-circle { margin-bottom: 0; }
+  .actions-tech { flex-direction: column; }
+  .btn-primary-tech, .btn-secondary-tech { width: 100%; }
 }
