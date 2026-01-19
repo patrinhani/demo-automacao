@@ -27,3 +27,42 @@ body {
   padding: 0;
   text-align: left; /* Remove o alinhamento central padrão */
 }
+
+/* =======================================================
+   ESTILIZAÇÃO DE CORES DA BARRA DE ROLAGEM (GLOBAL)
+   ======================================================= */
+
+/* 1. Define a largura da barra */
+::-webkit-scrollbar {
+  width: 10px;               /* Largura vertical */
+  height: 10px;              /* Altura horizontal */
+}
+
+/* 2. O Trilho (Fundo da barra) */
+/* Aqui trocamos o branco padrão pela cor escura do seu fundo */
+::-webkit-scrollbar-track {
+  background: #0f172a; 
+}
+
+/* 3. O Polegar (A parte que você arrasta) */
+::-webkit-scrollbar-thumb {
+  background-color: #334155; /* Um cinza azulado para contraste sutil */
+  border-radius: 6px;        /* Bordas arredondadas */
+  border: 2px solid #0f172a; /* Uma borda da cor do fundo cria um efeito de "respiro" */
+}
+
+/* 4. Quando passa o mouse em cima da barra */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #3b82f6; /* Azul Neon (TechCorp) ao interagir */
+}
+
+/* 5. Canto (junção das barras vertical e horizontal) */
+::-webkit-scrollbar-corner {
+  background: #0f172a;
+}
+
+/* --- Suporte para Firefox --- */
+* {
+  scrollbar-width: thin;           /* Barra fina */
+  scrollbar-color: #334155 #0f172a; /* Cor da barra / Cor do fundo */
+}

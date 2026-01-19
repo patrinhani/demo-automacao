@@ -1,8 +1,9 @@
+/* src/pages/Perfil.css */
+
 /* =========================================
    PERFIL TECHCORP - ESTILO DARK/NEON
    ========================================= */
 
-/* Variáveis Locais */
 .tech-layout-perfil {
   --bg-dark: #0f172a;
   --glass-bg: rgba(30, 41, 59, 0.7);
@@ -23,14 +24,15 @@
   flex-direction: column;
 }
 
-/* --- Luzes de Fundo (Copiadas para consistência) --- */
+/* --- Luzes de Fundo (Fixed para performance) --- */
 .ambient-light {
-  position: absolute;
+  position: fixed;
   border-radius: 50%;
-  filter: blur(100px);
+  filter: blur(80px);
   z-index: 0;
   opacity: 0.4;
   animation: floatProfile 20s infinite ease-in-out alternate;
+  pointer-events: none;
 }
 .light-1 { top: -10%; left: -10%; width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-purple), transparent 70%); }
 .light-2 { bottom: -10%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-blue), transparent 70%); animation-delay: -5s; }
@@ -40,30 +42,41 @@
   100% { transform: translate(20px, 30px) scale(1.1); }
 }
 
-/* --- Header --- */
+/* --- Header Padronizado (Fixed) --- */
 .tech-header-glass {
+  height: 80px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 40px;
-  background: rgba(15, 23, 42, 0.8);
+  padding: 0 40px;
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
-  z-index: 10;
+  position: fixed; /* Fixo no topo */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  box-sizing: border-box;
 }
 
-.tech-user-badge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 15px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 30px;
-  border: 1px solid var(--glass-border);
+.header-left { display: flex; align-items: center; gap: 15px; }
+.divider { color: var(--glass-border); font-size: 1.5rem; }
+.page-title { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); }
+
+.tech-back-btn {
+  background: rgba(255,255,255,0.05); 
+  color: var(--text-secondary); 
+  border: 1px solid var(--glass-border); 
+  padding: 8px 16px; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: 0.3s;
 }
-.avatar-mini {
-  width: 32px; height: 32px; background: var(--neon-blue); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;
+.tech-back-btn:hover { 
+  border-color: var(--neon-blue); 
+  color: #fff; 
+  background: rgba(59, 130, 246, 0.1); 
 }
 
 /* --- Container Principal --- */
@@ -75,37 +88,23 @@
   z-index: 1;
   width: 100%;
   box-sizing: border-box;
+  
+  /* Margem no topo para compensar o header fixo */
+  padding-top: 120px; 
+  padding-bottom: 60px;
 }
 
 .perfil-header-tech {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 30px;
 }
 
 .titulo-neon {
   font-size: 2rem;
-  margin: 0;
+  margin: 0 0 5px 0;
   background: linear-gradient(to right, #fff, #94a3b8);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.btn-voltar-tech {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary);
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.btn-voltar-tech:hover {
-  border-color: var(--neon-blue);
-  color: #fff;
-  background: rgba(59, 130, 246, 0.1);
 }
 
 /* --- Card de Vidro (Layout Principal) --- */
@@ -166,7 +165,7 @@
   padding: 50px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: visible; /* Deixa o scroll pro navegador */
 }
 
 .form-header h3 { font-size: 1.3rem; margin: 0 0 5px 0; color: var(--text-primary); }
@@ -195,25 +194,11 @@
   transition: 0.3s;
 }
 
-/* Estado Bloqueado (Padrão) */
-.form-group-tech input:disabled {
-  background: rgba(0, 0, 0, 0.2);
-  color: #64748b;
-  border-color: transparent;
-  cursor: not-allowed;
-}
+/* Estados */
+.form-group-tech input:disabled { background: rgba(0, 0, 0, 0.2); color: #64748b; border-color: transparent; cursor: not-allowed; }
 .form-group-tech input.locked { opacity: 0.7; }
-
-/* Estado Editável */
-.form-group-tech input.editable {
-  background: rgba(15, 23, 42, 0.8);
-  border-color: var(--neon-blue);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-}
-.form-group-tech input.editable:focus {
-  outline: none;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
-}
+.form-group-tech input.editable { background: rgba(15, 23, 42, 0.8); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
+.form-group-tech input.editable:focus { outline: none; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
 
 /* Ações */
 .form-actions-tech {
@@ -225,19 +210,13 @@
   gap: 15px;
 }
 
-.btn-editar-tech {
-  background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;
-}
+.btn-editar-tech { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s; }
 .btn-editar-tech:hover { background: rgba(59, 130, 246, 0.1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
 
-.btn-salvar-tech {
-  background: var(--neon-green); color: #0f172a; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s;
-}
+.btn-salvar-tech { background: var(--neon-green); color: #0f172a; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; }
 .btn-salvar-tech:hover { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
 
-.btn-cancelar-tech {
-  background: transparent; color: var(--text-secondary); border: none; padding: 10px 20px; cursor: pointer; transition: 0.3s;
-}
+.btn-cancelar-tech { background: transparent; color: var(--text-secondary); border: none; padding: 10px 20px; cursor: pointer; transition: 0.3s; }
 .btn-cancelar-tech:hover { color: #fff; }
 
 /* Responsividade */
@@ -245,7 +224,7 @@
   .perfil-card-glass { flex-direction: column; height: auto; }
   .perfil-sidebar-tech { width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); padding: 30px; flex-direction: row; justify-content: flex-start; gap: 20px; text-align: left; }
   .avatar-large-tech { width: 80px; height: 80px; font-size: 2rem; margin-bottom: 0; }
-  .info-badges { display: none; } /* Esconde badges no mobile pra limpar */
+  .info-badges { display: none; }
   .form-grid-tech { grid-template-columns: 1fr; }
   .perfil-form-tech { padding: 30px; }
 }

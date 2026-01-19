@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
-import './Ferias.css'; // Vamos criar este arquivo
+import './Ferias.css';
 
 export default function Ferias() {
   const navigate = useNavigate();
   const formRef = useRef();
 
-  // --- LÓGICA (Mantida igual) ---
+  // --- LÓGICA ---
   const [dataInicio, setDataInicio] = useState('');
   const [dias, setDias] = useState(30);
   const [venderDias, setVenderDias] = useState(false);
@@ -56,28 +56,43 @@ export default function Ferias() {
     navigate('/dashboard');
   };
 
+  // --- FUNÇÃO FINAL OTIMIZADA (Leve e Sem Bugs) ---
   const gerarPDF = async () => {
     setLoadingPDF(true);
+    
+    // Pequeno delay para garantir que o elemento está renderizado no DOM
     setTimeout(async () => {
       const element = formRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true 
-      });
+      
+      try {
+        const canvas = await html2canvas(element, {
+          scale: 2, // Mantém boa qualidade
+          backgroundColor: '#ffffff', // Força fundo branco se for transparente
+          logging: false,
+          useCORS: true
+        });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        // TRUQUE DO TAMANHO: Usar JPEG com qualidade 0.7
+        // Isso reduz o arquivo drasticamente (de MBs para KBs)
+        const imgData = canvas.toDataURL('image/jpeg', 0.7); 
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const nomeArquivo = `Solicitacao_Ferias_${dataInicio}.pdf`;
-      pdf.save(nomeArquivo);
+        // Adiciona imagem JPEG comprimida
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        const nomeArquivo = `Solicitacao_Ferias_${dataInicio}.pdf`;
+        pdf.save(nomeArquivo);
+
+        // Alert removido! O usuário só vê o botão voltar ao normal.
+        
+      } catch (error) {
+        console.error("Erro:", error);
+      }
 
       setLoadingPDF(false);
-      alert("Formulário baixado! Não esqueça de assinar.");
     }, 500);
   };
 
@@ -137,28 +152,13 @@ export default function Ferias() {
             <form onSubmit={handleSubmit} className="ferias-form">
               <div className="form-group-tech">
                 <label>Início das Férias</label>
-                <input 
-                  type="date" 
-                  min={hoje} 
-                  value={dataInicio} 
-                  onChange={(e) => setDataInicio(e.target.value)} 
-                  required 
-                  className={erroData ? 'input-error' : ''}
-                />
-                
-                {erroData ? (
-                  <div className="error-msg-tech">{erroData}</div>
-                ) : (
-                  <small className="helper-text">*Permitido apenas seg, ter ou qua.</small>
-                )}
+                <input type="date" min={hoje} value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required className={erroData ? 'input-error' : ''}/>
+                {erroData ? <div className="error-msg-tech">{erroData}</div> : <small className="helper-text">*Permitido apenas seg, ter ou qua.</small>}
               </div>
 
               <div className="form-group-tech">
                 <label>Quantidade de Dias</label>
-                <select 
-                  value={dias} 
-                  onChange={(e) => setDias(e.target.value)}
-                >
+                <select value={dias} onChange={(e) => setDias(e.target.value)}>
                   <option value={30}>30 Dias Corridos</option>
                   <option value={20}>20 Dias (Vender 10)</option>
                   <option value={15}>15 Dias (Fracionar)</option>
@@ -166,16 +166,8 @@ export default function Ferias() {
               </div>
 
               <div className="checkbox-group-tech">
-                <input 
-                  type="checkbox" 
-                  id="venderCheck"
-                  checked={venderDias} 
-                  onChange={() => setVenderDias(!venderDias)} 
-                  disabled={dias == 30} 
-                /> 
-                <label htmlFor="venderCheck" onClick={() => dias != 30 && setVenderDias(!venderDias)}>
-                  Solicitar Abono Pecuniário (Vender Férias)
-                </label>
+                <input type="checkbox" id="venderCheck" checked={venderDias} onChange={() => setVenderDias(!venderDias)} disabled={dias == 30} /> 
+                <label htmlFor="venderCheck" onClick={() => dias != 30 && setVenderDias(!venderDias)}>Solicitar Abono Pecuniário (Vender Férias)</label>
               </div>
 
               <div className="prediction-box">
@@ -192,46 +184,12 @@ export default function Ferias() {
           {/* COLUNA DIREITA: ESCALA */}
           <div className="ferias-card-glass fit-content">
             <h4 className="section-title-tech">Escala da Equipe</h4>
-            
-            {conflito && (
-              <div className="conflict-alert-tech">
-                <strong>⚠ CONFLITO DETECTADO:</strong><br/>
-                O limite de ausências simultâneas do setor será excedido.
-              </div>
-            )}
-
+            {conflito && <div className="conflict-alert-tech"><strong>⚠ CONFLITO DETECTADO:</strong><br/>Limite de ausências excedido.</div>}
             <ul className="team-list-tech">
-              <li className="team-item-tech">
-                <div>
-                  <strong>Carlos (TI)</strong>
-                  <span>DevOps</span>
-                </div>
-                <span className="status-badge-tech ferias">FÉRIAS (JAN)</span>
-              </li>
-
-              <li className="team-item-tech">
-                <div>
-                  <strong>Duda (Design)</strong>
-                  <span>UX/UI</span>
-                </div>
-                <span className="status-badge-tech ferias">FÉRIAS (JUL)</span>
-              </li>
-
-              <li className="team-item-tech">
-                <div>
-                  <strong>Ana (Gerente)</strong>
-                  <span>Gestão</span>
-                </div>
-                <span className="status-badge-tech presente">PRESENTE</span>
-              </li>
-
-              <li className="team-item-tech opacity-50">
-                <div>
-                  <strong>Você</strong>
-                  <span>Analista</span>
-                </div>
-                <span>---</span>
-              </li>
+              <li className="team-item-tech"><div><strong>Carlos (TI)</strong><span>DevOps</span></div><span className="status-badge-tech ferias">FÉRIAS (JAN)</span></li>
+              <li className="team-item-tech"><div><strong>Duda (Design)</strong><span>UX/UI</span></div><span className="status-badge-tech ferias">FÉRIAS (JUL)</span></li>
+              <li className="team-item-tech"><div><strong>Ana (Gerente)</strong><span>Gestão</span></div><span className="status-badge-tech presente">PRESENTE</span></li>
+              <li className="team-item-tech opacity-50"><div><strong>Você</strong><span>Analista</span></div><span>---</span></li>
             </ul>
           </div>
         </div>
@@ -261,8 +219,8 @@ export default function Ferias() {
         </div>
       )}
 
-      {/* --- TEMPLATE PDF (Mantido Oculto e Branco) --- */}
-      <div style={{position: 'absolute', top: '-10000px', left: 0}}>
+      {/* --- TEMPLATE PDF (Agora fica atrás do site, mas visível para o script) --- */}
+      <div className="pdf-hidden-template">
          <div ref={formRef} style={{
             width: '210mm', minHeight: '297mm', background: 'white', padding: '20mm', boxSizing: 'border-box',
             fontFamily: 'Times New Roman, serif', color: 'black', border: '1px solid black'

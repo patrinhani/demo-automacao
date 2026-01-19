@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
-import '../App.css';
 import './PlanoSaude.css';
 
 export default function PlanoSaude() {
@@ -17,7 +16,7 @@ export default function PlanoSaude() {
   const [busca, setBusca] = useState({ especialidade: '', cidade: '' });
   const [buscando, setBuscando] = useState(false);
   const [resultados, setResultados] = useState([]);
-  const [todosMedicos, setTodosMedicos] = useState([]); // Lista completa gerada
+  const [todosMedicos, setTodosMedicos] = useState([]); 
 
   // Extrato
   const [baixandoExtrato, setBaixandoExtrato] = useState(false);
@@ -34,7 +33,6 @@ export default function PlanoSaude() {
         const bairrosRJ = ['Centro', 'Copacabana', 'Barra', 'Tijuca', 'Botafogo', 'Leblon'];
 
         const lista = [];
-        // Gerar 60 médicos
         for (let i = 0; i < 60; i++) {
             const cidade = Math.random() > 0.5 ? 'sp' : 'rj';
             const bairro = cidade === 'sp' 
@@ -87,49 +85,72 @@ export default function PlanoSaude() {
     }, 800);
   };
 
+  // --- DOWNLOAD PDF OTIMIZADO ---
   const handleDownloadExtrato = async () => {
     setBaixandoExtrato(true);
-    // Pequeno delay para garantir que o React renderizou o hidden div se necessário
+    
     setTimeout(async () => {
       const element = printRef.current;
-      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('Extrato_Coparticipacao.pdf');
+      try {
+        const canvas = await html2canvas(element, { 
+            scale: 1.5, 
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+        const pdf = new jsPDF('p', 'mm', 'a4', true);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+        pdf.save('Extrato_Saude.pdf');
+      } catch (error) {
+        console.error("Erro PDF", error);
+      }
       
       setBaixandoExtrato(false);
-      alert('Extrato baixado com sucesso!');
     }, 500);
   };
 
   return (
-    <div className="app-container">
-      <header className="top-bar">
-        <div className="brand"><Logo /></div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>Voltar ao Menu ↩</div>
+    <div className="tech-layout-saude">
+      
+      {/* LUZES DE FUNDO */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+
+      {/* HEADER */}
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Saúde & Bem-estar</span>
+        </div>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
+          Voltar ao Menu ↩
+        </button>
       </header>
 
-      <div className="dashboard-wrapper">
-        <div className="page-header">
-          <h2>Saúde & Bem-estar</h2>
-          <div className="breadcrumbs">Benefícios &gt; Plano de Saúde &gt; Titular</div>
+      <div className="saude-container-tech">
+        <div className="page-header-tech">
+          <h2>Plano de Saúde</h2>
+          <p>Benefícios &gt; Titular &gt; Ouro Max Nacional</p>
         </div>
 
         {/* NAVEGAÇÃO DE ABAS */}
-        <div className="health-tabs">
-          <button className={`tab-btn ${activeTab === 'carteirinha' ? 'active' : ''}`} onClick={() => setActiveTab('carteirinha')}>💳 Carteirinha Digital</button>
-          <button className={`tab-btn ${activeTab === 'rede' ? 'active' : ''}`} onClick={() => setActiveTab('rede')}>🔍 Rede Credenciada</button>
-          <button className={`tab-btn ${activeTab === 'extrato' ? 'active' : ''}`} onClick={() => setActiveTab('extrato')}>📄 Extrato de Utilização</button>
+        <div className="tabs-tech">
+          <button className={`tab-btn-tech ${activeTab === 'carteirinha' ? 'active' : ''}`} onClick={() => setActiveTab('carteirinha')}>💳 Carteirinha</button>
+          <button className={`tab-btn-tech ${activeTab === 'rede' ? 'active' : ''}`} onClick={() => setActiveTab('rede')}>🔍 Rede Credenciada</button>
+          <button className={`tab-btn-tech ${activeTab === 'extrato' ? 'active' : ''}`} onClick={() => setActiveTab('extrato')}>📄 Extrato</button>
         </div>
 
         {/* === ABA 1: CARTEIRINHA === */}
         {activeTab === 'carteirinha' && (
-          <div style={{textAlign: 'center', padding: '20px'}}>
-            <p style={{color: '#666'}}>Clique no cartão para visualizar o token de atendimento no verso.</p>
+          <div style={{textAlign: 'center'}}>
+            <p style={{color: '#94a3b8'}}>Clique no cartão para ver o verso e token.</p>
             <div className="card-scene" onClick={() => setCardFlipped(!cardFlipped)}>
               <div className={`card-object ${cardFlipped ? 'flipped' : ''}`}>
                 <div className="card-face front">
@@ -137,19 +158,19 @@ export default function PlanoSaude() {
                     <Logo lightMode={true} size={0.8} />
                     <div className="card-chip"></div>
                   </div>
-                  <div style={{textAlign:'left', margin: '15px 0'}}><span className="card-number">8899 2233 1111 0045</span></div>
+                  <div style={{textAlign:'left'}}><div className="card-number">8899 2233 1111 0045</div></div>
                   <div style={{display:'flex', justifyContent:'space-between', textAlign:'left'}}>
                     <div><span className="card-label">BENEFICIÁRIO</span><span className="card-value">GUILHERME SILVA</span></div>
                     <div><span className="card-label">VALIDADE</span><span className="card-value">12/2028</span></div>
                   </div>
                 </div>
                 <div className="card-face back">
-                   <div style={{textAlign: 'left', borderBottom: '1px solid #ddd', paddingBottom: '10px'}}>
-                      <strong style={{color: '#004a80'}}>TOKEN DE ATENDIMENTO</strong>
-                      <div style={{fontSize: '1.5rem', letterSpacing: '2px', fontWeight: 'bold', marginTop: '5px'}}>AB45-99X</div>
-                      <span style={{fontSize: '0.7rem', color: 'red'}}>Válido por 10 min</span>
+                   <div className="token-box">
+                      <span className="card-label">TOKEN DE ATENDIMENTO</span>
+                      <div className="token-value">AB45-99X</div>
+                      <span style={{fontSize: '0.7rem', color: '#ef4444'}}>Válido por 10 min</span>
                    </div>
-                   <div style={{fontSize: '0.8rem', textAlign: 'left', marginTop: '15px', color: '#555'}}>
+                   <div className="card-info-back" style={{textAlign: 'left'}}>
                       <p><strong>Carência:</strong> CUMPRIDA</p>
                       <p><strong>Acomodação:</strong> APARTAMENTO</p>
                       <p><strong>Emergência:</strong> 0800 777 9999</p>
@@ -160,11 +181,11 @@ export default function PlanoSaude() {
           </div>
         )}
 
-        {/* === ABA 2: REDE CREDENCIADA (POPULADA) === */}
+        {/* === ABA 2: REDE CREDENCIADA === */}
         {activeTab === 'rede' && (
           <div style={{animation: 'fadeIn 0.3s'}}>
-            <form className="search-box" onSubmit={handleBusca}>
-              <div className="search-field">
+            <form className="search-box-tech" onSubmit={handleBusca}>
+              <div className="search-field-tech">
                 <label>Especialidade</label>
                 <select value={busca.especialidade} onChange={(e) => setBusca({...busca, especialidade: e.target.value})}>
                   <option value="">-- Todas --</option>
@@ -176,7 +197,7 @@ export default function PlanoSaude() {
                   <option value="neurologia">Neurologia</option>
                 </select>
               </div>
-              <div className="search-field">
+              <div className="search-field-tech">
                 <label>Cidade</label>
                 <select value={busca.cidade} onChange={(e) => setBusca({...busca, cidade: e.target.value})}>
                   <option value="">-- Todas --</option>
@@ -184,28 +205,28 @@ export default function PlanoSaude() {
                   <option value="rj">Rio de Janeiro - RJ</option>
                 </select>
               </div>
-              <button type="submit" className="btn-primary" disabled={buscando}>
+              <button type="submit" className="btn-search-tech" disabled={buscando}>
                 {buscando ? 'Buscando...' : '🔍 Buscar'}
               </button>
             </form>
 
             <div className="results-container">
                {resultados.length === 0 && !buscando && (
-                   <div style={{color: '#888', textAlign: 'center', padding: '20px'}}>
+                   <div style={{color: '#94a3b8', textAlign: 'center', padding: '20px'}}>
                        Utilize os filtros acima para encontrar médicos. Total de {todosMedicos.length} profissionais disponíveis.
                    </div>
                )}
-               <div className="results-grid">
+               <div className="results-grid-tech">
                   {resultados.map(med => (
-                      <div key={med.id} className="doctor-card">
+                      <div key={med.id} className="doctor-card-tech">
                           <div>
                             <span className="doc-name">{med.nome}</span>
                             <span className="doc-spec">{med.esp}</span>
                             <span className="doc-address">📍 {med.end}<br/>{med.cidade.toUpperCase()}</span>
                           </div>
-                          <div style={{marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #eee'}}>
-                              <span style={{fontSize: '0.8rem', fontWeight: 'bold'}}>{med.tel}</span>
-                              <button className="btn-secondary" style={{padding: '5px 10px', fontSize: '0.8rem'}}>Agendar</button>
+                          <div className="doc-footer">
+                              <span className="doc-tel">{med.tel}</span>
+                              <button className="btn-agendar">Agendar</button>
                           </div>
                       </div>
                   ))}
@@ -217,18 +238,18 @@ export default function PlanoSaude() {
         {/* === ABA 3: EXTRATO === */}
         {activeTab === 'extrato' && (
           <div style={{animation: 'fadeIn 0.3s'}}>
-             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+             <div className="usage-header">
                 <div>
-                   <h3 style={{margin: 0, color: '#333'}}>Extrato de Coparticipação</h3>
-                   <span style={{fontSize: '0.9rem', color: '#666'}}>Últimos 90 dias</span>
+                   <h3 style={{margin: 0, color: '#fff'}}>Extrato de Coparticipação</h3>
+                   <span style={{fontSize: '0.9rem', color: '#94a3b8'}}>Últimos 90 dias</span>
                 </div>
-                <button className="btn-download-stmt" onClick={handleDownloadExtrato} disabled={baixandoExtrato}>
-                   {baixandoExtrato ? 'Gerando PDF...' : '⬇ Baixar PDF Oficial'}
+                <button className="btn-download-tech" onClick={handleDownloadExtrato} disabled={baixandoExtrato}>
+                   {baixandoExtrato ? 'Gerando...' : '⬇ Baixar PDF'}
                 </button>
              </div>
 
-             <div className="table-container">
-                <table className="usage-table">
+             <div className="table-glass-container">
+                <table className="tech-table-saude">
                    <thead>
                       <tr><th>Data</th><th>Prestador</th><th>Procedimento</th><th style={{textAlign: 'right'}}>Valor</th><th style={{textAlign: 'right'}}>Copart. (10%)</th></tr>
                    </thead>
@@ -237,26 +258,23 @@ export default function PlanoSaude() {
                           <tr key={idx}>
                              <td>{item.data}</td><td>{item.prestador}</td><td>{item.proc}</td>
                              <td style={{textAlign: 'right'}}>R$ {item.valor}</td>
-                             <td style={{textAlign: 'right', fontWeight: 'bold', color: '#dc3545'}}>R$ {item.copart}</td>
+                             <td style={{textAlign: 'right', fontWeight: 'bold'}} className="valor-negativo">R$ {item.copart}</td>
                           </tr>
                       ))}
                    </tbody>
                 </table>
              </div>
-             <div style={{marginTop: '20px', padding: '15px', background: '#fff3cd', border: '1px solid #ffeeba', borderRadius: '4px', color: '#856404', fontSize: '0.9rem'}}>
-                ℹ Os valores serão descontados em folha.
+             <div style={{marginTop: '20px', padding: '15px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', color: '#f59e0b', fontSize: '0.9rem'}}>
+                ℹ Os valores serão descontados na próxima folha de pagamento.
              </div>
           </div>
         )}
       </div>
 
-      {/* =================================================================
-          TEMPLATE OCULTO PARA IMPRESSÃO (PDF A4)
-         ================================================================= */}
-      <div className="print-hidden-wrapper">
-        <div ref={printRef} className="print-health-page">
-            
-            <div className="health-header-print">
+      {/* === PDF OCULTO (FIXO NO FUNDO) === */}
+      <div className="pdf-hidden-template">
+        <div ref={printRef} className="print-page">
+            <div className="print-header">
                <Logo lightMode={true} size={1.5} />
                <div style={{textAlign: 'right'}}>
                   <h2 style={{margin: 0, textTransform: 'uppercase', color: '#004a80'}}>Extrato de Utilização</h2>
@@ -264,42 +282,26 @@ export default function PlanoSaude() {
                </div>
             </div>
 
-            <div className="health-info-box">
+            <div className="print-box">
                <table style={{width: '100%'}}>
                    <tbody>
-                       <tr>
-                           <td><strong>TITULAR:</strong> GUILHERME SILVA</td>
-                           <td><strong>CARTEIRINHA:</strong> 8899 2233 1111 0045</td>
-                       </tr>
-                       <tr>
-                           <td><strong>PLANO:</strong> OURO MAX NACIONAL</td>
-                           <td><strong>PERÍODO:</strong> 01/09/2024 A 30/10/2024</td>
-                       </tr>
+                       <tr><td><strong>TITULAR:</strong> GUILHERME SILVA</td><td><strong>CARTEIRINHA:</strong> 8899 2233 1111 0045</td></tr>
+                       <tr><td><strong>PLANO:</strong> OURO MAX NACIONAL</td><td><strong>PERÍODO:</strong> 01/09/2024 A 30/10/2024</td></tr>
                    </tbody>
                </table>
             </div>
 
-            <table className="health-table-print">
+            <table className="print-table">
                <thead>
-                  <tr>
-                     <th>DATA</th>
-                     <th>PRESTADOR</th>
-                     <th>PROCEDIMENTO</th>
-                     <th style={{textAlign: 'right'}}>VALOR TOTAL</th>
-                     <th style={{textAlign: 'right'}}>COPART.</th>
-                  </tr>
+                  <tr><th>DATA</th><th>PRESTADOR</th><th>PROCEDIMENTO</th><th style={{textAlign: 'right'}}>VALOR</th><th style={{textAlign: 'right'}}>COPART.</th></tr>
                </thead>
                <tbody>
                   {extratoMock.map((item, idx) => (
                       <tr key={idx}>
-                         <td>{item.data}</td>
-                         <td>{item.prestador}</td>
-                         <td>{item.proc}</td>
-                         <td style={{textAlign: 'right'}}>R$ {item.valor}</td>
-                         <td style={{textAlign: 'right', fontWeight: 'bold'}}>R$ {item.copart}</td>
+                         <td>{item.data}</td><td>{item.prestador}</td><td>{item.proc}</td>
+                         <td style={{textAlign: 'right'}}>R$ {item.valor}</td><td style={{textAlign: 'right'}}>R$ {item.copart}</td>
                       </tr>
                   ))}
-                  {/* Linha de Total */}
                   <tr style={{background: '#f0f0f0'}}>
                       <td colSpan="4" style={{textAlign: 'right', fontWeight: 'bold'}}>TOTAL A DESCONTAR:</td>
                       <td style={{textAlign: 'right', fontWeight: 'bold', color: '#dc3545'}}>
@@ -308,13 +310,9 @@ export default function PlanoSaude() {
                   </tr>
                </tbody>
             </table>
-            
-            <div className="health-footer-print">
-               <p>Este documento serve como comprovante de despesas médicas para fins de Imposto de Renda.</p>
-               <p>TechCorp Saúde - ANS nº 123456</p>
-               <p>Gerado em: {new Date().toLocaleDateString()} às {new Date().toLocaleTimeString()}</p>
+            <div style={{marginTop: '50px', textAlign: 'center', fontSize: '8pt', color: '#666', borderTop: '1px solid #eee', paddingTop: '10px'}}>
+               <p>TechCorp Saúde - ANS nº 123456 - Gerado em: {new Date().toLocaleString()}</p>
             </div>
-
         </div>
       </div>
 
