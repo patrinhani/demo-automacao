@@ -1,0 +1,284 @@
+/* src/pages/StatusReembolso.css */
+
+/* =========================================
+   STATUS TECHCORP - ESTILO DARK/NEON
+   ========================================= */
+
+.tech-layout-status {
+  --bg-dark: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --neon-blue: #3b82f6;
+  --neon-green: #10b981;
+  --neon-orange: #f59e0b;
+
+  background-color: var(--bg-dark);
+  min-height: 100vh;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Luzes de Fundo (Fixed) --- */
+.ambient-light {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.4;
+  animation: floatStatus 20s infinite ease-in-out alternate;
+  pointer-events: none;
+}
+.light-1 { top: -10%; left: -10%; width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-green), transparent 70%); }
+.light-2 { bottom: -10%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-blue), transparent 70%); animation-delay: -5s; }
+
+@keyframes floatStatus {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(20px, 30px) scale(1.1); }
+}
+
+/* --- Header Padronizado (Fixed) --- */
+.tech-header-glass {
+  height: 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  box-sizing: border-box;
+}
+
+.header-left { display: flex; align-items: center; gap: 15px; }
+.divider { color: var(--glass-border); font-size: 1.5rem; }
+.page-title { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); }
+
+.tech-back-btn {
+  background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.3s;
+}
+.tech-back-btn:hover { border-color: var(--neon-blue); color: #fff; background: rgba(59, 130, 246, 0.1); }
+
+/* --- Container Principal --- */
+.status-container-tech {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 120px; /* Espaço para o header */
+  padding-bottom: 60px;
+}
+
+/* --- Card de Sucesso --- */
+.status-card-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.success-icon-tech {
+  width: 100px; height: 100px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid var(--neon-green);
+  color: var(--neon-green);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 4rem;
+  margin: 0 auto 25px auto;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+  animation: pulseSuccess 2s infinite;
+}
+
+@keyframes pulseSuccess {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.status-card-glass h2 {
+  color: #fff;
+  margin: 0 0 10px 0;
+  font-size: 2rem;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.protocolo-tech {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  background: rgba(255,255,255,0.05);
+  padding: 8px 20px;
+  border-radius: 30px;
+  display: inline-block;
+  margin-bottom: 40px;
+  border: 1px solid var(--glass-border);
+}
+.protocolo-tech strong { color: var(--neon-blue); letter-spacing: 1px; }
+
+/* --- Linha do Tempo (Timeline Tech) - CORRIGIDA --- */
+.timeline-tech {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* Alinha tudo ao topo */
+  margin: 60px 0 40px 0;   /* Mais espaço em cima */
+  position: relative;
+  padding: 0;              /* Remove padding lateral para alinhar com as pontas */
+  width: 100%;
+}
+
+/* A linha de fundo (Cinza) */
+.timeline-line-bg {
+  position: absolute;
+  top: 22px; /* Metade da altura da bolinha (44px / 2) */
+  left: 45px; /* Começa no centro da primeira bolinha (metade da largura do step) */
+  right: 45px; /* Termina no centro da última bolinha */
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 0;
+  border-radius: 4px;
+}
+
+/* O preenchimento da linha (Colorido) */
+.timeline-line-fill {
+  position: absolute;
+  top: 22px; /* Mesmo top da linha de fundo */
+  left: 45px; /* Mesmo left */
+  height: 4px;
+  /* Largura calculada: 33% vai até o passo 2, 66% passo 3, 100% passo 4 */
+  width: 33%; 
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
+  z-index: 0;
+  box-shadow: 0 0 15px var(--neon-orange);
+  border-radius: 4px;
+  transition: width 1s ease-in-out;
+}
+
+/* Container de cada Passo */
+.timeline-step {
+  z-index: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centraliza horizontalmente */
+  justify-content: flex-start;
+  width: 90px; /* Largura fixa para manter o centro estável */
+}
+
+/* A Bolinha */
+.step-circle {
+  width: 44px;
+  height: 44px;
+  background: #0f172a; /* Cor do fundo do site para "cortar" a linha */
+  border: 2px solid var(--glass-border);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 12px; /* Espaço entre bolinha e texto */
+  transition: 0.3s;
+  box-sizing: border-box; /* Garante que a borda não aumente o tamanho */
+}
+
+/* Textos */
+.step-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 4px;
+  text-align: center; /* Força o texto a centralizar */
+  white-space: nowrap; /* Evita quebra de linha em telas maiores */
+}
+
+.step-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* --- Estados (Cores) --- */
+
+/* Concluído (Passo 1) */
+.timeline-step.completed .step-circle {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  background: #0f172a;
+}
+
+/* Ativo (Passo 2) */
+.timeline-step.active .step-circle {
+  border-color: var(--neon-orange);
+  color: var(--neon-orange);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+  transform: scale(1.15); /* Aumenta um pouco */
+  background: #0f172a;
+}
+
+/* Pendente (Passos 3 e 4) */
+.timeline-step.pending .step-circle {
+  opacity: 0.4;
+  border-color: #fff;
+}
+.timeline-step.pending .step-label {
+  opacity: 0.5;
+}
+
+/* Responsividade Mobile */
+@media (max-width: 600px) {
+  .timeline-tech {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 20px;
+    height: auto;
+    margin-bottom: 20px;
+  }
+  
+  /* Transforma a linha em vertical */
+  .timeline-line-bg, .timeline-line-fill {
+    width: 4px;
+    height: 100%; /* Altura total */
+    left: 40px; /* Centralizado na bolinha */
+    top: 20px;
+    right: auto;
+  }
+  
+  .timeline-line-fill {
+    height: 33%; /* Preenchimento vertical */
+    width: 4px;
+  }
+
+  .timeline-step {
+    flex-direction: row;
+    width: 100%;
+    margin-bottom: 30px;
+    align-items: center;
+  }
+
+  .step-circle {
+    margin-bottom: 0;
+    margin-right: 15px;
+  }
+
+  .step-label, .step-sub {
+    text-align: left;
+  }
+}

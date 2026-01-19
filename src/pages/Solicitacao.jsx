@@ -1,163 +1,184 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
-import '../App.css'; 
-
-// Em breve importaremos o robô aqui
-// import BotAutomacao from '../components/BotAutomacao';
+import './Solicitacao.css'; // Importa o novo CSS específico
 
 export default function Solicitacao() {
   const navigate = useNavigate();
   const formRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [arquivoNome, setArquivoNome] = useState('');
+
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setArquivoNome(e.target.files[0].name);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Captura os dados apenas para passar para a tela de recibo
-    // O robô vai preencher isso visualmente, mas aqui pegamos o valor final
-    const form = formRef.current;
-    
-    // Gera dados fictícios para o comprovante
     const dadosEnvio = {
       protocolo: `REQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000)}`,
-      valor: '150,00', // Valor fixo para a demo ou poderia vir do input se fosse controlado
+      valor: '150,00', 
       data: new Date().toLocaleDateString()
     };
 
-    // Simula tempo de processamento do servidor (SAP/ERP)
     setTimeout(() => {
       navigate('/status-reembolso', { state: dadosEnvio });
     }, 1500);
   };
 
   return (
-    <div className="app-container">
-      {/* BARRA DE TOPO */}
-      <header className="top-bar">
-        <div className="brand">
-          <Logo />
+    <div className="tech-layout-solicitacao">
+      
+      {/* LUZES DE FUNDO */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+
+      {/* HEADER PADRONIZADO */}
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Financeiro</span>
         </div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
           Voltar ao Menu ↩
-        </div>
+        </button>
       </header>
 
-      {/* CONTEÚDO PRINCIPAL */}
-      <div className="main-wrapper">
-        <div className="page-header">
-          <h2>Solicitação de Reembolso de Despesas</h2>
-          <div className="breadcrumbs">Home &gt; Financeiro &gt; Novo Reembolso</div>
+      <div className="solicitacao-container-tech">
+        
+        <div className="page-header-tech">
+          <h2>Nova Solicitação</h2>
+          <p>Financeiro &gt; Reembolsos &gt; Preenchimento</p>
         </div>
 
-        <div className="form-content">
-          <div className="alert-box">
-            ⚠ <strong>Atenção:</strong> O preenchimento incorreto pode acarretar no bloqueio do centro de custo. Anexe sempre o comprovante fiscal legível.
+        <div className="form-card-glass">
+          <div className="alert-box-tech">
+            <span>⚠</span> 
+            <strong>Atenção:</strong> O preenchimento incorreto pode bloquear o centro de custo. Anexe comprovante legível.
           </div>
 
           <form ref={formRef} onSubmit={handleSubmit}>
             
             {/* LINHA 1 */}
-            <div className="form-row">
-              <div className="form-group">
+            <div className="form-row-tech">
+              <div className="form-group-tech">
                 <label htmlFor="campo_matricula">Matrícula SAP *</label>
                 <input 
+                  className="input-tech"
                   type="text" 
                   name="matricula" 
                   id="campo_matricula" 
                   placeholder="Ex: 8000XXXX"
-                  defaultValue="" 
                   required
                 />
               </div>
-              <div className="form-group" style={{flex: 2}}>
+              <div className="form-group-tech" style={{flex: 2}}>
                 <label htmlFor="campo_nome">Nome Completo *</label>
                 <input 
+                  className="input-tech"
                   type="text" 
                   name="nome" 
                   id="campo_nome" 
-                  defaultValue="" 
+                  placeholder="Seu nome completo"
                   required
                 />
               </div>
             </div>
 
             {/* LINHA 2 */}
-            <div className="form-row">
-              <div className="form-group">
+            <div className="form-row-tech">
+              <div className="form-group-tech">
                 <label htmlFor="campo_centro_custo">Centro de Custo *</label>
-                <select name="centro_custo" id="campo_centro_custo" defaultValue="" required>
-                  <option value="">-- Selecione --</option>
+                <select className="select-tech" name="centro_custo" id="campo_centro_custo" required defaultValue="">
+                  <option value="" disabled>-- Selecione --</option>
                   <option value="CC_TI_DEV">1020 - TI Desenvolvimento</option>
                   <option value="CC_RH_ADM">3040 - RH Administrativo</option>
                   <option value="CC_FIN_CORP">5000 - Financeiro Corporativo</option>
                   <option value="CC_COMERCIAL">6000 - Comercial / Vendas</option>
                 </select>
               </div>
-              <div className="form-group">
+              <div className="form-group-tech">
                 <label htmlFor="campo_data">Data da Despesa *</label>
                 <input 
+                  className="input-tech"
                   type="date" 
                   name="data" 
                   id="campo_data" 
-                  defaultValue="" 
                   required
                 />
               </div>
             </div>
 
             {/* LINHA 3 */}
-            <div className="form-group">
+            <div className="form-group-tech" style={{marginBottom: '20px'}}>
               <label htmlFor="campo_motivo">Justificativa da Despesa *</label>
               <textarea 
+                className="textarea-tech"
                 name="motivo" 
                 id="campo_motivo" 
                 rows="4" 
-                placeholder="Descreva detalhadamente o motivo da despesa (transporte, alimentação, etc)..."
-                defaultValue=""
+                placeholder="Descreva detalhadamente o motivo (transporte, alimentação com cliente, etc)..."
                 required
               ></textarea>
             </div>
 
-            {/* UPLOAD */}
-            <div className="form-group" style={{marginTop: '20px'}}>
-              <label htmlFor="campo_arquivo">Comprovante Fiscal (PDF/XML) *</label>
-              <div className="file-upload-box">
-                <input type="file" name="arquivo" id="campo_arquivo" required />
-                <p style={{fontSize: '0.8rem', color: '#666', marginTop: '10px'}}>
-                  Formatos aceitos: PDF, JPG, PNG. Tamanho máximo: 5MB.
-                </p>
+            {/* UPLOAD CUSTOMIZADO */}
+            <div className="form-group-tech">
+              <label>Comprovante Fiscal (PDF/XML) *</label>
+              <div className="upload-box-tech">
+                <input 
+                  type="file" 
+                  name="arquivo" 
+                  id="campo_arquivo" 
+                  className="upload-input-hidden" 
+                  required 
+                  onChange={handleFileChange}
+                />
+                <div className="upload-label">
+                  <span className="icon-upload">📂</span>
+                  {arquivoNome ? (
+                    <span style={{color: '#3b82f6'}}>{arquivoNome}</span>
+                  ) : (
+                    <>
+                      <span className="text-upload">Clique ou arraste o arquivo aqui</span>
+                      <span className="subtext-upload">Formatos: PDF, JPG, PNG (Máx 5MB)</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* BOTÕES */}
-            <div className="actions">
+            <div className="actions-tech">
               <button 
                 type="button" 
-                className="btn-secondary" 
-                onClick={() => formRef.current.reset()}
+                className="btn-secondary-tech" 
+                onClick={() => {
+                  formRef.current.reset();
+                  setArquivoNome('');
+                }}
                 disabled={loading}
               >
-                Limpar
+                Limpar Campos
               </button>
               
               <button 
                 type="submit" 
-                className="btn-primary"
+                className="btn-primary-tech"
                 disabled={loading}
-                style={{minWidth: '150px'}}
               >
-                {loading ? 'Processando...' : 'Enviar Solicitação'}
+                {loading ? 'Enviando ao SAP...' : 'Enviar Solicitação 🚀'}
               </button>
             </div>
 
           </form>
         </div>
       </div>
-      
-      {/* O Robô entrará aqui depois */}
-      {/* <BotAutomacao /> */}
     </div>
   );
 }

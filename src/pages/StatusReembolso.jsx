@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
-import '../App.css';
+import './StatusReembolso.css'; // Importa o novo CSS
 
 export default function StatusReembolso() {
   const navigate = useNavigate();
@@ -14,84 +14,111 @@ export default function StatusReembolso() {
   };
 
   return (
-    <div className="app-container">
-      <header className="top-bar">
-        <div className="brand"><Logo /></div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>Ir para o Início ↩</div>
+    <div className="tech-layout-status">
+      
+      {/* LUZES DE FUNDO */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+
+      {/* HEADER TECH */}
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Status da Solicitação</span>
+        </div>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
+          Voltar ao Menu ↩
+        </button>
       </header>
 
-      <div className="main-wrapper" style={{maxWidth: '800px'}}>
+      <div className="status-container-tech">
         
-        {/* MENSAGEM DE SUCESSO */}
-        <div style={{textAlign: 'center', padding: '40px 20px'}}>
-          <div style={{
-            width: '80px', height: '80px', background: '#28a745', color: 'white', 
-            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '3rem', margin: '0 auto 20px auto', boxShadow: '0 4px 10px rgba(40,167,69,0.3)'
-          }}>
+        <div className="status-card-glass">
+          
+          {/* ÍCONE DE SUCESSO PULSANTE */}
+          <div className="success-icon-tech">
             ✓
           </div>
-          <h2 style={{color: '#28a745', margin: '0'}}>Solicitação Enviada!</h2>
-          <p style={{color: '#666', fontSize: '1.1rem'}}>
-            Protocolo: <strong>{dados.protocolo}</strong>
-          </p>
-        </div>
-
-        {/* DETALHES DO PROCESSO */}
-        <div className="form-content" style={{borderTop: '1px solid #eee'}}>
-          <h3 style={{color: '#004a80', marginTop: 0}}>Acompanhamento do Processo</h3>
           
-          {/* LINHA DO TEMPO (CSS INLINE PARA SIMPLIFICAR) */}
-          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '30px', position: 'relative'}}>
-            {/* Linha cinza de fundo */}
-            <div style={{position: 'absolute', top: '15px', left: '0', width: '100%', height: '3px', background: '#e0e0e0', zIndex: 0}}></div>
-            
-            {/* ETAPA 1: ENVIADO (ATIVO) */}
-            <div style={{zIndex: 1, textAlign: 'center', flex: 1}}>
-              <div style={{width: '30px', height: '30px', background: '#004a80', color: 'white', borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>1</div>
-              <div style={{marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold', color: '#004a80'}}>Enviado</div>
-              <div style={{fontSize: '0.8rem', color: '#666'}}>{dados.data}</div>
+          <h2>Solicitação Enviada!</h2>
+          <div className="protocolo-tech">
+            Protocolo: <strong>{dados.protocolo}</strong>
+          </div>
+
+          <hr style={{borderColor: 'rgba(255,255,255,0.1)', margin: '30px 0'}} />
+
+          {/* LINHA DO TEMPO TECH */}
+          <h3 style={{color: '#fff', marginBottom: '30px', fontSize: '1.2rem'}}>Acompanhamento</h3>
+          
+          <div className="timeline-tech">
+            {/* Linha de Fundo e Preenchimento */}
+            <div className="timeline-line-bg"></div>
+            <div className="timeline-line-fill"></div>
+
+            {/* ETAPA 1: ENVIADO (Concluído) */}
+            <div className="timeline-step completed">
+              <div className="step-circle">✓</div>
+              <div>
+                <div className="step-label">Enviado</div>
+                <div className="step-sub">{dados.data}</div>
+              </div>
             </div>
 
-            {/* ETAPA 2: EM ANÁLISE (ATIVO) */}
-            <div style={{zIndex: 1, textAlign: 'center', flex: 1}}>
-              <div style={{width: '30px', height: '30px', background: '#e6b800', color: 'white', borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>2</div>
-              <div style={{marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold', color: '#e6b800'}}>Em Análise</div>
-              <div style={{fontSize: '0.8rem', color: '#666'}}>RH / Financeiro</div>
+            {/* ETAPA 2: EM ANÁLISE (Ativo/Pulsando) */}
+            <div className="timeline-step active">
+              <div className="step-circle">2</div>
+              <div>
+                <div className="step-label" style={{color: 'var(--neon-orange)'}}>Em Análise</div>
+                <div className="step-sub">RH / Fin.</div>
+              </div>
             </div>
 
-            {/* ETAPA 3: APROVADO (PENDENTE) */}
-            <div style={{zIndex: 1, textAlign: 'center', flex: 1, opacity: 0.5}}>
-              <div style={{width: '30px', height: '30px', background: '#ccc', color: 'white', borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>3</div>
-              <div style={{marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold'}}>Aprovação</div>
+            {/* ETAPA 3: APROVAÇÃO (Pendente) */}
+            <div className="timeline-step pending">
+              <div className="step-circle">3</div>
+              <div>
+                <div className="step-label">Aprovação</div>
+                <div className="step-sub">Gestor</div>
+              </div>
             </div>
 
-            {/* ETAPA 4: PAGAMENTO (PENDENTE) */}
-            <div style={{zIndex: 1, textAlign: 'center', flex: 1, opacity: 0.5}}>
-              <div style={{width: '30px', height: '30px', background: '#ccc', color: 'white', borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>4</div>
-              <div style={{marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold'}}>Pagamento</div>
+            {/* ETAPA 4: PAGAMENTO (Pendente) */}
+            <div className="timeline-step pending">
+              <div className="step-circle">4</div>
+              <div>
+                <div className="step-label">Pagamento</div>
+                <div className="step-sub">Depósito</div>
+              </div>
             </div>
           </div>
 
           {/* CARD DE RESUMO */}
-          <div style={{background: '#f9f9f9', padding: '20px', borderRadius: '6px', marginTop: '40px', border: '1px solid #eee'}}>
-            <strong style={{display: 'block', marginBottom: '10px', color: '#333'}}>Resumo da Solicitação:</strong>
-            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem'}}>
-              <span>Valor Declarado:</span>
-              <strong>R$ {dados.valor}</strong>
+          <div className="summary-box-tech">
+            <span className="summary-title">Resumo do Pedido</span>
+            
+            <div className="summary-row">
+              <span>Valor Declarado</span>
+              <strong style={{color: '#fff'}}>R$ {dados.valor}</strong>
             </div>
-            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginTop: '5px'}}>
-              <span>Status Atual:</span>
-              <span style={{color: '#e6b800', fontWeight: 'bold', background: '#fff3cd', padding: '2px 8px', borderRadius: '4px'}}>AGUARDANDO APROVAÇÃO</span>
+            
+            <div className="summary-row">
+              <span>Status Atual</span>
+              <span className="status-badge-tech">Aguardando Análise</span>
             </div>
-            <p style={{fontSize: '0.8rem', color: '#666', marginTop: '15px', fontStyle: 'italic'}}>
-              O prazo médio para análise é de 5 dias úteis. Você receberá uma notificação por e-mail quando o status mudar.
+            
+            <p className="info-text">
+              O prazo médio para análise é de 5 dias úteis. Você receberá uma notificação por e-mail a cada atualização.
             </p>
           </div>
 
-          <div className="actions" style={{justifyContent: 'center'}}>
-            <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Voltar ao Menu Principal</button>
-            <button className="btn-primary" onClick={() => navigate('/solicitacao')}>Nova Solicitação</button>
+          <div className="actions-tech">
+            <button className="btn-secondary-tech" onClick={() => navigate('/dashboard')}>
+              Voltar ao Menu
+            </button>
+            <button className="btn-primary-tech" onClick={() => navigate('/solicitacao')}>
+              Nova Solicitação
+            </button>
           </div>
 
         </div>
