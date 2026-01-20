@@ -1,7 +1,7 @@
 /* src/pages/StatusReembolso.css */
 
 /* =========================================
-   STATUS TECHCORP - ESTILO DARK/NEON
+   STATUS TECHCORP - ESTILO DARK/NEON (CORREÇÃO DEFINITIVA DA BOLINHA)
    ========================================= */
 
 .tech-layout-status {
@@ -131,84 +131,146 @@
 }
 .protocolo-tech strong { color: var(--neon-blue); letter-spacing: 1px; }
 
-/* --- Linha do Tempo (Timeline Tech) --- */
+/* =======================================================
+   LINHA DO TEMPO (TIMELINE)
+   ======================================================= */
 .timeline-tech {
+  position: relative;
   display: flex;
   justify-content: space-between;
-  margin: 40px 0;
-  position: relative;
-  padding: 0 20px;
+  align-items: flex-start;
+  margin: 60px 0 50px 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* LINHAS DE FUNDO E PREENCHIMENTO */
+.timeline-line-bg, .timeline-line-fill {
+  position: absolute;
+  /* Top 25px = Metade da altura da bolinha (50px / 2) */
+  top: 25px; 
+  /* Left/Right 50px = Metade da largura do container do passo (100px / 2) */
+  left: 20px; 
+  right: 50px;
+  height: 4px;
+  z-index: 0; /* Atrás de tudo */
+  border-radius: 4px;
 }
 
 .timeline-line-bg {
-  position: absolute;
-  top: 20px;
-  left: 50px;
-  right: 50px;
-  height: 4px;
-  background: rgba(255,255,255,0.1);
-  z-index: 0;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* O preenchimento da linha até a etapa 2 */
 .timeline-line-fill {
-  position: absolute;
-  top: 20px;
-  left: 43px;
-  height: 4px;
-  width: 33%; /* Ajustado para parar na etapa 2 */
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
-  z-index: 0;
-  box-shadow: 0 0 10px var(--neon-orange);
-  border-radius: 4px;
+  width: 32%; /* Ajustado para parar exatamente no centro da bolinha 2 */
+  box-shadow: 0 0 15px var(--neon-orange);
+  transition: width 1s ease-in-out;
 }
 
+/* O CONTAINER DE CADA PASSO */
 .timeline-step {
   z-index: 1;
-  text-align: center;
-  width: 90px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; 
+  width: 100px; 
 }
 
+/* A BOLINHA (STEP CIRCLE) - Base */
 .step-circle {
-  width: 44px; height: 44px;
-  background: #0f172a; /* Fundo escuro para cobrir a linha */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  
+  background: #1e293b; 
   border: 2px solid var(--glass-border);
   color: var(--text-secondary);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; font-size: 1rem;
-  margin-bottom: 15px;
-  transition: 0.3s;
+  
+  margin-bottom: 15px; 
+  box-sizing: border-box;
+  position: relative; /* Necessário para o z-index funcionar */
 }
 
-/* Estados dos Passos */
+/* --- ESTADOS DAS BOLINHAS --- */
+
+/* 1. Concluído */
 .timeline-step.completed .step-circle {
   border-color: var(--neon-blue);
   color: var(--neon-blue);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-  margin-bottom: 20px;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  background: #1e293b;
+  z-index: 5;
 }
 
+/* ==============================================================================
+   A CORREÇÃO PRINCIPAL ESTÁ AQUI
+   ============================================================================== */
+/* 2. Ativo (AGORA É UMA ESFERA SÓLIDA) */
 .timeline-step.active .step-circle {
-  border-color: var(--neon-orange);
-  color: var(--neon-orange);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-  transform: scale(1.1);
-  background: #0f172a;
-  margin-bottom: 20px;
-}
+  /* 1. Preenchimento Sólido da cor Neon */
+  background: var(--neon-orange) !important;
 
+  /* 2. Texto Branco para contraste */
+  color: #ffffff !important;
+
+  /* 3. Remove a borda para ficar uma esfera pura */
+  border: none !important;
+
+  /* 4. Brilho intenso externo + luz interna para dar volume 3D */
+  box-shadow: 
+    0 0 40px rgba(245, 158, 11, 0.8),  /* Brilho externo forte */
+    inset 0 0 15px rgba(255, 255, 255, 0.5) !important; /* Luz interna (volume) */
+
+  /* 6. Garante que fique ACIMA da linha */
+  z-index: 10 !important;
+}
+/* ============================================================================== */
+
+
+/* 3. Pendente */
 .timeline-step.pending .step-circle {
-  opacity: 0.5;
-  margin-bottom: 20px;
+  opacity: 0.4;
+  border-color: #fff;
+  background: #1e293b;
+  z-index: 5;
 }
 
-.step-label { font-size: 0.9rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
-.step-sub { font-size: 0.75rem; color: var(--text-secondary); }
+/* --- TEXTOS DOS PASSOS --- */
+.step-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.step-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  display: block;
+  margin-top: 10px;
+}
+
+/* Cores específicas para os textos ativos */
+.timeline-step.active .step-label {
+  color: var(--neon-orange);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+.timeline-step.pending .step-label {
+  opacity: 0.5;
+}
 
 /* --- Resumo --- */
 .summary-box-tech {
@@ -247,10 +309,16 @@
 
 /* Mobile */
 @media (max-width: 600px) {
-  .timeline-tech { flex-direction: column; gap: 20px; align-items: flex-start; padding-left: 20px; }
-  .timeline-line-bg, .timeline-line-fill { left: 41px; top: 20px; width: 4px; height: 100%; }
-  .timeline-step { flex-direction: row; gap: 20px; width: 100%; text-align: left; }
-  .step-circle { margin-bottom: 0; }
+  .timeline-tech { flex-direction: column; align-items: flex-start; padding-left: 20px; height: auto; margin-bottom: 20px; gap: 0; }
+  
+  /* Linha Vertical no Mobile */
+  .timeline-line-bg, .timeline-line-fill { width: 4px; height: 100%; left: 48px; top: 25px; right: auto; }
+  .timeline-line-fill { height: 33%; width: 4px; }
+
+  .timeline-step { flex-direction: row; width: 100%; margin-bottom: 30px; align-items: center; }
+  .step-circle { margin-bottom: 0; margin-right: 15px; }
+  .step-label, .step-sub { text-align: left; }
+  
   .actions-tech { flex-direction: column; }
   .btn-primary-tech, .btn-secondary-tech { width: 100%; }
 }

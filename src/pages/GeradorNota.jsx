@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo'; 
-import '../App.css';
+// Substitui o App.css pelo novo CSS modular
+import './GeradorNota.css';
 
 export default function GeradorNota() {
   const navigate = useNavigate();
@@ -27,59 +28,77 @@ export default function GeradorNota() {
     e.preventDefault();
     setLoading(true);
 
-    // Pequeno delay para garantir que o React renderizou os dados no template invisível
+    // Pequeno delay para garantir renderização no DOM oculto
     setTimeout(async () => {
       const element = invoiceRef.current;
       
-      // 1. Tira o print do elemento HTML
-      const canvas = await html2canvas(element, {
-        scale: 1, // Aumenta a resolução para ficar nítido
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true // Ajuda a carregar fontes externas
-      });
+      try {
+        // 1. Tira o print do elemento HTML
+        const canvas = await html2canvas(element, {
+          scale: 2, // Escala 2 para alta resolução
+          backgroundColor: '#ffffff', // Força fundo branco
+          logging: false,
+          useCORS: true 
+        });
 
-      // 2. Converte para imagem
-      const imgData = canvas.toDataURL('image/png');
+        // 2. Otimiza imagem (JPEG 0.8 é melhor que PNG para documentos escaneados/impressos)
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
 
-      // 3. Cria o PDF (A4)
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        // 3. Cria o PDF (A4)
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      
-      // Gera um nome aleatório para parecer real
-      const nomeArquivo = `NFE_${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}.pdf`;
-      pdf.save(nomeArquivo);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Gera um nome aleatório realista
+        const nomeArquivo = `NFE_${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}.pdf`;
+        pdf.save(nomeArquivo);
 
-      setLoading(false);
-      alert("Nota Fiscal emitida e baixada com sucesso!\n\nAgora anexe este arquivo na solicitação de reembolso.");
-      
-      // Redireciona o usuário de volta para o formulário
-      navigate('/solicitacao');
+        alert("✅ Nota Fiscal emitida e baixada com sucesso!\n\nAnexe o PDF na sua solicitação de reembolso.");
+        navigate('/solicitacao');
+        
+      } catch (error) {
+        console.error("Erro ao gerar PDF:", error);
+        alert("Erro ao gerar PDF. Tente novamente.");
+      } finally {
+        setLoading(false);
+      }
     }, 800);
   };
 
   return (
-    <div className="app-container">
-      <header className="top-bar">
-        <div className="brand">
-          <Logo />
+    <div className="tech-layout-gerador">
+      
+      {/* LUZES DE FUNDO (AMBIENT) */}
+      <div className="ambient-light light-blue"></div>
+      <div className="ambient-light light-green"></div>
+
+      {/* HEADER TECHCORP */}
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Emissão de NFE</span>
         </div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>Voltar ao Menu ↩</div>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
+          Voltar ao Menu ↩
+        </button>
       </header>
 
-      <div className="main-wrapper" style={{maxWidth: '800px'}}>
-        <div className="page-header">
-          <h2>Emissão de Nota Fiscal de Serviço</h2>
-          <div className="breadcrumbs">O PDF será gerado automaticamente com a marca da empresa.</div>
+      {/* CONTAINER PRINCIPAL */}
+      <div className="gerador-container-tech">
+        
+        <div className="page-header-tech">
+          <h2>Gerador de Nota Fiscal</h2>
+          <p>Utilize esta ferramenta para gerar comprovantes fiscais padronizados para reembolso.</p>
         </div>
 
-        <div className="form-content">
+        {/* CARD DO FORMULÁRIO */}
+        <div className="gerador-card-glass">
           <form onSubmit={gerarEBaixarPDF}>
-            <div className="form-row">
-              <div className="form-group">
+            <div className="form-grid">
+              <div className="form-group-tech">
                 <label>CNPJ do Prestador</label>
                 <input 
                   name="cnpj" 
@@ -90,7 +109,7 @@ export default function GeradorNota() {
                   required 
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group-tech">
                 <label>Valor Total (R$)</label>
                 <input 
                   name="valor" 
@@ -98,68 +117,55 @@ export default function GeradorNota() {
                   onChange={handleChange} 
                   type="number" 
                   placeholder="0,00" 
+                  step="0.01"
                   required 
                 />
               </div>
             </div>
             
-            <div className="form-group">
+            <div className="form-group-tech">
               <label>Descrição Detalhada do Serviço</label>
               <textarea 
                 name="descricao" 
                 value={formData.descricao} 
                 onChange={handleChange} 
-                rows="3"
-                placeholder="Ex: Serviço de transporte executivo para reunião com cliente..." 
+                rows="4"
+                placeholder="Descreva o serviço realizado (ex: Transporte executivo, Almoço de negócios, etc)..." 
                 required 
               />
             </div>
 
-            <div className="actions">
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Gerando PDF...' : 'Gerar e Baixar PDF'}
-              </button>
-            </div>
+            <button type="submit" className="btn-gerar-tech" disabled={loading}>
+              {loading ? 'Processando Documento...' : '📄 Gerar e Baixar PDF'}
+            </button>
           </form>
         </div>
       </div>
 
-{/* =======================================================
-          TEMPLATE DO PDF (Ajustado)
+      {/* =======================================================
+          TEMPLATE DO PDF (OCULTO VISUALMENTE, VISÍVEL P/ SCRIPT)
           ======================================================= */}
-      <div style={{position: 'absolute', top: '-10000px', left: 0}}>
+      <div className="pdf-hidden-template">
         <div ref={invoiceRef} className="invoice-paper">
           
-          {/* CABEÇALHO */}
-          <div className="nfe-header" style={{
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            borderBottom: '2px solid #000',
-            paddingBottom: '10px', /* Reduzi o padding */
-            marginBottom: '15px'   /* Reduzi a margem */
-          }}>
-            
-            {/* LADO ESQUERDO: LOGO MENOR */}
+          {/* CABEÇALHO NFE */}
+          <div className="nfe-header">
             <div style={{ paddingLeft: '5px' }}>
-               {/* Reduzi o size de 1.8 para 0.8 */}
-               <Logo lightMode={true} size={0.8} /> 
+               {/* Logo em modo Light para sair correto no papel branco */}
+               <Logo lightMode={true} size={1.0} /> 
             </div>
 
-            {/* LADO DIREITO: TÍTULOS */}
             <div style={{textAlign: 'right'}}>
-              <div className="nfe-title" style={{fontSize: '1.4rem', fontWeight:'900', marginBottom:'2px'}}>NOTA FISCAL DE SERVIÇO</div>
-              <div style={{fontSize: '0.75rem', color: '#444'}}>
+              <div className="nfe-title">NOTA FISCAL DE SERVIÇO</div>
+              <div className="nfe-subtitle">
                 Prefeitura Municipal de TechCity<br/>
-                Secretaria da Fazenda - NFS-e
+                Secretaria da Fazenda - NFS-e Digital
               </div>
             </div>
           </div>
 
-          {/* ... O RESTANTE DO CÓDIGO CONTINUA IGUAL ... */}
-
           {/* DADOS DA NOTA */}
-          <div className="nfe-row">
+          <div className="nfe-row" style={{background: '#f8f9fa', padding: '10px', border: '1px solid #ddd'}}>
             <div className="nfe-col">
               <span className="nfe-label">Número da Nota</span>
               <span className="nfe-value">{new Date().getFullYear()}000{Math.floor(Math.random() * 999)}</span>
@@ -169,17 +175,17 @@ export default function GeradorNota() {
               <span className="nfe-value">{new Date().toLocaleDateString()} {new Date().toLocaleTimeString().slice(0,5)}</span>
             </div>
             <div className="nfe-col">
-              <span className="nfe-label">Código de Verificação</span>
+              <span className="nfe-label">Código Verificação</span>
               <span className="nfe-value">XJ9-{Math.floor(Math.random()*100)}K-L0P</span>
             </div>
           </div>
 
           {/* PRESTADOR */}
           <div className="nfe-section-title">Prestador de Serviços</div>
-          <div className="nfe-row" style={{background: '#f8f9fa'}}>
+          <div className="nfe-row">
             <div className="nfe-col">
               <span className="nfe-label">Razão Social / Nome</span>
-              <span className="nfe-value">TRANSPORTES E SERVIÇOS LTDA</span>
+              <span className="nfe-value">PRESTADOR DE SERVIÇOS GERAIS LTDA</span>
             </div>
             <div className="nfe-col">
               <span className="nfe-label">CNPJ / CPF</span>
@@ -206,7 +212,7 @@ export default function GeradorNota() {
 
           {/* DESCRIÇÃO */}
           <div className="nfe-section-title">Discriminação dos Serviços</div>
-          <div style={{border: '1px solid #000', padding: '15px', minHeight: '100px', fontSize: '1rem', marginBottom: '10px'}}>
+          <div className="nfe-desc-box">
             {formData.descricao || 'Descrição do serviço prestado...'}
           </div>
 
@@ -226,19 +232,18 @@ export default function GeradorNota() {
                 <td>R$ {formData.valor || '0,00'}</td>
                 <td>5%</td>
                 <td>R$ {(formData.valor * 0.05).toFixed(2)}</td>
-                <td style={{fontWeight: 'bold', fontSize: '1.2rem'}}>R$ {formData.valor || '0,00'}</td>
+                <td className="nfe-total">R$ {formData.valor || '0,00'}</td>
               </tr>
             </tbody>
           </table>
 
-          {/* RODAPÉ E CÓDIGO DE BARRAS */}
-          <div style={{marginTop: '50px', textAlign: 'center'}}>
-             {/* O Texto entre asteriscos gera o código de barras correto na fonte Libre Barcode 39 */}
+          {/* RODAPÉ */}
+          <div style={{marginTop: '60px', textAlign: 'center'}}>
              <div className="barcode">
                *NFE{new Date().getFullYear()}TECHCORP*
              </div>
              
-             <div style={{fontSize: '0.75rem', color: '#666', marginTop: '15px', borderTop: '1px solid #ccc', paddingTop: '10px'}}>
+             <div style={{fontSize: '0.7rem', color: '#888', marginTop: '20px', borderTop: '1px solid #ccc', paddingTop: '10px'}}>
                 Documento emitido por ME ou EPP optante pelo Simples Nacional.<br/>
                 Não gera direito a crédito fiscal de IPI.
              </div>
