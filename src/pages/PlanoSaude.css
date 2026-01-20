@@ -247,10 +247,9 @@ input[type="date"] {
 /* Scroll na Tabela do Extrato */
 .table-wrapper-tech {
   max-height: 300px;
-  max-width: 900px;
-  overflow-y: auto;
   margin-bottom: 15px;
 }
+
 .table-wrapper-tech::-webkit-scrollbar { width: 6px; }
 .table-wrapper-tech::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
 .table-wrapper-tech::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; }
