@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
-import '../App.css';
-import './GestaoViagens.css';
+import './GestaoViagens.css'; // O CSS novo que vamos criar abaixo
 
 export default function GestaoViagens() {
   const navigate = useNavigate();
@@ -21,7 +20,7 @@ export default function GestaoViagens() {
     { 
       id: 'TRIP-9021', 
       origem: 'São Paulo (GRU)', destino: 'Rio de Janeiro (SDU)', 
-      data_ida: '10/11/2024', data_volta: '12/11/2024', 
+      data_ida: '2024-11-10', data_volta: '2024-11-12', 
       motivo: 'Visita Cliente Petrobras', 
       status: 'APROVADO', custo: 'R$ 1.250,00',
       voo: 'LA3402', hotel: 'Windsor Barra'
@@ -29,7 +28,7 @@ export default function GestaoViagens() {
     { 
       id: 'TRIP-8840', 
       origem: 'São Paulo (CGH)', destino: 'Brasília (BSB)', 
-      data_ida: '05/10/2024', data_volta: '06/10/2024', 
+      data_ida: '2024-10-05', data_volta: '2024-10-06', 
       motivo: 'Reunião Regulatória', 
       status: 'CONCLUÍDO', custo: 'R$ 2.100,00',
       voo: 'G3 1440', hotel: 'B Hotel'
@@ -82,6 +81,7 @@ export default function GestaoViagens() {
     setTimeout(async () => {
       if(printRef.current) {
         const element = printRef.current;
+        // Força fundo branco no canvas para o PDF não sair transparente/escuro
         const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -95,190 +95,214 @@ export default function GestaoViagens() {
   };
 
   return (
-    <div className="app-container">
-      <header className="top-bar">
-        <div className="brand"><Logo /></div>
-        <div className="user-badge" onClick={() => navigate('/dashboard')}>Voltar ao Menu ↩</div>
-      </header>
+    <div className="tech-layout">
+      {/* LUZES DE FUNDO (AMBIENT LIGHTS) */}
+      <div className="ambient-light light-1"></div>
+      <div className="ambient-light light-2"></div>
+      <div className="ambient-light light-3"></div>
 
-      <div className="dashboard-wrapper">
-        <div className="page-header">
-          <h2>Gestão de Viagens Corporativas</h2>
-          <div className="breadcrumbs">Serviços &gt; Viagens &gt; Solicitações</div>
-        </div>
-
-        {/* TABS DE NAVEGAÇÃO */}
-        <div className="travel-tabs">
-          <button 
-            className={`travel-tab-btn ${activeTab === 'minhas_viagens' ? 'active' : ''}`}
-            onClick={() => setActiveTab('minhas_viagens')}
-          >
-            ✈ Minhas Viagens
-          </button>
-          <button 
-            className={`travel-tab-btn ${activeTab === 'nova_solicitacao' ? 'active' : ''}`}
-            onClick={() => setActiveTab('nova_solicitacao')}
-          >
-            ➕ Nova Solicitação
-          </button>
-        </div>
-
-        {/* === ABA 1: DASHBOARD DE VIAGENS === */}
-        {activeTab === 'minhas_viagens' && (
-          <div className="trip-grid" style={{animation: 'fadeIn 0.3s'}}>
-            {viagens.map(trip => (
-              <div key={trip.id} className="trip-card">
-                <div className="trip-status" style={{color: trip.status === 'APROVADO' ? 'green' : trip.status === 'CONCLUÍDO' ? 'blue' : 'orange'}}>
-                  {trip.status}
-                </div>
-                <div className="trip-header">
-                  <span className="trip-route">{trip.origem.slice(0,3).toUpperCase()} ➝ {trip.destino.slice(0,3).toUpperCase()}</span>
-                  <span className="trip-id">{trip.id}</span>
-                </div>
-                <div className="trip-body">
-                  <div className="trip-row">
-                    <div><span className="trip-label">IDA</span><span className="trip-value">{trip.data_ida}</span></div>
-                    <div style={{textAlign:'right'}}><span className="trip-label">VOLTA</span><span className="trip-value">{trip.data_volta}</span></div>
-                  </div>
-                  <div className="trip-row">
-                    <div><span className="trip-label">MOTIVO</span><span className="trip-value">{trip.motivo}</span></div>
-                  </div>
-                  <div style={{display:'flex', gap:'10px', marginTop:'10px'}}>
-                    <div style={{background:'#f1f3f5', padding:'5px 10px', borderRadius:'4px', fontSize:'0.8rem'}}>🏨 {trip.hotel}</div>
-                    <div style={{background:'#f1f3f5', padding:'5px 10px', borderRadius:'4px', fontSize:'0.8rem'}}>✈ {trip.voo}</div>
-                  </div>
-                </div>
-                <div className="trip-actions">
-                  <button className="btn-secondary" onClick={() => gerarVoucher(trip)}>
-                    📄 Baixar Voucher
-                  </button>
-                </div>
-              </div>
-            ))}
+      <div className="tech-main">
+        {/* HEADER ESTILO TECH */}
+        <header className="tech-header">
+          <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor:'pointer'}}>
+            <Logo /> <span style={{color:'white', marginLeft:'10px'}}>Viagens</span>
           </div>
-        )}
+          <div className="tech-profile" onClick={() => navigate('/dashboard')}>
+            <span style={{color:'var(--text-secondary)', fontSize:'0.9rem'}}>Voltar ao Menu ↩</span>
+          </div>
+        </header>
 
-        {/* === ABA 2: WIZARD DE SOLICITAÇÃO === */}
-        {activeTab === 'nova_solicitacao' && (
-          <div className="wizard-container" style={{animation: 'fadeIn 0.3s'}}>
-            
-            {/* Indicador de Passos */}
-            <div className="wizard-steps">
-              <div className={`step-item ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>1 <span className="step-label">Dados</span></div>
-              <div className={`step-item ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>2 <span className="step-label">Logística</span></div>
-              <div className={`step-item ${step >= 3 ? 'active' : ''}`}>3 <span className="step-label">Revisão</span></div>
-            </div>
+        <div className="tech-scroll-content">
+          <div className="page-header-tech">
+            <h2>Gestão de Viagens Corporativas</h2>
+            <div className="breadcrumbs-tech">Serviços / Viagens / Solicitações</div>
+          </div>
 
-            <form onSubmit={handleSubmit}>
-              
-              {/* PASSO 1: DADOS BÁSICOS */}
-              {step === 1 && (
-                <div className="wizard-form-grid">
-                  <div className="form-group full-width">
-                    <label>Motivo da Viagem *</label>
-                    <input name="motivo" value={formData.motivo} onChange={handleInputChange} type="text" placeholder="Ex: Reunião com Cliente X" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Centro de Custo *</label>
-                    <select name="centro_custo" value={formData.centro_custo} onChange={handleInputChange} required>
-                      <option value="">Selecione...</option>
-                      <option value="1000">1000 - Comercial</option>
-                      <option value="2000">2000 - TI / Infra</option>
-                      <option value="3000">3000 - Diretoria</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Projeto (PEP) - Opcional</label>
-                    <input name="projeto" value={formData.projeto} onChange={handleInputChange} type="text" placeholder="Ex: PROJ-2024-001" />
-                  </div>
-                </div>
-              )}
+          {/* TABS DE NAVEGAÇÃO MODERNAS */}
+          <div className="travel-tabs-glass">
+            <button 
+              className={`travel-tab-glass ${activeTab === 'minhas_viagens' ? 'active' : ''}`}
+              onClick={() => setActiveTab('minhas_viagens')}
+            >
+              ✈ Minhas Viagens
+            </button>
+            <button 
+              className={`travel-tab-glass ${activeTab === 'nova_solicitacao' ? 'active' : ''}`}
+              onClick={() => setActiveTab('nova_solicitacao')}
+            >
+              ➕ Nova Solicitação
+            </button>
+          </div>
 
-              {/* PASSO 2: LOGÍSTICA */}
-              {step === 2 && (
-                <div className="wizard-form-grid">
-                  <div className="form-group">
-                    <label>Origem *</label>
-                    <input name="origem" value={formData.origem} onChange={handleInputChange} type="text" placeholder="Cidade/Aeroporto" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Destino *</label>
-                    <input name="destino" value={formData.destino} onChange={handleInputChange} type="text" placeholder="Cidade/Aeroporto" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Data Ida *</label>
-                    <input name="data_ida" value={formData.data_ida} onChange={handleInputChange} type="date" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Data Volta *</label>
-                    <input name="data_volta" value={formData.data_volta} onChange={handleInputChange} type="date" required />
+          {/* === ABA 1: DASHBOARD DE VIAGENS === */}
+          {activeTab === 'minhas_viagens' && (
+            <div className="trip-grid-tech" style={{animation: 'fadeIn 0.5s'}}>
+              {viagens.map(trip => (
+                <div key={trip.id} className="trip-card-glass">
+                  {/* Status Badge Neon */}
+                  <div className={`trip-status-neon ${trip.status.toLowerCase()}`}>
+                    {trip.status}
                   </div>
                   
-                  <div className="form-group">
-                    <label>Precisa de Hotel?</label>
-                    <select name="precisa_hotel" value={formData.precisa_hotel} onChange={handleInputChange}>
-                      <option value="nao">Não</option>
-                      <option value="sim">Sim</option>
-                    </select>
+                  <div className="trip-glass-header">
+                    <span className="trip-route-tech">{trip.origem.slice(0,3).toUpperCase()} <span className="arrow">➝</span> {trip.destino.slice(0,3).toUpperCase()}</span>
+                    <span className="trip-id-tech">{trip.id}</span>
                   </div>
                   
-                  {formData.precisa_hotel === 'sim' && (
-                    <div className="form-group">
-                      <label>Preferência Hotel</label>
-                      <input name="hotel_pref" value={formData.hotel_pref} onChange={handleInputChange} type="text" placeholder="Ex: Próximo ao centro..." />
+                  <div className="trip-glass-body">
+                    <div className="trip-row-tech">
+                      <div><span className="trip-label-tech">IDA</span><span className="trip-value-tech">{trip.data_ida}</span></div>
+                      <div style={{textAlign:'right'}}><span className="trip-label-tech">VOLTA</span><span className="trip-value-tech">{trip.data_volta}</span></div>
                     </div>
-                  )}
-
-                  <div className="form-group full-width">
-                     <label>Solicitar Adiantamento (R$)</label>
-                     <input name="adiantamento" type="number" value={formData.adiantamento} onChange={handleInputChange} placeholder="0,00" />
-                     <small style={{color:'#666'}}>* Sujeito à aprovação para valores acima de R$ 500,00</small>
+                    <div className="trip-row-tech">
+                      <div><span className="trip-label-tech">MOTIVO</span><span className="trip-value-tech">{trip.motivo}</span></div>
+                    </div>
+                    
+                    <div className="tags-container">
+                      <div className="glass-tag">🏨 {trip.hotel}</div>
+                      <div className="glass-tag">✈ {trip.voo}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="trip-glass-actions">
+                    <button className="btn-neon-outline" onClick={() => gerarVoucher(trip)}>
+                      📄 Baixar Voucher
+                    </button>
                   </div>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
-              {/* PASSO 3: REVISÃO */}
-              {step === 3 && (
-                <div className="wizard-form-grid">
-                  <div className="full-width" style={{background:'#f8f9fa', padding:'20px', borderRadius:'8px'}}>
-                    <h4 style={{marginTop:0, color:'#333'}}>Resumo da Solicitação</h4>
-                    <p><strong>Motivo:</strong> {formData.motivo}</p>
-                    <p><strong>Rota:</strong> {formData.origem} ➝ {formData.destino}</p>
-                    <p><strong>Período:</strong> {formData.data_ida} até {formData.data_volta}</p>
-                    <p><strong>Hotel:</strong> {formData.precisa_hotel === 'sim' ? 'Sim' : 'Não'}</p>
-                    <p><strong>Adiantamento:</strong> R$ {formData.adiantamento}</p>
+          {/* === ABA 2: WIZARD DE SOLICITAÇÃO === */}
+          {activeTab === 'nova_solicitacao' && (
+            <div className="wizard-glass-container" style={{animation: 'fadeIn 0.5s'}}>
+              
+              {/* Indicador de Passos Neon */}
+              <div className="wizard-steps-neon">
+                <div className={`step-item-neon ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>1</div>
+                <div className="step-line"></div>
+                <div className={`step-item-neon ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>2</div>
+                <div className="step-line"></div>
+                <div className={`step-item-neon ${step >= 3 ? 'active' : ''}`}>3</div>
+              </div>
+              
+              <div className="step-label-display">
+                {step === 1 && "Dados do Projeto"}
+                {step === 2 && "Logística & Datas"}
+                {step === 3 && "Revisão Final"}
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                
+                {/* PASSO 1: DADOS BÁSICOS */}
+                {step === 1 && (
+                  <div className="wizard-form-grid-tech">
+                    <div className="form-group-tech full-width">
+                      <label>Motivo da Viagem *</label>
+                      <input className="glass-input" name="motivo" value={formData.motivo} onChange={handleInputChange} type="text" placeholder="Ex: Reunião com Cliente X" required />
+                    </div>
+                    <div className="form-group-tech">
+                      <label>Centro de Custo *</label>
+                      <select className="glass-input" name="centro_custo" value={formData.centro_custo} onChange={handleInputChange} required>
+                        <option value="">Selecione...</option>
+                        <option value="1000">1000 - Comercial</option>
+                        <option value="2000">2000 - TI / Infra</option>
+                        <option value="3000">3000 - Diretoria</option>
+                      </select>
+                    </div>
+                    <div className="form-group-tech">
+                      <label>Projeto (PEP) - Opcional</label>
+                      <input className="glass-input" name="projeto" value={formData.projeto} onChange={handleInputChange} type="text" placeholder="Ex: PROJ-2024-001" />
+                    </div>
+                  </div>
+                )}
+
+                {/* PASSO 2: LOGÍSTICA */}
+                {step === 2 && (
+                  <div className="wizard-form-grid-tech">
+                    <div className="form-group-tech">
+                      <label>Origem *</label>
+                      <input className="glass-input" name="origem" value={formData.origem} onChange={handleInputChange} type="text" placeholder="Cidade/Aeroporto" required />
+                    </div>
+                    <div className="form-group-tech">
+                      <label>Destino *</label>
+                      <input className="glass-input" name="destino" value={formData.destino} onChange={handleInputChange} type="text" placeholder="Cidade/Aeroporto" required />
+                    </div>
+                    <div className="form-group-tech">
+                      <label>Data Ida *</label>
+                      <input className="glass-input" name="data_ida" value={formData.data_ida} onChange={handleInputChange} type="date" required />
+                    </div>
+                    <div className="form-group-tech">
+                      <label>Data Volta *</label>
+                      <input className="glass-input" name="data_volta" value={formData.data_volta} onChange={handleInputChange} type="date" required />
+                    </div>
                     
-                    <div style={{marginTop:'20px', padding:'10px', background:'#fff3cd', border:'1px solid #ffeeba', color:'#856404', fontSize:'0.9rem'}}>
+                    <div className="form-group-tech">
+                      <label>Precisa de Hotel?</label>
+                      <select className="glass-input" name="precisa_hotel" value={formData.precisa_hotel} onChange={handleInputChange}>
+                        <option value="nao">Não</option>
+                        <option value="sim">Sim</option>
+                      </select>
+                    </div>
+                    
+                    {formData.precisa_hotel === 'sim' && (
+                      <div className="form-group-tech">
+                        <label>Preferência Hotel</label>
+                        <input className="glass-input" name="hotel_pref" value={formData.hotel_pref} onChange={handleInputChange} type="text" placeholder="Ex: Próximo ao centro..." />
+                      </div>
+                    )}
+
+                    <div className="form-group-tech full-width">
+                      <label>Solicitar Adiantamento (R$)</label>
+                      <input className="glass-input" name="adiantamento" type="number" value={formData.adiantamento} onChange={handleInputChange} placeholder="0,00" />
+                      <small style={{color:'var(--text-secondary)'}}>* Sujeito à aprovação para valores acima de R$ 500,00</small>
+                    </div>
+                  </div>
+                )}
+
+                {/* PASSO 3: REVISÃO */}
+                {step === 3 && (
+                  <div className="wizard-review-glass">
+                    <h4 className="neon-text">Resumo da Solicitação</h4>
+                    <div className="review-item"><strong>Motivo:</strong> <span>{formData.motivo}</span></div>
+                    <div className="review-item"><strong>Rota:</strong> <span>{formData.origem} ➝ {formData.destino}</span></div>
+                    <div className="review-item"><strong>Período:</strong> <span>{formData.data_ida} até {formData.data_volta}</span></div>
+                    <div className="review-item"><strong>Hotel:</strong> <span>{formData.precisa_hotel === 'sim' ? 'Sim' : 'Não'}</span></div>
+                    <div className="review-item"><strong>Adiantamento:</strong> <span className="highlight-money">R$ {formData.adiantamento}</span></div>
+                    
+                    <div className="glass-alert">
                       ⚠ Ao confirmar, a solicitação será enviada ao seu gestor imediato. Certifique-se de que o orçamento do projeto comporta esta despesa.
                     </div>
                   </div>
+                )}
+
+                {/* RODAPÉ DO WIZARD (BOTÕES) */}
+                <div className="wizard-footer-tech">
+                  {step > 1 ? (
+                    <button type="button" className="btn-glass-secondary" onClick={prevStep}>Anterior</button>
+                  ) : (
+                    <div></div> 
+                  )}
+
+                  {step < 3 ? (
+                    <button type="button" className="btn-neon-primary" onClick={nextStep}>Próximo Passo</button>
+                  ) : (
+                    <button type="submit" className="btn-neon-primary" disabled={loading}>
+                      {loading ? 'Enviando...' : '✅ Confirmar Solicitação'}
+                    </button>
+                  )}
                 </div>
-              )}
 
-              {/* RODAPÉ DO WIZARD (BOTÕES) */}
-              <div className="wizard-footer">
-                {step > 1 ? (
-                  <button type="button" className="btn-secondary" onClick={prevStep}>Anterior</button>
-                ) : (
-                  <div></div> /* Espaçador */
-                )}
-
-                {step < 3 ? (
-                  <button type="button" className="btn-primary" onClick={nextStep}>Próximo Passo</button>
-                ) : (
-                  <button type="submit" className="btn-primary" disabled={loading}>
-                    {loading ? 'Enviando...' : '✅ Confirmar Solicitação'}
-                  </button>
-                )}
-              </div>
-
-            </form>
-          </div>
-        )}
+              </form>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* =================================================================
           TEMPLATE DE IMPRESSÃO (VOUCHER)
+          NOTA: MANTEMOS O VISUAL "PAPEL BRANCO" PARA IMPRESSÃO CORRETA
          ================================================================= */}
       <div className="print-hidden-wrapper">
         {voucherParaImpressao && (

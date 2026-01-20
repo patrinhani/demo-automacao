@@ -6,7 +6,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Definição dos itens do menu (ATUALIZADO)
+  // Definição dos itens do menu
   const menuItems = [
     { label: 'Visão Geral', icon: '📊', path: '/dashboard' },
     
@@ -20,13 +20,14 @@ export default function Sidebar() {
     { type: 'divider', label: 'Financeiro' },
     { label: 'Reembolsos', icon: '💸', path: '/solicitacao' },
     { label: 'Status Reembolso', icon: '📊', path: '/status-reembolso' },
-    { label: 'Gerador de Nota', icon: '🧾', path: '/gerar-nota' }, // <--- ADICIONADO
+    { label: 'Gerador de Nota', icon: '🧾', path: '/gerar-nota' },
     { label: 'Viagens', icon: '✈️', path: '/viagens' },
     
     { type: 'divider', label: 'Dia a Dia' },
     { label: 'Helpdesk', icon: '🎧', path: '/helpdesk' },
     { label: 'Reservas', icon: '📅', path: '/reservas' },
-    { label: 'Mural & Avisos', icon: '📢', path: '/comunicacao' }, // <--- JÁ ESTAVA AQUI
+    { label: 'Chat Equipes', icon: '💬', path: '/chat' }, // <--- NOVO ITEM
+    { label: 'Mural & Avisos', icon: '📢', path: '/comunicacao' },
   ];
 
   return (

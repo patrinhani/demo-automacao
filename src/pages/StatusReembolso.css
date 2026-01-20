@@ -1,7 +1,7 @@
 /* src/pages/StatusReembolso.css */
 
 /* =========================================
-   STATUS TECHCORP - ESTILO DARK/NEON (CORREÇÃO DEFINITIVA DA BOLINHA)
+   STATUS TECHCORP - FINAL (COM EFEITO ROTATIVO)
    ========================================= */
 
 .tech-layout-status {
@@ -150,7 +150,7 @@
   /* Top 25px = Metade da altura da bolinha (50px / 2) */
   top: 25px; 
   /* Left/Right 50px = Metade da largura do container do passo (100px / 2) */
-  left: 20px; 
+  left: 40px; 
   right: 50px;
   height: 4px;
   z-index: 0; /* Atrás de tudo */
@@ -163,7 +163,8 @@
 
 .timeline-line-fill {
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
-  width: 32%; /* Ajustado para parar exatamente no centro da bolinha 2 */
+  /* Ajuste Fino: Aumentei um pouco para entrar embaixo da bolinha laranja */
+  width: 31%; 
   box-shadow: 0 0 15px var(--neon-orange);
   transition: width 1s ease-in-out;
 }
@@ -194,7 +195,7 @@
   border: 2px solid var(--glass-border);
   color: var(--text-secondary);
   
-  margin-bottom: 15px; 
+  margin-bottom: 12px; 
   box-sizing: border-box;
   position: relative; /* Necessário para o z-index funcionar */
 }
@@ -210,30 +211,33 @@
   z-index: 5;
 }
 
-/* ==============================================================================
-   A CORREÇÃO PRINCIPAL ESTÁ AQUI
-   ============================================================================== */
-/* 2. Ativo (AGORA É UMA ESFERA SÓLIDA) */
+/* =========================================================
+   2. ATIVO (AGORA COM ANEL GIRATÓRIO)
+   ========================================================= */
 .timeline-step.active .step-circle {
-  /* 1. Preenchimento Sólido da cor Neon */
+  /* Preenchimento Sólido */
   background: var(--neon-orange) !important;
-
-  /* 2. Texto Branco para contraste */
   color: #ffffff !important;
-
-  /* 3. Remove a borda para ficar uma esfera pura */
   border: none !important;
-
-  /* 4. Brilho intenso externo + luz interna para dar volume 3D */
-  box-shadow: 
-    0 0 40px rgba(245, 158, 11, 0.8),  /* Brilho externo forte */
-    inset 0 0 15px rgba(255, 255, 255, 0.5) !important; /* Luz interna (volume) */
-
-  /* 6. Garante que fique ACIMA da linha */
+  
+  /* Brilho interno e externo */
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  
+  /* Z-Index alto para cobrir a linha */
   z-index: 10 !important;
 }
-/* ============================================================================== */
 
+/* O Anel que Gira (Pseudo-elemento) */
+.timeline-step.active .step-circle::after {
+  content: '';
+  position: absolute;
+  top: -6px; left: -6px; right: -6px; bottom: -6px; /* Tamanho maior que a bola */
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--neon-orange); /* Apenas um pedaço do anel tem cor */
+  border-right-color: var(--neon-orange);
+  animation: rotateRing 1.5s linear infinite; /* Animação de rotação */
+}
 
 /* 3. Pendente */
 .timeline-step.pending .step-circle {
@@ -250,7 +254,7 @@
   color: #fff;
   text-align: center;
   line-height: 1.2;
-  margin-bottom: 5px;
+  margin-top: 5px; /* Espaço seguro */
   display: block;
 }
 
@@ -260,7 +264,7 @@
   text-align: center;
   line-height: 1.2;
   display: block;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 /* Cores específicas para os textos ativos */
@@ -307,6 +311,12 @@
 }
 .btn-secondary-tech:hover { border-color: #fff; color: #fff; }
 
+/* --- ANIMAÇÃO DE ROTAÇÃO (NOVO) --- */
+@keyframes rotateRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Mobile */
 @media (max-width: 600px) {
   .timeline-tech { flex-direction: column; align-items: flex-start; padding-left: 20px; height: auto; margin-bottom: 20px; gap: 0; }
@@ -317,7 +327,7 @@
 
   .timeline-step { flex-direction: row; width: 100%; margin-bottom: 30px; align-items: center; }
   .step-circle { margin-bottom: 0; margin-right: 15px; }
-  .step-label, .step-sub { text-align: left; }
+  .step-label, .step-sub { text-align: left; margin: 0; }
   
   .actions-tech { flex-direction: column; }
   .btn-primary-tech, .btn-secondary-tech { width: 100%; }

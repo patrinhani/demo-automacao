@@ -1,168 +1,364 @@
-/* src/pages/GestaoViagens.css */
+/* src/pages/GestaoViagens.css - TEMA TECH/GLASS */
 
-/* --- TABS DO TOPO --- */
-.travel-tabs {
+/* Títulos */
+.page-header-tech h2 {
+  font-size: 1.8rem;
+  margin: 0;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.breadcrumbs-tech {
+  color: var(--neon-blue);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  opacity: 0.8;
+}
+
+/* --- TABS ESTILO NEON --- */
+.travel-tabs-glass {
   display: flex;
   gap: 15px;
-  border-bottom: 2px solid #eee;
-  margin-bottom: 30px;
+  margin: 30px 0;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 10px;
 }
 
-.travel-tab-btn {
-  padding: 12px 20px;
-  background: none;
+.travel-tab-glass {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.travel-tab-glass:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.travel-tab-glass.active {
+  background: rgba(59, 130, 246, 0.15); /* Fundo Azul Transparente */
+  color: var(--neon-blue);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+/* --- GRID DE CARDS (VIAGENS) --- */
+.trip-grid-tech {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.trip-card-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.trip-card-glass:hover {
+  transform: translateY(-5px);
+  border-color: var(--neon-blue);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge de Status */
+.trip-status-neon {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trip-status-neon.aprovado {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981; /* Verde Neon */
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.trip-status-neon.concluído {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6; /* Azul Neon */
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.trip-status-neon.pendente {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308; /* Amarelo */
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+/* Conteúdo do Card */
+.trip-glass-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--glass-border);
+  background: linear-gradient(90deg, rgba(59,130,246,0.1), transparent);
+}
+
+.trip-route-tech {
+  display: block;
+  font-size: 1.1rem;
+  color: white;
+  font-weight: 600;
+}
+.trip-route-tech .arrow { color: var(--neon-purple); margin: 0 5px; }
+
+.trip-id-tech {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.trip-glass-body {
+  padding: 20px;
+}
+
+.trip-row-tech {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.trip-label-tech {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.trip-value-tech {
+  font-size: 0.95rem;
+  color: #f1f5f9;
+}
+
+.tags-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.glass-tag {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+}
+
+.trip-glass-actions {
+  padding: 15px 20px;
+  border-top: 1px solid var(--glass-border);
+  text-align: right;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Botões Neon */
+.btn-neon-outline {
+  background: transparent;
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+.btn-neon-outline:hover {
+  background: var(--neon-blue);
+  color: white;
+  box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.btn-neon-primary {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
   border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 1rem;
-  color: #666;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+.btn-neon-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
 }
 
-.travel-tab-btn:hover { background: #f8f9fa; color: var(--corp-blue); }
-.travel-tab-btn.active {
-  color: var(--corp-blue);
-  border-bottom-color: var(--corp-blue);
-}
-
-/* --- LISTA DE VIAGENS (CARDS TIPO PASSAGEM) --- */
-.trip-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.trip-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-}
-
-.trip-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.trip-header {
-  background: var(--corp-blue);
+.btn-glass-secondary {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--glass-border);
   color: white;
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.trip-route { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
-.trip-id { font-size: 0.8rem; opacity: 0.8; }
-
-.trip-body { padding: 20px; }
-.trip-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
-.trip-label { font-size: 0.75rem; color: #888; text-transform: uppercase; display: block; }
-.trip-value { font-size: 0.95rem; color: #333; font-weight: 500; }
-
-.trip-status {
-  position: absolute;
-  top: 15px; right: 50%; transform: translateX(50%);
-  background: white; color: var(--corp-blue);
-  padding: 2px 8px; border-radius: 10px;
-  font-size: 0.7rem; font-weight: bold;
-  text-transform: uppercase;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-.trip-status.aprovado { color: #28a745; }
-.trip-status.pendente { color: #856404; }
-
-.trip-actions {
-  padding: 15px;
-  background: #f8f9fa;
-  border-top: 1px solid #eee;
-  text-align: right;
-}
-
-/* --- WIZARD DE NOVA SOLICITAÇÃO --- */
-.wizard-container {
-  background: white;
-  border: 1px solid #eee;
+  padding: 12px 24px;
   border-radius: 8px;
-  padding: 30px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-/* Barra de Progresso */
-.wizard-steps {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 40px;
-  position: relative;
-}
-
-.wizard-steps::before {
-  content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 2px; background: #eee; z-index: 0;
-}
-
-.step-item {
-  position: relative; z-index: 1;
-  background: white;
-  width: 35px; height: 35px;
-  border-radius: 50%;
-  border: 2px solid #ccc;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; color: #ccc;
+  cursor: pointer;
   transition: all 0.3s;
 }
+.btn-glass-secondary:hover { background: rgba(255,255,255,0.2); }
 
-.step-item.active { border-color: var(--corp-blue); background: var(--corp-blue); color: white; }
-.step-item.completed { border-color: #28a745; background: #28a745; color: white; }
-
-.step-label {
-  position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
-  font-size: 0.75rem; color: #666; white-space: nowrap;
+/* --- WIZARD FORMULÁRIO --- */
+.wizard-glass-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  backdrop-filter: blur(15px);
 }
 
-/* Formulários do Wizard */
-.wizard-form-grid {
+/* Passos do Wizard */
+.wizard-steps-neon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.step-item-neon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  font-weight: bold;
+  position: relative;
+  transition: 0.3s;
+}
+
+.step-item-neon.active {
+  border-color: var(--neon-blue);
+  color: white;
+  box-shadow: 0 0 15px var(--neon-blue);
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.step-item-neon.completed {
+  background: var(--neon-green);
+  border-color: var(--neon-green);
+  color: white;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--glass-border);
+  margin: 0 10px;
+  max-width: 100px;
+}
+
+.step-label-display {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+}
+
+/* Inputs de Vidro */
+.wizard-form-grid-tech {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  animation: fadeIn 0.4s;
 }
-
 .full-width { grid-column: span 2; }
 
-.form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #555; }
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;
+.form-group-tech label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
-.wizard-footer {
+.glass-input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: white;
+  font-family: inherit;
+  outline: none;
+  transition: 0.3s;
+}
+.glass-input:focus {
+  border-color: var(--neon-blue);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* Área de Revisão */
+.wizard-review-glass {
+  background: rgba(255,255,255,0.03);
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+.neon-text { color: var(--neon-purple); margin-top: 0; }
+
+.review-item {
+  display: flex; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--glass-border);
+  color: var(--text-secondary);
+}
+.review-item span { color: white; text-align: right; }
+
+.highlight-money {
+  color: var(--neon-green) !important;
+  font-weight: bold;
+}
+
+.glass-alert {
+  margin-top: 20px;
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  font-size: 0.9rem;
+}
+
+.wizard-footer-tech {
   margin-top: 40px;
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #eee;
   padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
 }
 
-/* --- ESTILOS DE IMPRESSÃO (VOUCHER) --- */
+/* --- PRESERVAÇÃO DE IMPRESSÃO --- */
 .print-hidden-wrapper { position: absolute; top: -10000px; left: 0; }
 .print-voucher-page {
   width: 210mm; min-height: 297mm; padding: 15mm;
   background: white; color: black; font-family: Arial, sans-serif; box-sizing: border-box;
   border-top: 10px solid var(--corp-blue);
 }
-
+/* O resto do CSS de impressão permanece igual ao original para não quebrar o layout do PDF */
 .voucher-header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
 .voucher-title { font-size: 24px; text-transform: uppercase; color: #333; margin: 0; }
-
 .voucher-section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
 .voucher-sec-title { background: #eee; padding: 8px 15px; font-weight: bold; font-size: 10pt; border-bottom: 1px solid #ddd; }
 .voucher-sec-content { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
 .v-item strong { display: block; font-size: 8pt; color: #666; text-transform: uppercase; }
 .v-item span { display: block; font-size: 11pt; color: #000; font-weight: 500; }
