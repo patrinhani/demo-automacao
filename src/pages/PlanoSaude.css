@@ -247,8 +247,9 @@ input[type="date"] {
 /* Scroll na Tabela do Extrato */
 .table-wrapper-tech {
   max-height: 300px;
+  max-width: 900px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 .table-wrapper-tech::-webkit-scrollbar { width: 6px; }
 .table-wrapper-tech::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
@@ -284,3 +285,24 @@ input[type="date"] {
   animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* --- PDF TEMPLATE --- */
+.pdf-hidden-template {
+  position: fixed;
+  left: -10000px; /* Esconde fora da tela */
+  top: 0;
+  z-index: -9999;
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  color: black;
+  visibility: visible;
+  pointer-events: none;
+}
+
+.print-page { padding: 20mm; font-family: Arial, sans-serif; }
+.print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; }
+.print-box { background: #f0f0f0; padding: 15px; border: 1px solid #ccc; margin-bottom: 20px; border-radius: 4px; }
+.print-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt; }
+.print-table th, .print-table td { border: 1px solid #999; padding: 8px; text-align: left; }
+.print-table th { background: #e0e0e0; }

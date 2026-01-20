@@ -1,8 +1,8 @@
 /* ======================================================
-   CHAT INTERNO - CSS FINAL (SCROLL CORRETO EM FLEX)
+   CHAT INTERNO - CORRIGIDO (SCROLL FIXO)
    ====================================================== */
 
-/* --- RESET SEGURO (NÃO TRAVA A TELA) --- */
+/* --- RESET SEGURO --- */
 * {
   margin: 0;
   padding: 0;
@@ -11,12 +11,13 @@
 
 html, body {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh; /* FIX: Trava a altura da janela */
   background-color: #0f172a;
   font-family: 'Inter', sans-serif;
+  overflow: hidden; /* FIX: Impede scroll na página inteira */
 }
 
-/* Scrollbar */
+/* Scrollbar Estilizada */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -36,12 +37,13 @@ html, body {
   --neon-blue: #3b82f6;
   --text-secondary: #94a3b8;
 
-  min-height: 100vh;
+  height: 100vh; /* FIX: Usa altura fixa da tela */
   width: 100%;
   display: flex;
   flex-direction: column;
   background: var(--bg-dark);
   position: relative;
+  overflow: hidden; /* FIX: Garante que nada vaze */
 }
 
 /* LUZES DE FUNDO */
@@ -71,7 +73,7 @@ html, body {
 /* --- HEADER --- */
 .tech-header-chat {
   height: 60px;
-  flex: 0 0 60px;
+  flex: 0 0 60px; /* Não encolhe nem cresce */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -116,7 +118,7 @@ html, body {
 
 /* --- CONTAINER PRINCIPAL --- */
 .chat-container {
-  flex: 1;
+  flex: 1; /* Ocupa o espaço restante */
   margin: 20px;
   max-width: 1200px;
   width: calc(100% - 40px);
@@ -127,7 +129,7 @@ html, body {
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   overflow: hidden;
-  min-height: 0; /* 🔥 CRÍTICO */
+  min-height: 0; /* Essencial para o flexbox aninhado funcionar */
   position: relative;
   z-index: 1;
 }
@@ -140,7 +142,7 @@ html, body {
   border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 🔥 */
+  min-height: 0; 
   transition: transform 0.3s ease;
 }
 
@@ -155,7 +157,7 @@ html, body {
 .channels-list {
   flex: 1;
   overflow-y: auto;
-  min-height: 0; /* 🔥 */
+  min-height: 0;
   padding: 0 10px;
 }
 
@@ -200,8 +202,8 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 🔥 O MAIS IMPORTANTE */
-  overflow: hidden; /* impede crescimento */
+  min-height: 0; /* Essencial */
+  overflow: hidden; 
   background: rgba(30,41,59,0.2);
 }
 
@@ -216,11 +218,12 @@ html, body {
   color: white;
 }
 
-/* --- MENSAGENS --- */
+/* --- MENSAGENS (AQUI ESTÁ A MÁGICA) --- */
 .messages-scroll {
   flex: 1;
-  min-height: 0; /* 🔥 ESSENCIAL */
-  overflow-y: auto;
+  height: 0; /* FIX: Força o cálculo correto da altura no flexbox */
+  min-height: 0; 
+  overflow-y: auto; /* FIX: Ativa o scroll apenas aqui */
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -305,6 +308,7 @@ html, body {
   display: flex;
   gap: 10px;
   background: rgba(15,23,42,0.95);
+  flex-shrink: 0; /* Garante que o input não suma */
 }
 
 .chat-input {
@@ -337,7 +341,7 @@ html, body {
   .chat-container {
     margin: 0;
     width: 100%;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 60px); /* Ajusta altura para descontar o header */
     border-radius: 0;
     border: none;
   }
