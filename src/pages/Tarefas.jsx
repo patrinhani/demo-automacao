@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase'; // Importação do Banco
+import { ref, onValue, push, update, remove } from 'firebase/database'; // Funções do Firebase
 import Logo from '../components/Logo';
 import './Tarefas.css';
 
@@ -16,39 +18,68 @@ export default function Tarefas() {
     prioridade: 'media'
   });
 
-  // Lista de Tarefas
-  const [tarefas, setTarefas] = useState([
-    { id: 1, titulo: 'Relatório Mensal', descricao: 'Compilar dados de vendas de SP e RJ.', status: 'todo', prioridade: 'alta' },
-    { id: 2, titulo: 'Reunião Fornecedores', descricao: 'Discutir renovação de contrato de TI.', status: 'doing', prioridade: 'media' },
-    { id: 3, titulo: 'Planilha de Custos', descricao: 'Atualizar abas de Janeiro e Fevereiro.', status: 'done', prioridade: 'baixa' },
-  ]);
+  // Lista de Tarefas (Começa vazia, será preenchida pelo Firebase)
+  const [tarefas, setTarefas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Salvar Nova Tarefa
+  // --- 1. LEITURA EM TEMPO REAL (FIREBASE) ---
+  useEffect(() => {
+    const tarefasRef = ref(db, 'tarefas');
+
+    // O onValue fica "escutando" mudanças. Se alguém criar uma tarefa em outro PC, aparece aqui na hora.
+    const unsubscribe = onValue(tarefasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // O Firebase devolve um Objeto { id1: {dados}, id2: {dados} }
+        // Precisamos converter para Array [ {id: id1, ...dados}, {id: id2, ...dados} ]
+        const listaTarefas = Object.entries(data).map(([key, value]) => ({
+          id: key, 
+          ...value
+        }));
+        setTarefas(listaTarefas);
+      } else {
+        setTarefas([]);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe(); // Limpa o ouvinte ao sair da página
+  }, []);
+
+  // --- 2. SALVAR NOVA TAREFA (CREATE) ---
   const handleSalvar = (e) => {
     e.preventDefault();
     if (!novoItem.titulo.trim()) return alert("O título é obrigatório!");
 
-    const nova = {
-      id: Date.now(),
+    const tarefasRef = ref(db, 'tarefas');
+    
+    // O push gera um ID único automático e salva os dados
+    push(tarefasRef, {
       titulo: novoItem.titulo,
       descricao: novoItem.descricao,
-      status: 'todo',
-      prioridade: novoItem.prioridade
-    };
+      status: 'todo', // Status inicial padrão
+      prioridade: novoItem.prioridade,
+      createdAt: new Date().toISOString()
+    });
 
-    setTarefas([...tarefas, nova]);
     setNovoItem({ titulo: '', descricao: '', prioridade: 'media' }); // Limpa form
     setModalAberto(false); // Fecha modal
   };
 
-  // Funções de Manipulação
+  // --- 3. MOVER TAREFA (UPDATE) ---
   const moverTarefa = (id, novoStatus) => {
-    setTarefas(tarefas.map(t => t.id === id ? { ...t, status: novoStatus } : t));
+    // Atualiza apenas o campo 'status' da tarefa específica
+    const tarefaRef = ref(db, `tarefas/${id}`);
+    update(tarefaRef, {
+      status: novoStatus
+    });
   };
 
+  // --- 4. EXCLUIR TAREFA (DELETE) ---
   const excluirTarefa = (id) => {
-    if(window.confirm("Remover esta tarefa?")) {
-      setTarefas(tarefas.filter(t => t.id !== id));
+    if(window.confirm("Remover esta tarefa permanentemente?")) {
+      const tarefaRef = ref(db, `tarefas/${id}`);
+      remove(tarefaRef);
     }
   };
 
@@ -64,7 +95,8 @@ export default function Tarefas() {
         </div>
         
         <div className="column-body">
-          {itens.length === 0 && <p className="empty-msg">Vazio</p>}
+          {loading && <p className="loading-text">Carregando...</p>}
+          {!loading && itens.length === 0 && <p className="empty-msg">Vazio</p>}
           
           {itens.map(item => (
             <div key={item.id} className={`task-card border-${item.prioridade}`}>

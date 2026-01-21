@@ -22,9 +22,10 @@ export default function Dashboard() {
     const unsubscribeTarefas = onValue(tarefasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Conta quantas tarefas existem (pode filtrar por status se quiser)
-        // Exemplo: Object.values(data).filter(t => t.status === 'pendente').length
-        setKpis(prev => ({ ...prev, tarefas: Object.keys(data).length }));
+        // --- CORREÇÃO AQUI ---
+        // Filtra para contar apenas o que NÃO está 'done' (concluído)
+        const pendentes = Object.values(data).filter(tarefa => tarefa.status !== 'done').length;
+        setKpis(prev => ({ ...prev, tarefas: pendentes }));
       } else {
         setKpis(prev => ({ ...prev, tarefas: 0 }));
       }
@@ -42,7 +43,7 @@ export default function Dashboard() {
     });
 
     // 3. Ouvinte de Férias (Lê uma data específica ou calcula)
-    const feriasRef = ref(db, 'ferias/proximoPeriodo'); // Ex: estrutura { inicio: "20/11/2026" }
+    const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
     const unsubscribeFerias = onValue(feriasRef, (snapshot) => {
       const data = snapshot.val();
       if (data && data.inicio) {
@@ -68,25 +69,28 @@ export default function Dashboard() {
   const stats = [
     { 
       titulo: 'Tarefas Pendentes', 
-      valor: kpis.tarefas.toString(), // Usa o valor do estado
+      valor: kpis.tarefas.toString(), 
       icon: '⚡', 
       cor: 'var(--neon-blue)' 
     },
     { 
       titulo: 'Solicitações', 
-      valor: kpis.solicitacoes.toString(), // Usa o valor do estado
+      valor: kpis.solicitacoes.toString(), 
       icon: '📂', 
       cor: 'var(--neon-purple)' 
     },
     { 
       titulo: 'Próx. Férias', 
-      valor: kpis.ferias, // Usa o valor do estado
+      valor: kpis.ferias, 
       icon: '🌴', 
       cor: 'var(--neon-green)' 
     },
   ];
 
   const acessos = [
+    // --- BOTÃO DE TAREFAS ---
+    { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
+    // ------------------------
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
@@ -127,7 +131,17 @@ export default function Dashboard() {
           {/* Cards de Estatísticas com Dados Reais */}
           <section className="stats-row">
             {stats.map((stat, i) => (
-              <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor }}>
+              <div 
+                key={i} 
+                className="glass-stat-card" 
+                style={{ 
+                  borderTopColor: stat.cor,
+                  // Adiciona cursor pointer se for o card de tarefas
+                  cursor: stat.titulo.includes('Tarefas') ? 'pointer' : 'default' 
+                }}
+                // Navega para tarefas ao clicar no card correspondente
+                onClick={() => stat.titulo.includes('Tarefas') && navigate('/tarefas')}
+              >
                 <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
                   {stat.icon}
                 </div>
