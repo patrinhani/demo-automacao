@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { db } from '../firebase'; // Importando o banco de dados
-import { ref, onValue } from 'firebase/database'; // Importando funções de leitura
+import { db, auth } from '../firebase'; // Importando auth e db
+import { ref, onValue } from 'firebase/database';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -17,55 +17,62 @@ export default function Dashboard() {
 
   // --- EFEITO PARA BUSCAR DADOS DO FIREBASE EM TEMPO REAL ---
   useEffect(() => {
-    // 1. Ouvinte de Tarefas
+    // Função auxiliar para verificar login
+    const user = auth.currentUser;
+    if (!user) return; // Se não tiver usuário, não busca nada (ou poderia redirecionar)
+
+    // 1. Ouvinte de Tarefas (COM FILTRO DE USUÁRIO)
     const tarefasRef = ref(db, 'tarefas');
     const unsubscribeTarefas = onValue(tarefasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // --- CORREÇÃO AQUI ---
-        // Filtra para contar apenas o que NÃO está 'done' (concluído)
-        const pendentes = Object.values(data).filter(tarefa => tarefa.status !== 'done').length;
-        setKpis(prev => ({ ...prev, tarefas: pendentes }));
+        // Filtra: (É do meu usuário?) E (Não está concluída?)
+        const minhasPendentes = Object.values(data).filter(t => 
+          t.userId === user.uid && t.status !== 'done'
+        ).length;
+        setKpis(prev => ({ ...prev, tarefas: minhasPendentes }));
       } else {
         setKpis(prev => ({ ...prev, tarefas: 0 }));
       }
     });
 
-    // 2. Ouvinte de Solicitações (Reembolsos)
+    // 2. Ouvinte de Solicitações (COM FILTRO DE USUÁRIO)
     const solicitacoesRef = ref(db, 'reembolsos');
     const unsubscribeSolicitacoes = onValue(solicitacoesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setKpis(prev => ({ ...prev, solicitacoes: Object.keys(data).length }));
+        // Filtra apenas as solicitações feitas por MIM
+        const minhasSolicitacoes = Object.values(data).filter(s => 
+          s.userId === user.uid
+        ).length;
+        setKpis(prev => ({ ...prev, solicitacoes: minhasSolicitacoes }));
       } else {
         setKpis(prev => ({ ...prev, solicitacoes: 0 }));
       }
     });
 
-    // 3. Ouvinte de Férias (Lê uma data específica ou calcula)
+    // 3. Ouvinte de Férias (Global ou Pessoal)
+    // Se quiser pessoal no futuro, a lógica é a mesma: salvar userId nas férias
     const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
     const unsubscribeFerias = onValue(feriasRef, (snapshot) => {
       const data = snapshot.val();
       if (data && data.inicio) {
-        // Formata para mostrar Mês/Ano ou Dia/Mês (ex: "Nov/26")
         const dateObj = new Date(data.inicio);
         const mesAno = dateObj.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         setKpis(prev => ({ ...prev, ferias: mesAno }));
       } else {
-        // Fallback se não tiver data marcada
         setKpis(prev => ({ ...prev, ferias: 'A definir' }));
       }
     });
 
-    // Limpa os ouvintes ao sair da tela para não pesar a memória
     return () => {
       unsubscribeTarefas();
       unsubscribeSolicitacoes();
       unsubscribeFerias();
     };
-  }, []);
+  }, []); // Executa ao montar a tela
 
-  // --- DADOS DO UI CONECTADOS AO ESTADO ---
+  // --- DADOS DO UI ---
   const stats = [
     { 
       titulo: 'Tarefas Pendentes', 
@@ -88,9 +95,7 @@ export default function Dashboard() {
   ];
 
   const acessos = [
-    // --- BOTÃO DE TAREFAS ---
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
-    // ------------------------
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
@@ -103,7 +108,6 @@ export default function Dashboard() {
 
   return (
     <div className="tech-layout">
-      {/* Background Dinâmico */}
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
       <div className="ambient-light light-3"></div>
@@ -120,6 +124,7 @@ export default function Dashboard() {
           
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
+              {/* Aqui você pode futuramente puxar o nome do auth também */}
               <span className="name">Guilherme Silva</span>
               <span className="role">Dev Fullstack</span>
             </div>
@@ -128,7 +133,6 @@ export default function Dashboard() {
         </header>
 
         <div className="tech-scroll-content">
-          {/* Cards de Estatísticas com Dados Reais */}
           <section className="stats-row">
             {stats.map((stat, i) => (
               <div 
@@ -136,10 +140,8 @@ export default function Dashboard() {
                 className="glass-stat-card" 
                 style={{ 
                   borderTopColor: stat.cor,
-                  // Adiciona cursor pointer se for o card de tarefas
                   cursor: stat.titulo.includes('Tarefas') ? 'pointer' : 'default' 
                 }}
-                // Navega para tarefas ao clicar no card correspondente
                 onClick={() => stat.titulo.includes('Tarefas') && navigate('/tarefas')}
               >
                 <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
@@ -153,7 +155,6 @@ export default function Dashboard() {
             ))}
           </section>
 
-          {/* Grid de Módulos */}
           <section className="modules-section">
             <h2 className="section-title">Acesso Rápido</h2>
             <div className="modules-grid-tech">

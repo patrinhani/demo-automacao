@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db, auth } from '../firebase'; // <--- 1. Importamos 'auth'
+import { ref, push } from 'firebase/database';
 import Logo from '../components/Logo';
-import './Solicitacao.css'; // Importa o novo CSS específico
+import './Solicitacao.css';
 
 export default function Solicitacao() {
   const navigate = useNavigate();
@@ -15,29 +17,54 @@ export default function Solicitacao() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const dadosEnvio = {
-      protocolo: `REQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000)}`,
-      valor: '150,00', 
-      data: new Date().toLocaleDateString()
+    const formData = new FormData(formRef.current);
+    const dados = Object.fromEntries(formData.entries());
+    const protocoloGerado = `REQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000)}`;
+
+    // VERIFICAÇÃO DE SEGURANÇA
+    const usuarioAtual = auth.currentUser;
+    if (!usuarioAtual) {
+      alert("Erro: Você não está logado!");
+      navigate('/');
+      return;
+    }
+
+    const novaSolicitacao = {
+      protocolo: protocoloGerado,
+      userId: usuarioAtual.uid, // <--- 2. Salvamos o ID de quem criou
+      emailUsuario: usuarioAtual.email, // Útil para auditoria
+      matricula: dados.matricula,
+      nome: dados.nome,
+      centro_custo: dados.centro_custo,
+      data_despesa: dados.data,
+      motivo: dados.motivo,
+      nome_arquivo: arquivoNome,
+      valor: '150,00',
+      status: 'em_analise',
+      data_criacao: new Date().toISOString()
     };
 
-    setTimeout(() => {
-      navigate('/status-reembolso', { state: dadosEnvio });
-    }, 1500);
+    try {
+      const reembolsosRef = ref(db, 'reembolsos');
+      await push(reembolsosRef, novaSolicitacao);
+      navigate('/status-reembolso', { state: novaSolicitacao });
+    } catch (error) {
+      console.error("Erro ao enviar:", error);
+      alert("Erro ao enviar solicitação.");
+      setLoading(false);
+    }
   };
 
+  // ... (O restante do return (HTML) permanece exatamente igual ao anterior)
   return (
     <div className="tech-layout-solicitacao">
-      
-      {/* LUZES DE FUNDO */}
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
 
-      {/* HEADER PADRONIZADO */}
       <header className="tech-header-glass">
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
@@ -50,7 +77,6 @@ export default function Solicitacao() {
       </header>
 
       <div className="solicitacao-container-tech">
-        
         <div className="page-header-tech">
           <h2>Nova Solicitação</h2>
           <p>Financeiro &gt; Reembolsos &gt; Preenchimento</p>
@@ -63,34 +89,17 @@ export default function Solicitacao() {
           </div>
 
           <form ref={formRef} onSubmit={handleSubmit}>
-            
-            {/* LINHA 1 */}
             <div className="form-row-tech">
               <div className="form-group-tech">
                 <label htmlFor="campo_matricula">Matrícula SAP *</label>
-                <input 
-                  className="input-tech"
-                  type="text" 
-                  name="matricula" 
-                  id="campo_matricula" 
-                  placeholder="Ex: 8000XXXX"
-                  required
-                />
+                <input className="input-tech" type="text" name="matricula" id="campo_matricula" placeholder="Ex: 8000XXXX" required />
               </div>
               <div className="form-group-tech" style={{flex: 2}}>
                 <label htmlFor="campo_nome">Nome Completo *</label>
-                <input 
-                  className="input-tech"
-                  type="text" 
-                  name="nome" 
-                  id="campo_nome" 
-                  placeholder="Seu nome completo"
-                  required
-                />
+                <input className="input-tech" type="text" name="nome" id="campo_nome" placeholder="Seu nome completo" required />
               </div>
             </div>
 
-            {/* LINHA 2 */}
             <div className="form-row-tech">
               <div className="form-group-tech">
                 <label htmlFor="campo_centro_custo">Centro de Custo *</label>
@@ -104,78 +113,30 @@ export default function Solicitacao() {
               </div>
               <div className="form-group-tech">
                 <label htmlFor="campo_data">Data da Despesa *</label>
-                <input 
-                  className="input-tech"
-                  type="date" 
-                  name="data" 
-                  id="campo_data" 
-                  required
-                />
+                <input className="input-tech" type="date" name="data" id="campo_data" required />
               </div>
             </div>
 
-            {/* LINHA 3 */}
             <div className="form-group-tech" style={{marginBottom: '20px'}}>
               <label htmlFor="campo_motivo">Justificativa da Despesa *</label>
-              <textarea 
-                className="textarea-tech"
-                name="motivo" 
-                id="campo_motivo" 
-                rows="4" 
-                placeholder="Descreva detalhadamente o motivo (transporte, alimentação com cliente, etc)..."
-                required
-              ></textarea>
+              <textarea className="textarea-tech" name="motivo" id="campo_motivo" rows="4" placeholder="Descreva detalhadamente o motivo..." required></textarea>
             </div>
 
-            {/* UPLOAD CUSTOMIZADO */}
             <div className="form-group-tech">
               <label>Comprovante Fiscal (PDF/XML) *</label>
               <div className="upload-box-tech">
-                <input 
-                  type="file" 
-                  name="arquivo" 
-                  id="campo_arquivo" 
-                  className="upload-input-hidden" 
-                  required 
-                  onChange={handleFileChange}
-                />
+                <input type="file" name="arquivo" id="campo_arquivo" className="upload-input-hidden" required onChange={handleFileChange} />
                 <div className="upload-label">
                   <span className="icon-upload">📂</span>
-                  {arquivoNome ? (
-                    <span style={{color: '#3b82f6'}}>{arquivoNome}</span>
-                  ) : (
-                    <>
-                      <span className="text-upload">Clique ou arraste o arquivo aqui</span>
-                      <span className="subtext-upload">Formatos: PDF, JPG, PNG (Máx 5MB)</span>
-                    </>
-                  )}
+                  {arquivoNome ? <span style={{color: '#3b82f6'}}>{arquivoNome}</span> : <span className="text-upload">Clique ou arraste o arquivo</span>}
                 </div>
               </div>
             </div>
 
-            {/* BOTÕES */}
             <div className="actions-tech">
-              <button 
-                type="button" 
-                className="btn-secondary-tech" 
-                onClick={() => {
-                  formRef.current.reset();
-                  setArquivoNome('');
-                }}
-                disabled={loading}
-              >
-                Limpar Campos
-              </button>
-              
-              <button 
-                type="submit" 
-                className="btn-primary-tech"
-                disabled={loading}
-              >
-                {loading ? 'Enviando ao SAP...' : 'Enviar Solicitação 🚀'}
-              </button>
+              <button type="button" className="btn-secondary-tech" onClick={() => { formRef.current.reset(); setArquivoNome(''); }} disabled={loading}>Limpar Campos</button>
+              <button type="submit" className="btn-primary-tech" disabled={loading}>{loading ? 'Enviando...' : 'Enviar Solicitação 🚀'}</button>
             </div>
-
           </form>
         </div>
       </div>

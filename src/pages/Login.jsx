@@ -1,32 +1,37 @@
-import { useState } from 'react'; // <--- Adicione useState
+import { useState } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from "firebase/auth"; // <--- Importe a função do Firebase
-import { auth } from '../firebase'; // <--- Importe o auth que acabamos de criar
+import { signInWithEmailAndPassword } from "firebase/auth"; // Importa a função de login
+import { auth } from '../firebase'; // Importa a conexão que configuramos
 import Logo from '../components/Logo';
 import '../App.css';
 import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState(''); // Estado para o email
-  const [password, setPassword] = useState(''); // Estado para a senha
-  const [error, setError] = useState(''); // Estado para erros visuais
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => { // <--- Transforme em async
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); // Limpa erros anteriores
+    setError('');
+    setLoading(true);
 
     try {
-      // Tenta logar no Firebase
+      // ESTA É A MÁGICA:
+      // Envia email/senha para o Firebase. Se estiver certo, o Firebase devolve o Usuário (e o ID dele)
+      // e salva isso na sessão do navegador automaticamente.
       await signInWithEmailAndPassword(auth, email, password);
       
-      // Se der certo, redireciona
       navigate('/dashboard');
     } catch (error) {
       console.error("Erro ao logar:", error);
-      // Tratamento básico de erros
-      if (error.code === 'auth/invalid-credential') {
+      setLoading(false);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
         setError('E-mail ou senha incorretos.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Muitas tentativas. Tente mais tarde.');
       } else {
         setError('Falha ao entrar. Verifique sua conexão.');
       }
@@ -53,7 +58,7 @@ export default function Login() {
               placeholder="usuario@techcorp.com" 
               className="glass-input"
               value={email}
-              onChange={(e) => setEmail(e.target.value)} // Atualiza estado
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -65,16 +70,15 @@ export default function Login() {
               placeholder="••••••••" 
               className="glass-input"
               value={password}
-              onChange={(e) => setPassword(e.target.value)} // Atualiza estado
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
-          {/* Exibe erro se houver, sem quebrar a tela */}
-          {error && <p style={{ color: '#ff4d4d', fontSize: '0.9rem', textAlign: 'center' }}>{error}</p>}
+          {error && <p style={{ color: '#ff4d4d', fontSize: '0.9rem', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
 
-          <button type="submit" className="btn-neon">
-            Entrar no Sistema
+          <button type="submit" className="btn-neon" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar no Sistema'}
           </button>
         </form>
 
