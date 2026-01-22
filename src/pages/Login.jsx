@@ -1,7 +1,8 @@
 import { useState } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from "firebase/auth"; // Importa a função de login
-import { auth } from '../firebase'; // Importa a conexão que configuramos
+import { signInWithEmailAndPassword } from "firebase/auth"; 
+import { ref, get } from "firebase/database"; // <--- Importamos 'get' e 'ref'
+import { auth, db } from '../firebase'; 
 import Logo from '../components/Logo';
 import '../App.css';
 import './Login.css';
@@ -19,19 +20,29 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // ESTA É A MÁGICA:
-      // Envia email/senha para o Firebase. Se estiver certo, o Firebase devolve o Usuário (e o ID dele)
-      // e salva isso na sessão do navegador automaticamente.
-      await signInWithEmailAndPassword(auth, email, password);
-      
-      navigate('/dashboard');
+      // 1. Faz o Login na Autenticação
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Consulta o Banco de Dados para ver se precisa trocar senha
+      const userRef = ref(db, `users/${user.uid}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      // 3. Verifica a "Bandeira"
+      if (userData && userData.forceChangePassword === true) {
+        // Se for verdade, manda para a tela de troca obrigatória
+        navigate('/trocar-senha');
+      } else {
+        // Se não, segue vida normal para a Dashboard
+        navigate('/dashboard');
+      }
+
     } catch (error) {
       console.error("Erro ao logar:", error);
       setLoading(false);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
         setError('E-mail ou senha incorretos.');
-      } else if (error.code === 'auth/too-many-requests') {
-        setError('Muitas tentativas. Tente mais tarde.');
       } else {
         setError('Falha ao entrar. Verifique sua conexão.');
       }
@@ -75,10 +86,10 @@ export default function Login() {
             />
           </div>
 
-          {error && <p style={{ color: '#ff4d4d', fontSize: '0.9rem', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
+          {error && <p className="error-msg">{error}</p>}
 
           <button type="submit" className="btn-neon" disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar no Sistema'}
+            {loading ? 'Verificando...' : 'Entrar no Sistema'}
           </button>
         </form>
 

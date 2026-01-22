@@ -1,100 +1,128 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { db, auth } from '../firebase'; // Importando auth e db
+import { db, auth } from '../firebase';
 import { ref, onValue } from 'firebase/database';
+import { onAuthStateChanged } from "firebase/auth"; // <--- IMPORTANTE: Importar isso
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // --- ESTADO PARA OS DADOS REAIS (KPIs) ---
+  // Dados do Perfil
+  const [userProfile, setUserProfile] = useState({
+    nome: 'Carregando...',
+    cargo: '...',
+    role: 'colaborador'
+  });
+
+  // KPIs
   const [kpis, setKpis] = useState({
     tarefas: 0,
     solicitacoes: 0,
     ferias: '---'
   });
 
-  // --- EFEITO PARA BUSCAR DADOS DO FIREBASE EM TEMPO REAL ---
   useEffect(() => {
-    // Função auxiliar para verificar login
-    const user = auth.currentUser;
-    if (!user) return; // Se não tiver usuário, não busca nada (ou poderia redirecionar)
+    // Array para guardar as funções de limpeza (desligar ouvintes)
+    let dbUnsubscribes = [];
 
-    // 1. Ouvinte de Tarefas (COM FILTRO DE USUÁRIO)
-    const tarefasRef = ref(db, 'tarefas');
-    const unsubscribeTarefas = onValue(tarefasRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Filtra: (É do meu usuário?) E (Não está concluída?)
-        const minhasPendentes = Object.values(data).filter(t => 
-          t.userId === user.uid && t.status !== 'done'
-        ).length;
-        setKpis(prev => ({ ...prev, tarefas: minhasPendentes }));
+    // 1. VIGIA A AUTENTICAÇÃO
+    // O onAuthStateChanged espera o Firebase carregar o usuário antes de rodar
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      
+      if (user) {
+        // --- AGORA É SEGURO CARREGAR OS DADOS ---
+
+        // A. Busca Perfil
+        const userRef = ref(db, `users/${user.uid}`);
+        const unsubUser = onValue(userRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            setUserProfile({
+              nome: data.nome || 'Usuário',
+              cargo: data.cargo || 'Cargo não definido',
+              role: data.role || 'colaborador'
+            });
+          }
+        });
+        dbUnsubscribes.push(unsubUser);
+
+        // B. Busca Tarefas (Filtradas)
+        const tarefasRef = ref(db, 'tarefas');
+        const unsubTarefas = onValue(tarefasRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            const minhasPendentes = Object.values(data).filter(t => 
+              t.userId === user.uid && t.status !== 'done'
+            ).length;
+            setKpis(prev => ({ ...prev, tarefas: minhasPendentes }));
+          } else {
+            setKpis(prev => ({ ...prev, tarefas: 0 }));
+          }
+        });
+        dbUnsubscribes.push(unsubTarefas);
+
+        // C. Busca Solicitações (Filtradas)
+        const solicitacoesRef = ref(db, 'reembolsos');
+        const unsubSolicitacoes = onValue(solicitacoesRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            const minhasSolicitacoes = Object.values(data).filter(s => 
+              s.userId === user.uid
+            ).length;
+            setKpis(prev => ({ ...prev, solicitacoes: minhasSolicitacoes }));
+          } else {
+            setKpis(prev => ({ ...prev, solicitacoes: 0 }));
+          }
+        });
+        dbUnsubscribes.push(unsubSolicitacoes);
+
+        // D. Busca Férias
+        const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
+        const unsubFerias = onValue(feriasRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data && data.inicio) {
+            const dateObj = new Date(data.inicio);
+            const mesAno = dateObj.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            setKpis(prev => ({ ...prev, ferias: mesAno }));
+          } else {
+            setKpis(prev => ({ ...prev, ferias: 'A definir' }));
+          }
+        });
+        dbUnsubscribes.push(unsubFerias);
+
       } else {
-        setKpis(prev => ({ ...prev, tarefas: 0 }));
+        // Se não tiver usuário (deslogou), zera tudo ou redireciona
+        setUserProfile({ nome: '...', cargo: '...', role: 'colaborador' });
+        // Opcional: navigate('/');
       }
     });
 
-    // 2. Ouvinte de Solicitações (COM FILTRO DE USUÁRIO)
-    const solicitacoesRef = ref(db, 'reembolsos');
-    const unsubscribeSolicitacoes = onValue(solicitacoesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Filtra apenas as solicitações feitas por MIM
-        const minhasSolicitacoes = Object.values(data).filter(s => 
-          s.userId === user.uid
-        ).length;
-        setKpis(prev => ({ ...prev, solicitacoes: minhasSolicitacoes }));
-      } else {
-        setKpis(prev => ({ ...prev, solicitacoes: 0 }));
-      }
-    });
-
-    // 3. Ouvinte de Férias (Global ou Pessoal)
-    // Se quiser pessoal no futuro, a lógica é a mesma: salvar userId nas férias
-    const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
-    const unsubscribeFerias = onValue(feriasRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data && data.inicio) {
-        const dateObj = new Date(data.inicio);
-        const mesAno = dateObj.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-        setKpis(prev => ({ ...prev, ferias: mesAno }));
-      } else {
-        setKpis(prev => ({ ...prev, ferias: 'A definir' }));
-      }
-    });
-
+    // LIMPEZA: Quando sair da tela, desliga todos os ouvintes para não pesar o site
     return () => {
-      unsubscribeTarefas();
-      unsubscribeSolicitacoes();
-      unsubscribeFerias();
+      authUnsubscribe(); // Para de vigiar a autenticação
+      dbUnsubscribes.forEach(unsub => unsub()); // Para de vigiar o banco de dados
     };
-  }, []); // Executa ao montar a tela
+  }, [navigate]); // Array de dependências
 
-  // --- DADOS DO UI ---
+  // --- UI ---
   const stats = [
-    { 
-      titulo: 'Tarefas Pendentes', 
-      valor: kpis.tarefas.toString(), 
-      icon: '⚡', 
-      cor: 'var(--neon-blue)' 
-    },
-    { 
-      titulo: 'Solicitações', 
-      valor: kpis.solicitacoes.toString(), 
-      icon: '📂', 
-      cor: 'var(--neon-purple)' 
-    },
-    { 
-      titulo: 'Próx. Férias', 
-      valor: kpis.ferias, 
-      icon: '🌴', 
-      cor: 'var(--neon-green)' 
-    },
+    { titulo: 'Tarefas Pendentes', valor: kpis.tarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)' },
+    { titulo: 'Solicitações', valor: kpis.solicitacoes.toString(), icon: '📂', cor: 'var(--neon-purple)' },
+    { titulo: 'Próx. Férias', valor: kpis.ferias, icon: '🌴', cor: 'var(--neon-green)' },
   ];
 
+  // Lógica do Botão Admin
+  const ehAdmin = userProfile.role === 'admin' || userProfile.role === 'gestor' || (userProfile.cargo && userProfile.cargo.toLowerCase().includes('gestor'));
+
   const acessos = [
+    ...(ehAdmin ? [{ 
+      titulo: 'Criar Usuário', 
+      desc: 'Área do Gestor', 
+      icon: '🔐', 
+      rota: '/cadastro-usuario' 
+    }] : []),
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
@@ -124,11 +152,12 @@ export default function Dashboard() {
           
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
-              {/* Aqui você pode futuramente puxar o nome do auth também */}
-              <span className="name">Guilherme Silva</span>
-              <span className="role">Dev Fullstack</span>
+              <span className="name">{userProfile.nome}</span>
+              <span className="role">{userProfile.cargo}</span>
             </div>
-            <div className="profile-avatar">GS</div>
+            <div className="profile-avatar">
+              {userProfile.nome ? userProfile.nome.substring(0,2).toUpperCase() : 'GS'}
+            </div>
           </div>
         </header>
 
