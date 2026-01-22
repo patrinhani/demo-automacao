@@ -1,118 +1,144 @@
-/* src/components/Sidebar.css */
-
-.sidebar {
+/* --- ESTRUTURA PRINCIPAL --- */
+.tech-sidebar {
   width: 260px;
-  background: rgba(15, 23, 42, 0.4); 
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  
-  /* Borda direita contínua */
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  
-  color: #fff;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Garante altura total */
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
-  flex-shrink: 0;
   z-index: 100;
+  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3);
 }
 
+/* --- HEADER (LOGO) --- */
+/* CORREÇÃO: Usamos padding-left igual ao do menu para alinhar */
 .sidebar-header {
-  /* --- CORREÇÃO DE ALINHAMENTO --- */
-  height: 80px; /* Mesma altura exata do .tech-header do Dashboard */
-  box-sizing: border-box; /* Garante que padding não aumente a altura */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* Mesma cor de borda do header */
-  
+  min-height: 80px; 
   display: flex;
-  justify-content: center;
   align-items: center;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.02);
+  /* Alinha à esquerda, mas com o mesmo recuo do menu */
+  padding-left: 1.8rem; 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* --- NAVEGAÇÃO COM SCROLL --- */
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem 0;
-  
-  /* Scrollbar Fina (Firefox) */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  overflow-x: hidden;
+  /* Padding lateral ajustado para centralizar visualmente os itens */
+  padding: 1.5rem 1rem; 
 }
 
-/* Scrollbar Fina (Chrome/Edge) */
-.sidebar-nav::-webkit-scrollbar {
-  width: 4px;
+/* Custom Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
 }
-.sidebar-nav::-webkit-scrollbar-track {
+.custom-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-.sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Divisores e Itens */
-.nav-divider {
-  padding: 1rem 1.5rem 0.5rem;
-  font-size: 0.7rem;
+/* --- SEÇÕES E TÍTULOS --- */
+.nav-section {
+  margin-bottom: 1.5rem;
+}
+
+.nav-title {
+  display: block;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: #64748b;
   font-weight: 700;
-  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+  padding-left: 0.8rem; /* Alinha o título com o texto dos botões */
+  letter-spacing: 0.5px;
 }
 
+.admin-section .nav-title {
+  color: #3b82f6;
+}
+.admin-section .nav-item {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px dashed rgba(59, 130, 246, 0.2);
+}
+
+/* --- BOTÕES DO MENU --- */
 .nav-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1.5rem;
-  background: none;
+  gap: 12px;
+  padding: 0.8rem;
+  background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  text-align: left;
+  border-radius: 8px;
+  color: #cbd5e1;
   font-size: 0.95rem;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  margin-bottom: 4px;
+  text-decoration: none;
 }
 
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  padding-left: 1.8rem;
+  transform: translateX(3px);
 }
 
 .nav-item.active {
-  background: rgba(59, 130, 246, 0.15);
-  color: #fff;
-  border-left-color: #3b82f6;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
+  color: #60a5fa;
+  border-left: 3px solid #3b82f6;
+  padding-left: calc(0.8rem - 3px); /* Compensa a borda */
   font-weight: 600;
 }
 
-.nav-icon {
-  font-size: 1.2rem;
-  width: 24px;
+.nav-item .icon {
+  font-size: 1.1rem;
+  min-width: 24px;
   text-align: center;
-  filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+/* --- RODAPÉ --- */
 .sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 1.5rem 1rem; 
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.nav-item.logout {
-  color: #fda4af;
+.btn-logout {
+  width: 100%;
+  padding: 0.8rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
-.nav-item.logout:hover {
-  background: rgba(255, 68, 68, 0.1);
-  color: #ff5252;
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fff;
+  border-color: #ef4444;
 }

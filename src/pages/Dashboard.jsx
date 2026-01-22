@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db, auth } from '../firebase';
 import { ref, onValue } from 'firebase/database';
-import { onAuthStateChanged } from "firebase/auth"; // <--- IMPORTANTE: Importar isso
+import { onAuthStateChanged } from "firebase/auth"; // Importante para o carregamento
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -16,7 +16,7 @@ export default function Dashboard() {
     role: 'colaborador'
   });
 
-  // KPIs
+  // KPIs (Indicadores)
   const [kpis, setKpis] = useState({
     tarefas: 0,
     solicitacoes: 0,
@@ -24,17 +24,13 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    // Array para guardar as funções de limpeza (desligar ouvintes)
     let dbUnsubscribes = [];
 
-    // 1. VIGIA A AUTENTICAÇÃO
-    // O onAuthStateChanged espera o Firebase carregar o usuário antes de rodar
+    // 1. VIGIA A AUTENTICAÇÃO (Evita carregamento infinito)
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
       
       if (user) {
-        // --- AGORA É SEGURO CARREGAR OS DADOS ---
-
-        // A. Busca Perfil
+        // --- A. Busca Perfil ---
         const userRef = ref(db, `users/${user.uid}`);
         const unsubUser = onValue(userRef, (snapshot) => {
           const data = snapshot.val();
@@ -48,7 +44,7 @@ export default function Dashboard() {
         });
         dbUnsubscribes.push(unsubUser);
 
-        // B. Busca Tarefas (Filtradas)
+        // --- B. Busca Tarefas (Filtradas) ---
         const tarefasRef = ref(db, 'tarefas');
         const unsubTarefas = onValue(tarefasRef, (snapshot) => {
           const data = snapshot.val();
@@ -63,7 +59,7 @@ export default function Dashboard() {
         });
         dbUnsubscribes.push(unsubTarefas);
 
-        // C. Busca Solicitações (Filtradas)
+        // --- C. Busca Solicitações (Filtradas) ---
         const solicitacoesRef = ref(db, 'reembolsos');
         const unsubSolicitacoes = onValue(solicitacoesRef, (snapshot) => {
           const data = snapshot.val();
@@ -78,7 +74,7 @@ export default function Dashboard() {
         });
         dbUnsubscribes.push(unsubSolicitacoes);
 
-        // D. Busca Férias
+        // --- D. Busca Férias ---
         const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
         const unsubFerias = onValue(feriasRef, (snapshot) => {
           const data = snapshot.val();
@@ -93,40 +89,51 @@ export default function Dashboard() {
         dbUnsubscribes.push(unsubFerias);
 
       } else {
-        // Se não tiver usuário (deslogou), zera tudo ou redireciona
+        // Se deslogou
         setUserProfile({ nome: '...', cargo: '...', role: 'colaborador' });
-        // Opcional: navigate('/');
       }
     });
 
-    // LIMPEZA: Quando sair da tela, desliga todos os ouvintes para não pesar o site
+    // LIMPEZA
     return () => {
-      authUnsubscribe(); // Para de vigiar a autenticação
-      dbUnsubscribes.forEach(unsub => unsub()); // Para de vigiar o banco de dados
+      authUnsubscribe();
+      dbUnsubscribes.forEach(unsub => unsub());
     };
-  }, [navigate]); // Array de dependências
+  }, [navigate]);
 
-  // --- UI ---
+  // --- CARDS DE ESTATÍSTICA ---
   const stats = [
     { titulo: 'Tarefas Pendentes', valor: kpis.tarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)' },
     { titulo: 'Solicitações', valor: kpis.solicitacoes.toString(), icon: '📂', cor: 'var(--neon-purple)' },
     { titulo: 'Próx. Férias', valor: kpis.ferias, icon: '🌴', cor: 'var(--neon-green)' },
   ];
 
-  // Lógica do Botão Admin
+  // --- LÓGICA DE PERMISSÃO ---
   const ehAdmin = userProfile.role === 'admin' || userProfile.role === 'gestor' || (userProfile.cargo && userProfile.cargo.toLowerCase().includes('gestor'));
 
+  // --- MENU DE ACESSO RÁPIDO ---
   const acessos = [
-    ...(ehAdmin ? [{ 
-      titulo: 'Criar Usuário', 
-      desc: 'Área do Gestor', 
-      icon: '🔐', 
-      rota: '/cadastro-usuario' 
-    }] : []),
+    // BLOCO EXCLUSIVO DO GESTOR
+    ...(ehAdmin ? [
+      { 
+        titulo: 'Criar Usuário', 
+        desc: 'Cadastrar Colaborador', 
+        icon: '🔐', 
+        rota: '/cadastro-usuario' 
+      },
+      { 
+        titulo: 'Aprovar Reembolsos', 
+        desc: 'Central de Aprovações', 
+        icon: '💰', 
+        rota: '/gestao-reembolsos' 
+      }
+    ] : []),
+    
+    // BLOCO COMUM
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
+    { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
-    { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
     { titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },
     { titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },
     { titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
