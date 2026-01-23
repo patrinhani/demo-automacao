@@ -74,8 +74,15 @@ export default function Sidebar() {
         <div className="nav-section">
           <span className="nav-title">Financeiro</span>
           <button className={`nav-item ${isActive('/solicitacao')}`} onClick={() => navigate('/solicitacao')}>
-            <span className="icon">💸</span> Reembolsos
+            <span className="icon">💸</span> Solicitar Reembolso
           </button>
+          
+          {/* --- NOVO BOTÃO ADICIONADO --- */}
+          <button className={`nav-item ${isActive('/status-reembolso')}`} onClick={() => navigate('/status-reembolso')}>
+            <span className="icon">📊</span> Meus Reembolsos
+          </button>
+          {/* ----------------------------- */}
+
           <button className={`nav-item ${isActive('/holerite')}`} onClick={() => navigate('/holerite')}>
             <span className="icon">📄</span> Holerite
           </button>

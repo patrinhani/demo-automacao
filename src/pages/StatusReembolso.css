@@ -332,3 +332,84 @@
   .actions-tech { flex-direction: column; }
   .btn-primary-tech, .btn-secondary-tech { width: 100%; }
 }
+
+/* Adicionar ao StatusReembolso.css */
+
+.lista-cards-tech {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.card-resumo-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-resumo-glass:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.protocolo-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.status-pill {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+.status-pill.em_analise { background: rgba(255, 165, 0, 0.2); color: orange; }
+.status-pill.aprovado { background: rgba(0, 255, 0, 0.2); color: #0f0; }
+.status-pill.pago { background: rgba(0, 243, 255, 0.2); color: var(--neon-blue); }
+
+.card-body p {
+  color: #ccc;
+  margin: 5px 0;
+  font-size: 0.95rem;
+}
+
+.valor-destaque {
+  font-size: 1.4rem;
+  color: #fff !important;
+  font-weight: bold;
+  margin-top: 10px !important;
+}
+
+.card-footer {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.8rem;
+  color: var(--neon-blue);
+  text-align: right;
+}
+
+.empty-state-tech {
+  text-align: center;
+  color: #aaa;
+  margin-top: 50px;
+}
