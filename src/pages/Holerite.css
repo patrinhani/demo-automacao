@@ -1,7 +1,7 @@
 /* src/pages/Holerite.css */
 
 /* =========================================
-   HOLERITE - TEMA TECH GLASS
+   HOLERITE - TEMA TECH GLASS (FINAL WIDE)
    ========================================= */
 
 .tech-holerite-layout {
@@ -13,8 +13,8 @@
   
   --neon-blue: #3b82f6;
   --neon-green: #10b981;
-  --neon-yellow: #f59e0b; /* Para adiantamento */
-  --neon-purple: #8b5cf6;
+  --neon-yellow: #f59e0b;
+  --neon-red: #ef4444;
 
   background-color: var(--bg-dark);
   color: var(--text-primary);
@@ -28,12 +28,13 @@
 
 /* --- LUZES DE FUNDO --- */
 .ambient-light {
-  position: absolute;
+  position: fixed;
   border-radius: 50%;
   filter: blur(90px);
   z-index: 0;
   opacity: 0.4;
   animation: floatHolerite 20s infinite ease-in-out alternate;
+  pointer-events: none;
 }
 .light-1 { top: 20%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-green), transparent 70%); }
 .light-2 { bottom: -10%; right: -5%; width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-blue), transparent 70%); animation-delay: -5s; }
@@ -50,10 +51,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 40px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
-  z-index: 10;
+  z-index: 100;
   position: sticky;
   top: 0;
 }
@@ -69,7 +70,7 @@
 
 /* --- CONTAINER PRINCIPAL --- */
 .holerite-container-tech {
-  flex: 1; max-width: 1000px; margin: 0 auto; padding: 40px 20px; z-index: 1; width: 100%;
+  flex: 1; max-width: 1000px; margin: 0 auto; padding: 40px 20px; z-index: 1; width: 100%; box-sizing: border-box;
 }
 
 .page-header-row {
@@ -82,7 +83,6 @@
 }
 .page-header-tech p { color: var(--text-secondary); margin: 0; }
 
-/* Botão de Privacidade */
 .privacy-toggle-tech {
   background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
 }
@@ -95,25 +95,22 @@
 
 .filter-group label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
 .filter-group select {
-  background: #0f172a; border: 1px solid var(--glass-border); color: #fff; padding: 10px 15px; border-radius: 8px; min-width: 160px; outline: none; transition: 0.3s;
+  background: #0f172a; border: 1px solid var(--glass-border); color: #fff; padding: 10px 15px; border-radius: 8px; min-width: 160px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box;
 }
 .filter-group select:focus { border-color: var(--neon-blue); }
 
 /* --- LISTA DE CARDS --- */
-.holerite-list { display: flex; flex-direction: column; gap: 20px; }
+.holerite-list { display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
 
 .holerite-card-tech {
   background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s; position: relative; overflow: hidden;
 }
 .holerite-card-tech:hover { transform: translateX(5px); background: rgba(30, 41, 59, 0.9); border-color: rgba(255,255,255,0.2); }
 
-/* Borda lateral colorida (Indicador de Tipo) */
-.holerite-card-tech::before {
-  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-}
+/* Borda lateral colorida */
+.holerite-card-tech::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
 .holerite-card-tech.mensal::before { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
 .holerite-card-tech.adiantamento::before { background: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
-.holerite-card-tech.decimo::before { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
 
 .card-info h4 { margin: 0 0 5px 0; color: #fff; font-size: 1.1rem; }
 .card-info span { font-size: 0.9rem; color: var(--text-secondary); display: block; }
@@ -135,54 +132,64 @@
   background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); width: 45px; height: 45px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; color: var(--text-secondary);
 }
 .btn-icon-tech:hover { background: var(--neon-blue); color: #fff; border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+.btn-icon-tech.disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* --- MODAL DETALHES --- */
+/* --- MODAL DETALHES (LARGURA AUMENTADA) --- */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
-.modal-content-tech {
-  background: #1e293b; border: 1px solid var(--glass-border); border-radius: 20px; padding: 30px; width: 90%; max-width: 700px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); color: #fff; animation: slideIn 0.3s ease-out;
+
+.modal-content-techH {
+  background: #1e293b;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 30px;
+  
+  /* --- AQUI ESTÁ A MUDANÇA: MAIS LARGO --- */
+  width: 95%;          
+  max-width: 800px;   /* Aumentado de 700px para 1000px */
+  /* ---------------------------------------- */
+  
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  color: #fff;
+  animation: slideIn 0.3s ease-out;
 }
+
 @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .modal-header-tech { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
 .modal-header-tech h3 { margin: 0; color: var(--neon-blue); }
 .modal-close-tech { background: none; border: none; color: var(--text-secondary); font-size: 2rem; cursor: pointer; line-height: 1; }
 
+.modal-details-summary {
+  background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;
+}
+
+/* Tabela Ajustada */
 .payslip-table-tech { width: 100%; border-collapse: collapse; margin-top: 15px; }
-.payslip-table-tech th { text-align: left; padding: 10px; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; text-transform: uppercase; }
-.payslip-table-tech td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
+.payslip-table-tech th { text-align: left; padding: 12px; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; text-transform: uppercase; white-space: nowrap; }
+.payslip-table-tech td { padding: 15px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; white-space: nowrap; }
 .text-right { text-align: right; }
 .text-success { color: var(--neon-green); }
 .text-danger { color: var(--neon-red); }
 
-.modal-actions-tech { display: flex; justify-content: flex-end; margin-top: 20px; }
-.btn-close-modal { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+.modal-actions-tech { display: flex; justify-content: flex-end; margin-top: 25px; border-top: 1px solid var(--glass-border); padding-top: 20px; }
+.btn-close-modal { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px 25px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 600; }
 .btn-close-modal:hover { border-color: var(--neon-blue); background: rgba(59, 130, 246, 0.1); }
 
 
 /* =================================================================
-   ÁREA DE IMPRESSÃO (MANTIDA ORIGINAL - FUNDO BRANCO)
-   Não altere nada aqui para manter o PDF correto.
+   ÁREA DE IMPRESSÃO (PDF) - Oculta na tela
    ================================================================= */
-.print-hidden-wrapper {
-  position: absolute;
-  top: -10000px;
-  left: 0;
-}
+.print-hidden-wrapper { position: absolute; top: -10000px; left: 0; }
 
 .print-holerite-page {
-  width: 210mm;
-  min-height: 297mm;
-  padding: 15mm;
-  background: white; /* Importante: Fundo branco para PDF */
-  color: black;      /* Importante: Tinta preta */
-  font-family: 'Courier New', Courier, monospace;
-  box-sizing: border-box;
-  font-size: 10pt;
+  width: 210mm; min-height: 297mm; padding: 15mm;
+  background: white; color: black; font-family: 'Courier New', monospace;
+  box-sizing: border-box; font-size: 10pt;
 }
 
-/* Bordas e Caixas Padrão Holerite */
+/* Estilos internos do PDF */
 .holerite-box { border: 1px solid #000; margin-bottom: 5px; padding: 5px; }
 .holerite-header-top { display: flex; justify-content: space-between; }
 .holerite-title { text-align: right; font-weight: bold; text-transform: uppercase; }
@@ -190,24 +197,33 @@
 .holerite-label { font-size: 8pt; font-weight: bold; display: block; margin-bottom: 2px; }
 .holerite-value { font-size: 10pt; display: block; text-transform: uppercase; }
 
-/* Tabela Principal do PDF */
 .holerite-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; border: 1px solid #000; }
 .holerite-table th { border-bottom: 1px solid #000; border-right: 1px solid #000; text-align: left; padding: 3px 5px; font-size: 9pt; background: #eee; font-weight: bold; }
 .holerite-table td { padding: 2px 5px; border-right: 1px solid #000; font-size: 9pt; }
 .holerite-table td:last-child, .holerite-table th:last-child { border-right: none; }
 
-/* Área de Totais do PDF */
 .holerite-totals { display: flex; border: 1px solid #000; margin-bottom: 5px; }
 .holerite-total-box { flex: 1; padding: 5px; border-right: 1px solid #000; background: #f9f9f9; }
 .holerite-total-box:last-child { border-right: none; }
 .total-label { font-size: 8pt; font-weight: bold; display: block; }
 .total-value { font-size: 11pt; font-weight: bold; text-align: right; display: block; margin-top: 5px; }
 
-/* Rodapé */
 .holerite-footer-bases { border: 1px solid #000; display: flex; justify-content: space-between; padding: 5px; margin-bottom: 30px; }
 .base-item { text-align: right; }
 .base-item span { display: block; }
 .base-label { font-size: 7pt; font-weight: bold; }
 .base-value { font-size: 9pt; }
+
 .holerite-msg { font-size: 8pt; margin-bottom: 50px; font-style: italic; }
 .holerite-sign-area { border-top: 1px solid #000; width: 60%; margin: 0 auto; text-align: center; padding-top: 5px; font-size: 9pt; }
+
+@media (max-width: 768px) {
+  .holerite-card-tech { flex-direction: column; align-items: flex-start; gap: 15px; }
+  .card-values { text-align: left; }
+  .card-actions { width: 100%; justify-content: flex-end; }
+  .filter-bar-tech { flex-direction: column; align-items: stretch; }
+  
+  /* No mobile, voltamos para quase tela cheia */
+  .modal-content-tech { width: 95%; max-width: 95%; padding: 20px; }
+  .payslip-table-tech { display: block; overflow-x: auto; } /* Permite scroll horizontal SOMENTE no mobile se precisar */
+}

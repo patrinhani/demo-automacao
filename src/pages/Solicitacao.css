@@ -1,7 +1,7 @@
 /* src/pages/Solicitacao.css */
 
 /* =========================================
-   SOLICITAÇÃO TECHCORP - ESTILO DARK/NEON
+   SOLICITAÇÃO TECHCORP - FINAL FIXED SCROLL
    ========================================= */
 
 .tech-layout-solicitacao {
@@ -17,21 +17,27 @@
   --neon-orange: #f59e0b;
 
   background-color: var(--bg-dark);
-  min-height: 100vh;
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
-  position: relative;
+
+  /* --- CORREÇÃO DO SCROLL --- */
+  /* Fixa o layout na tela inteira e gerencia o scroll internamente */
+  position: fixed; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* A barra de rolagem aparece aqui */
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  z-index: 1;
 }
 
 /* --- Luzes de Fundo (Fixed) --- */
 .ambient-light {
-  position: fixed;
+  position: fixed; /* Garante que as luzes não rolem */
   border-radius: 50%;
   filter: blur(80px);
-  z-index: 0;
+  z-index: -1; /* Joga para o fundo absoluto */
   opacity: 0.4;
   animation: floatForm 20s infinite ease-in-out alternate;
   pointer-events: none;
@@ -51,14 +57,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 40px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.9); /* Um pouco mais opaco para leitura */
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
-  position: fixed;
+  
+  position: fixed; /* Fixo no topo da viewport */
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 50;
+  z-index: 100; /* Acima de tudo */
   box-sizing: border-box;
 }
 
@@ -71,17 +78,21 @@
 }
 .tech-back-btn:hover { border-color: var(--neon-blue); color: #fff; background: rgba(59, 130, 246, 0.1); }
 
-/* --- Container Principal --- */
+/* --- Container Principal (ONDE O CONTEÚDO VIVE) --- */
 .solicitacao-container-tech {
-  flex: 1;
+  width: 60%;
   max-width: 1000px;
   margin: 0 auto;
-  padding: 40px 20px;
-  z-index: 1;
-  width: 100%;
+  padding: 0 20px;
   box-sizing: border-box;
-  padding-top: 120px; /* Espaço para o header */
-  padding-bottom: 60px;
+  position: relative;
+  z-index: 1;
+
+  /* Espaço vital para o Header Fixo */
+  padding-top: 120px; 
+  
+  /* A CORREÇÃO MÁGICA: Espaço extra no final para garantir que o scroll vá até o fim */
+  padding-bottom: 150px; 
 }
 
 .page-header-tech { margin-bottom: 30px; }
@@ -100,6 +111,9 @@
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  
+  /* Garante que o card não estoure a largura no mobile */
+  max-width: 100%;
 }
 
 .alert-box-tech {
@@ -148,7 +162,7 @@
   font-family: inherit;
   transition: 0.3s;
   outline: none;
-  box-sizing: border-box; /* Garante que padding não quebre o layout */
+  box-sizing: border-box;
 }
 
 .input-tech:focus, .select-tech:focus, .textarea-tech:focus {
@@ -241,4 +255,9 @@
   .form-card-glass { padding: 25px; }
   .actions-tech { flex-direction: column-reverse; }
   .btn-primary-tech, .btn-secondary-tech { width: 100%; }
+  
+  /* Ajuste extra para mobile */
+  .solicitacao-container-tech {
+    padding-bottom: 200px;
+  }
 }

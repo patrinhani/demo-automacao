@@ -67,13 +67,13 @@
 /* --- CONTAINER PRINCIPAL --- */
 .gerador-container-tech {
   flex: 1; 
-  max-width: 800px; /* Largura focada para formulário */
+  max-width: 800px; 
   margin: 0 auto; 
   padding: 40px 20px; 
   width: 100%; 
   box-sizing: border-box;
   z-index: 1;
-  padding-top: 120px; /* Espaço para o header fixo */
+  padding-top: 120px;
 }
 
 .page-header-tech { margin-bottom: 30px; text-align: center; }
@@ -100,18 +100,15 @@
 .form-group-tech input:focus, .form-group-tech textarea:focus { border-color: var(--neon-blue); background: rgba(15, 23, 42, 0.8); }
 
 .btn-gerar-tech {
-  width: 100%; padding: 16px; background: var(--neon-green); color: #0f172a;
-  border: none; border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+  width: 100%; padding: 16px; background: transparent; color: var(--neon-green);
+  border: 1px solid var(--neon-green); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
   cursor: pointer; transition: 0.3s; font-size: 1rem; margin-top: 10px;
 }
-/* .btn-gerar-tech:hover { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); transform: translateY(-2px); background: #34d399; }
-.btn-gerar-tech:disabled { opacity: 0.6; cursor: wait; transform: none; } */
-.btn-gerar-tech { background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); }
 .btn-gerar-tech:hover { background: rgba(16, 185, 129, 0.1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+.btn-gerar-tech:disabled { opacity: 0.6; cursor: wait; box-shadow: none; }
 
 /* =========================================
    ESTILO DA "FOLHA DE PAPEL" (PDF TEMPLATE)
-   Esses estilos são aplicados apenas dentro do div oculto
    ========================================= */
 
 .pdf-hidden-template {
@@ -122,7 +119,6 @@
   visibility: visible;
 }
 
-/* Simula uma folha A4 real */
 .invoice-paper {
   width: 210mm;
   min-height: 297mm;
@@ -130,11 +126,10 @@
   padding: 15mm;
   box-sizing: border-box;
   font-family: 'Helvetica', 'Arial', sans-serif;
-  color: #000; /* Força cor preta para impressão */
+  color: #000;
   border: 1px solid #ddd;
 }
 
-/* Estilos internos da NFE */
 .nfe-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
 .nfe-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 5px; }
 .nfe-subtitle { font-size: 0.8rem; color: #555; line-height: 1.4; }
@@ -152,8 +147,6 @@
 .nfe-table th { background: #333; color: white; padding: 8px; text-align: left; font-weight: normal; }
 .nfe-table td { border-bottom: 1px solid #ddd; padding: 10px 8px; }
 .nfe-total { font-weight: bold; font-size: 1.1rem; }
-
-.barcode { font-family: 'Libre Barcode 39', 'Courier New', monospace; font-size: 3rem; letter-spacing: 5px; margin-top: 30px; }
 
 @media (max-width: 800px) {
   .form-grid { grid-template-columns: 1fr; }

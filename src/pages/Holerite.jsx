@@ -1,11 +1,44 @@
-// src/pages/Holerite.jsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
 import '../App.css';
 import './Holerite.css';
+
+// Dados Mockados (Fora do componente para performance)
+const mockHolerites = [
+  { 
+    id: 1, ano: '2024', mes: 'Outubro', tipo: 'Folha Mensal', 
+    data_credito: '30/10/2024', valor_liquido: '3.450,00', status: 'PAGO', cssClass: 'mensal',
+    bases: { sal_base: '4.000,00', base_inss: '4.150,00', base_fgts: '4.150,00', fgts_mes: '332,00', base_irrf: '3.700,00', faixa_irrf: '7.5%' },
+    detalhes: [
+      { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
+      { cod: '015', desc: 'Hora Extra 50%', ref: '02:00', venc: '150,00', desc_val: '0,00' },
+      { cod: '501', desc: 'INSS', ref: '11%', venc: '0,00', desc_val: '450,00' },
+      { cod: '505', desc: 'IRRF', ref: '7.5%', venc: '0,00', desc_val: '150,00' },
+      { cod: '520', desc: 'Vale Transporte', ref: '6%', venc: '0,00', desc_val: '100,00' }
+    ]
+  },
+  { 
+    id: 2, ano: '2024', mes: 'Outubro', tipo: 'Adiantamento Quinzenal', 
+    data_credito: '15/10/2024', valor_liquido: '1.600,00', status: 'PAGO', cssClass: 'adiantamento',
+    bases: { sal_base: '4.000,00', base_inss: '0,00', base_fgts: '0,00', fgts_mes: '0,00', base_irrf: '0,00', faixa_irrf: '0%' },
+    detalhes: [
+      { cod: '005', desc: 'Adiantamento Salarial', ref: '40%', venc: '1.600,00', desc_val: '0,00' }
+    ]
+  },
+  { 
+    id: 3, ano: '2024', mes: 'Setembro', tipo: 'Folha Mensal', 
+    data_credito: '30/09/2024', valor_liquido: '3.400,00', status: 'PAGO', cssClass: 'mensal',
+    bases: { sal_base: '4.000,00', base_inss: '4.000,00', base_fgts: '4.000,00', fgts_mes: '320,00', base_irrf: '3.550,00', faixa_irrf: '7.5%' },
+    detalhes: [
+      { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
+      { cod: '501', desc: 'INSS', ref: '11%', venc: '0,00', desc_val: '450,00' },
+      { cod: '505', desc: 'IRRF', ref: '7.5%', venc: '0,00', desc_val: '150,00' }
+    ]
+  }
+];
 
 export default function Holerite() {
   const navigate = useNavigate();
@@ -21,62 +54,39 @@ export default function Holerite() {
   
   const printRef = useRef();
 
-  // Dados Mockados
-  const holerites = [
-    { 
-      id: 1, ano: '2024', mes: 'Outubro', tipo: 'Folha Mensal', 
-      data_credito: '30/10/2024', valor_liquido: '3.450,00', status: 'PAGO', cssClass: 'mensal',
-      bases: { sal_base: '4.000,00', base_inss: '4.150,00', base_fgts: '4.150,00', fgts_mes: '332,00', base_irrf: '3.700,00', faixa_irrf: '7.5%' },
-      detalhes: [
-        { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
-        { cod: '015', desc: 'Hora Extra 50%', ref: '02:00', venc: '150,00', desc_val: '0,00' },
-        { cod: '501', desc: 'INSS', ref: '11%', venc: '0,00', desc_val: '450,00' },
-        { cod: '505', desc: 'IRRF', ref: '7.5%', venc: '0,00', desc_val: '150,00' },
-        { cod: '520', desc: 'Vale Transporte', ref: '6%', venc: '0,00', desc_val: '100,00' }
-      ]
-    },
-    { 
-      id: 2, ano: '2024', mes: 'Outubro', tipo: 'Adiantamento Quinzenal', 
-      data_credito: '15/10/2024', valor_liquido: '1.600,00', status: 'PAGO', cssClass: 'adiantamento',
-      bases: { sal_base: '4.000,00', base_inss: '0,00', base_fgts: '0,00', fgts_mes: '0,00', base_irrf: '0,00', faixa_irrf: '0%' },
-      detalhes: [
-        { cod: '005', desc: 'Adiantamento Salarial', ref: '40%', venc: '1.600,00', desc_val: '0,00' }
-      ]
-    },
-    { 
-      id: 3, ano: '2024', mes: 'Setembro', tipo: 'Folha Mensal', 
-      data_credito: '30/09/2024', valor_liquido: '3.400,00', status: 'PAGO', cssClass: 'mensal',
-      bases: { sal_base: '4.000,00', base_inss: '4.000,00', base_fgts: '4.000,00', fgts_mes: '320,00', base_irrf: '3.550,00', faixa_irrf: '7.5%' },
-      detalhes: [
-        { cod: '001', desc: 'Salário Base', ref: '30d', venc: '4.000,00', desc_val: '0,00' },
-        { cod: '501', desc: 'INSS', ref: '11%', venc: '0,00', desc_val: '450,00' },
-        { cod: '505', desc: 'IRRF', ref: '7.5%', venc: '0,00', desc_val: '150,00' }
-      ]
-    }
-  ];
+  // Filtro otimizado
+  const listaFiltrada = useMemo(() => {
+    return mockHolerites.filter(h => h.ano === anoSelecionado);
+  }, [anoSelecionado]);
 
-  const listaFiltrada = holerites.filter(h => h.ano === anoSelecionado);
-
+  // Função de Download PDF
   const handleDownload = async (id, nomeArquivo) => {
+    if (downloadingId) return;
+
     setDownloadingId(id);
-    const holeriteParaBaixar = holerites.find(h => h.id === id);
+    const holeriteParaBaixar = mockHolerites.find(h => h.id === id);
     setHoleriteParaImpressao(holeriteParaBaixar);
 
     setTimeout(async () => {
-      if (printRef.current) {
-        const element = printRef.current;
-        // Configuração mantida: Fundo branco explícito
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', logging: false });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(nomeArquivo);
+      try {
+        if (printRef.current) {
+          const element = printRef.current;
+          const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', logging: false });
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save(nomeArquivo);
+        }
+      } catch (error) {
+        console.error("Erro ao gerar PDF:", error);
+        alert("Erro ao gerar PDF.");
+      } finally {
+        setDownloadingId(null);
+        setHoleriteParaImpressao(null);
       }
-      setDownloadingId(null);
-      setHoleriteParaImpressao(null);
     }, 800);
   };
 
@@ -112,12 +122,15 @@ export default function Holerite() {
             <h2>Meus Holerites</h2>
             <p>Financeiro &gt; Demonstrativos de Pagamento</p>
           </div>
-          <button className="privacy-toggle-tech" onClick={() => setValoresVisiveis(!valoresVisiveis)}>
+          <button 
+            className="privacy-toggle-tech" 
+            onClick={() => setValoresVisiveis(!valoresVisiveis)}
+          >
             {valoresVisiveis ? '👁️ Ocultar Valores' : '🙈 Mostrar Valores'}
           </button>
         </div>
 
-        {/* Filtros Glass */}
+        {/* Filtros */}
         <div className="filter-bar-tech">
           <div className="filter-group">
             <label>Ano Competência</label>
@@ -153,28 +166,32 @@ export default function Holerite() {
               </div>
               
               <div className="card-actions">
-                <button className="btn-icon-tech" title="Visualizar Detalhes" onClick={() => abrirDetalhes(item)}>
-                   📄
-                </button>
-                <button className="btn-icon-tech" title="Baixar PDF Oficial" onClick={() => handleDownload(item.id, `Holerite_${item.mes}_${item.ano}.pdf`)}>
+                <button className="btn-icon-tech" title="Visualizar Detalhes" onClick={() => abrirDetalhes(item)}>📄</button>
+                <button 
+                  className={`btn-icon-tech ${downloadingId === item.id ? 'disabled' : ''}`}
+                  title="Baixar PDF Oficial" 
+                  onClick={() => handleDownload(item.id, `Holerite_${item.mes}_${item.ano}.pdf`)}
+                  disabled={downloadingId !== null}
+                >
                   {downloadingId === item.id ? '⏳' : '⬇'}
                 </button>
               </div>
             </div>
           ))}
+          {listaFiltrada.length === 0 && <div className="no-results">Nenhum holerite encontrado.</div>}
         </div>
       </div>
 
-      {/* MODAL DETALHES (Estilo Tech) */}
+      {/* MODAL DETALHES (LARGURA AUMENTADA NO CSS) */}
       {modalAberto && holeriteSelecionado && (
-        <div className="modal-overlay">
-          <div className="modal-content-tech">
+        <div className="modal-overlay" onClick={() => setModalAberto(false)}>
+          <div className="modal-content-techH" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-tech">
               <h3>Detalhes do Holerite</h3>
               <button className="modal-close-tech" onClick={() => setModalAberto(false)}>×</button>
             </div>
             
-            <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px'}}>
+            <div className="modal-details-summary" style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px'}}>
                 <strong style={{color: '#fff'}}>{holeriteSelecionado.tipo}</strong> <br/>
                 <span style={{color: '#94a3b8'}}>Competência: {holeriteSelecionado.mes}/{holeriteSelecionado.ano}</span>
             </div>
@@ -200,11 +217,7 @@ export default function Holerite() {
         </div>
       )}
 
-      {/* =================================================================
-         TEMPLATE DE IMPRESSÃO (Mantido Original/Branco para PDF)
-         Esta parte não é visível na tela, apenas para o gerador de PDF.
-         ================================================================= 
-      */}
+      {/* TEMPLATE IMPRESSÃO (PDF) */}
       <div className="print-hidden-wrapper">
         {holeriteParaImpressao && (
         <div ref={printRef} className="print-holerite-page">
@@ -259,18 +272,9 @@ export default function Holerite() {
 
             <div className="holerite-totals">
                 <div className="holerite-total-box"></div>
-                <div className="holerite-total-box">
-                    <span className="total-label">TOTAL VENCIMENTOS</span>
-                    <span className="total-value">{holeriteParaImpressao.bases.sal_base ? '4.150,00' : '1.600,00'}</span>
-                </div>
-                <div className="holerite-total-box">
-                    <span className="total-label">TOTAL DESCONTOS</span>
-                    <span className="total-value">{holeriteParaImpressao.bases.sal_base ? '700,00' : '0,00'}</span>
-                </div>
-                <div className="holerite-total-box" style={{background: '#eee'}}>
-                    <span className="total-label">LÍQUIDO A RECEBER</span>
-                    <span className="total-value">R$ {holeriteParaImpressao.valor_liquido}</span>
-                </div>
+                <div className="holerite-total-box"><span className="total-label">TOTAL VENCIMENTOS</span><span className="total-value">{holeriteParaImpressao.bases.sal_base ? '4.150,00' : '1.600,00'}</span></div>
+                <div className="holerite-total-box"><span className="total-label">TOTAL DESCONTOS</span><span className="total-value">{holeriteParaImpressao.bases.sal_base ? '700,00' : '0,00'}</span></div>
+                <div className="holerite-total-box" style={{background: '#eee'}}><span className="total-label">LÍQUIDO A RECEBER</span><span className="total-value">R$ {holeriteParaImpressao.valor_liquido}</span></div>
             </div>
 
             <div className="holerite-footer-bases">
@@ -282,17 +286,11 @@ export default function Holerite() {
                 <div className="base-item"><span className="base-label">FAIXA IRRF</span><span className="base-value">{holeriteParaImpressao.bases.faixa_irrf}</span></div>
             </div>
 
-            <div className="holerite-msg">
-                <p>DECLARO TER RECEBIDO A IMPORTÂNCIA LÍQUIDA DISCRIMINADA NESTE RECIBO.</p>
-            </div>
-
-            <div className="holerite-sign-area">
-                DATA ___/___/______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ASSINATURA DO FUNCIONÁRIO
-            </div>
+            <div className="holerite-msg"><p>DECLARO TER RECEBIDO A IMPORTÂNCIA LÍQUIDA DISCRIMINADA NESTE RECIBO.</p></div>
+            <div className="holerite-sign-area">DATA ___/___/______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ASSINATURA DO FUNCIONÁRIO</div>
         </div>
         )}
       </div>
-
     </div>
   );
 }
