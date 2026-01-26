@@ -9,115 +9,168 @@ import './Dashboard.css';
 export default function Dashboard() {
   const navigate = useNavigate();
 
+  // Estado do Usuário
   const [userProfile, setUserProfile] = useState({
     nome: 'Carregando...',
     cargo: '...',
     role: 'colaborador'
   });
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const [kpis, setKpis] = useState({
-    tarefas: 0,
-    solicitacoes: 0,
-    ferias: '---'
-  });
+  // Contadores Separados
+  const [contagemTarefas, setContagemTarefas] = useState(0);
+  const [contagemReembolsos, setContagemReembolsos] = useState(0);
+  const [contagemGeral, setContagemGeral] = useState(0);
+  const [proxFerias, setProxFerias] = useState('---');
 
   useEffect(() => {
-    let dbUnsubscribes = [];
-
+    // Monitora autenticação
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // --- A. Busca Perfil ---
-        const userRef = ref(db, `users/${user.uid}`);
-        dbUnsubscribes.push(onValue(userRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            setUserProfile({
-              nome: data.nome || 'Usuário',
-              cargo: data.cargo || 'Cargo não definido',
-              role: data.role || 'colaborador'
-            });
-          }
-        }));
+      if (!user) return navigate('/');
 
-        // --- B. Busca Tarefas ---
-        const tarefasRef = ref(db, 'tarefas');
-        dbUnsubscribes.push(onValue(tarefasRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const minhasPendentes = Object.values(data).filter(t => 
-              t.userId === user.uid && t.status !== 'done'
-            ).length;
-            setKpis(prev => ({ ...prev, tarefas: minhasPendentes }));
+      // 1. BUSCAR PERFIL E DEFINIR PERMISSÃO
+      const userRef = ref(db, `users/${user.uid}`);
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setUserProfile({
+            nome: data.nome || 'Usuário',
+            cargo: data.cargo || 'Cargo não definido',
+            role: data.role || 'colaborador'
+          });
+          
+          // Verifica se é Gestor/CEO
+          const ehChefe = data.role === 'admin' || data.role === 'gestor' || (data.cargo && data.cargo.includes('C.E.O'));
+          setIsAdmin(ehChefe);
+        }
+      });
+
+      // 2. BUSCAR TAREFAS (Sempre pessoais)
+      const tarefasRef = ref(db, 'tarefas');
+      onValue(tarefasRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const total = Object.values(snapshot.val()).filter(t => t.userId === user.uid && t.status !== 'done').length;
+          setContagemTarefas(total);
+        } else {
+          setContagemTarefas(0);
+        }
+      });
+
+      // 3. BUSCAR FÉRIAS (Lógica Restaurada: Busca do nó do usuário)
+      // Antes estava buscando de 'ferias/proximoPeriodo' (estático), agora busca de 'ferias/UID'
+      const feriasRef = ref(db, `ferias/${user.uid}`);
+      onValue(feriasRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Pega a solicitação mais recente (ordena por dataInicio decrescente)
+          const listaFerias = Object.values(data).sort((a, b) => 
+            new Date(b.dataInicio) - new Date(a.dataInicio)
+          );
+          
+          const ultimaFerias = listaFerias[0];
+          
+          if (ultimaFerias) {
+            const dateObj = new Date(ultimaFerias.dataInicio);
+            // Formata: "10 de Jan"
+            const diaMes = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            setProxFerias(diaMes);
+          }
+        } else {
+          setProxFerias('A definir');
+        }
+      });
+
+    });
+
+    return () => authUnsubscribe();
+  }, [navigate]);
+
+  // --- 4. LISTENER DEDICADO PARA SOLICITAÇÕES (Admin vs Colaborador) ---
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // A. Listener de Reembolsos
+    const reembolsosRef = ref(db, 'reembolsos');
+    const unsubReembolsos = onValue(reembolsosRef, (snapshot) => {
+      let count = 0;
+      if (snapshot.exists()) {
+        Object.values(snapshot.val()).forEach(item => {
+          if (isAdmin) {
+            if (item.status === 'em_analise') count++;
           } else {
-            setKpis(prev => ({ ...prev, tarefas: 0 }));
+            if (item.userId === user.uid) count++;
           }
-        }));
-
-        // --- C. Busca Solicitações (Reembolsos) ---
-        const solicitacoesRef = ref(db, 'reembolsos');
-        dbUnsubscribes.push(onValue(solicitacoesRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const minhasSolicitacoes = Object.values(data).filter(s => 
-              s.userId === user.uid
-            ).length;
-            setKpis(prev => ({ ...prev, solicitacoes: minhasSolicitacoes }));
-          } else {
-            setKpis(prev => ({ ...prev, solicitacoes: 0 }));
-          }
-        }));
-
-        // --- D. Busca Férias (INTEGRAÇÃO FEITA!) ---
-        // Agora busca no nó específico do usuário: ferias/UID
-        const feriasRef = ref(db, `ferias/${user.uid}`);
-        dbUnsubscribes.push(onValue(feriasRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            // Transforma em array e ordena por data (pega a última solicitada)
-            const listaFerias = Object.values(data).sort((a, b) => 
-              new Date(b.dataInicio) - new Date(a.dataInicio)
-            );
-            
-            // Pega a mais recente
-            const ultimaFerias = listaFerias[0];
-            
-            if (ultimaFerias) {
-              const dateObj = new Date(ultimaFerias.dataInicio);
-              // Exemplo: "10 de Jan"
-              const diaMes = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-              setKpis(prev => ({ ...prev, ferias: diaMes }));
-            }
-          } else {
-            setKpis(prev => ({ ...prev, ferias: 'Não agendado' }));
-          }
-        }));
-
-      } else {
-        setUserProfile({ nome: '...', cargo: '...', role: 'colaborador' });
+        });
       }
+      setContagemReembolsos(count);
+    });
+
+    // B. Listener de Solicitações Gerais
+    const solicitacoesRef = ref(db, 'solicitacoes');
+    const unsubGerais = onValue(solicitacoesRef, (snapshot) => {
+      let count = 0;
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.values(data).forEach(categoria => {
+          Object.values(categoria).forEach(item => {
+            const statusItem = item.status ? item.status.toLowerCase() : 'pendente';
+            
+            if (isAdmin) {
+              if (statusItem === 'pendente') count++;
+            } else {
+              if (item.userId === user.uid) count++;
+            }
+          });
+        });
+      }
+      setContagemGeral(count);
     });
 
     return () => {
-      authUnsubscribe();
-      dbUnsubscribes.forEach(unsub => unsub());
+      unsubReembolsos();
+      unsubGerais();
     };
-  }, [navigate]);
+  }, [isAdmin]); 
+
+  // --- CONFIGURAÇÃO VISUAL ---
+  const totalSolicitacoes = contagemReembolsos + contagemGeral;
 
   const stats = [
-    { titulo: 'Tarefas Pendentes', valor: kpis.tarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)' },
-    { titulo: 'Solicitações', valor: kpis.solicitacoes.toString(), icon: '📂', cor: 'var(--neon-purple)' },
-    { titulo: 'Próx. Férias', valor: kpis.ferias, icon: '🌴', cor: 'var(--neon-green)' },
+    { 
+      titulo: 'Tarefas Pendentes', 
+      valor: contagemTarefas.toString(), 
+      icon: '⚡', 
+      cor: 'var(--neon-blue)',
+      rota: '/tarefas'
+    },
+    { 
+      titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
+      valor: totalSolicitacoes.toString(), 
+      icon: isAdmin ? '✅' : '📂', 
+      cor: 'var(--neon-purple)',
+      rota: isAdmin ? '/gestao-reembolsos' : '/solicitacao' // Ajustei rotas para existirem
+    },
+    { 
+      titulo: 'Próx. Férias', 
+      valor: proxFerias, 
+      icon: '🌴', 
+      cor: 'var(--neon-green)',
+      rota: '/ferias'
+    },
   ];
 
-  const ehAdmin = userProfile.role === 'admin' || userProfile.role === 'gestor' || (userProfile.cargo && userProfile.cargo.toLowerCase().includes('gestor'));
-
   const acessos = [
-    ...(ehAdmin ? [
+    // BLOCO GESTOR
+    ...(isAdmin ? [
       { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
-      { titulo: 'Aprovar Reembolsos', desc: 'Central de Aprovações', icon: '💰', rota: '/gestao-reembolsos' }
+      { titulo: 'Gestão Reembolsos', desc: 'Aprovar pagamentos', icon: '💰', rota: '/gestao-reembolsos' }
     ] : []),
+    
+    // BLOCO COMUM
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
+    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' }, // RESTAURADO!
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
     { titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },
@@ -125,7 +178,6 @@ export default function Dashboard() {
     { titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
     { titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },
     { titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
-    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' }, // Link adicionado/confirmado
   ];
 
   return (
@@ -143,6 +195,7 @@ export default function Dashboard() {
             <h1>Visão Geral</h1>
             <p>Bem-vindo ao <strong>TechPortal</strong></p>
           </div>
+          
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
               <span className="name">{userProfile.nome}</span>
@@ -160,7 +213,11 @@ export default function Dashboard() {
               <div 
                 key={i} 
                 className="glass-stat-card" 
-                style={{ borderTopColor: stat.cor, cursor: 'default' }}
+                style={{ 
+                  borderTopColor: stat.cor,
+                  cursor: 'pointer' 
+                }}
+                onClick={() => stat.rota && navigate(stat.rota)}
               >
                 <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
                   {stat.icon}
