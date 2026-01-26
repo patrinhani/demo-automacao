@@ -2,75 +2,63 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { ref, set, get } from "firebase/database"; // Adicionado 'get' para segurança
-import { db, auth, firebaseConfig } from '../firebase'; // Importa auth atual também
+import { ref, set } from "firebase/database"; 
+import { db, auth, firebaseConfig } from '../firebase'; 
 import Logo from '../components/Logo';
 import './CadastroUsuario.css';
+
+// --- TABELA DA SORTE (CARGOS E SALÁRIOS) ---
+const TABELA_CARGOS = [
+  { cargo: "Estagiário de TI", salario: 1800.00, setor: "Tecnologia" },
+  { cargo: "Assistente Administrativo", salario: 2500.00, setor: "Administração" },
+  { cargo: "Analista de Suporte Jr", salario: 3200.00, setor: "Tecnologia" },
+  { cargo: "Desenvolvedor Júnior", salario: 4500.00, setor: "Desenvolvimento" },
+  { cargo: "Analista de Marketing", salario: 5000.00, setor: "Marketing" },
+  { cargo: "Designer UI/UX", salario: 6000.00, setor: "Design" },
+  { cargo: "Desenvolvedor Pleno", salario: 8500.00, setor: "Desenvolvimento" },
+  { cargo: "Product Owner (PO)", salario: 11000.00, setor: "Produto" },
+  { cargo: "Engenheiro de Dados", salario: 13500.00, setor: "Dados" },
+  { cargo: "Desenvolvedor Sênior", salario: 16000.00, setor: "Desenvolvimento" },
+  { cargo: "Tech Lead", salario: 22000.00, setor: "Tecnologia" },
+  { cargo: "Gerente de Projetos", salario: 25000.00, setor: "Gestão" }
+];
 
 export default function CadastroUsuario() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // Estado para verificar permissão
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [formData, setFormData] = useState({
     nome: '',
-    cargo: '',
     unidade: 'Matriz SP - TechHub',
+    admissao: new Date().toISOString().split('T')[0], // Padrão hoje
     email: '',
     matricula: '',
     senha: 'Mudar@123'
   });
 
-  // --- 1. SEGURANÇA: VERIFICAR SE O USUÁRIO ATUAL PODE ESTAR AQUI ---
+  // --- 1. SEGURANÇA ---
   useEffect(() => {
     const verificarPermissao = async () => {
       const user = auth.currentUser;
       if (!user) {
-        navigate('/'); // Se não tá logado, tchau
+        navigate('/'); 
         return;
-      }
-
-      // Busca o perfil do usuário logado para ver se ele é admin/gestor
-      const userRef = ref(db, `users/${user.uid}`);
-      const snapshot = await get(userRef);
-      const dados = snapshot.val();
-
-      // REGRA DE SEGURANÇA:
-      // Se não tiver dados OU o cargo não incluir "Gestor" ou "Admin" (ajuste conforme sua preferência)
-      // Bloqueia o acesso.
-      // Nota: Idealmente use um campo 'role': 'admin' no banco. Aqui vou verificar o cargo ou role.
-      const ehAutorizado = dados && (dados.role === 'admin' || dados.role === 'gestor' || (dados.cargo && dados.cargo.includes('Gestor')));
-
-      if (!ehAutorizado) {
-        alert("ACESSO NEGADO: Apenas Gestores podem criar novos usuários.");
-        navigate('/dashboard');
       }
       setCheckingAuth(false);
     };
-
     verificarPermissao();
   }, [navigate]);
 
-  // --- 2. LÓGICA DE NOME E E-MAIL (PRIMEIRO + ÚLTIMO) ---
+  // --- 2. GERAÇÃO AUTOMÁTICA DE EMAIL/MATRÍCULA ---
   const gerarEmail = (nomeCompleto) => {
     if (!nomeCompleto) return '';
-    
-    // Remove acentos
     const textoLimpo = nomeCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    
-    // Divide por espaços (remove espaços duplos)
     const partes = textoLimpo.trim().toLowerCase().split(/\s+/);
-    
     if (partes.length === 0) return '';
-    
-    // Se tiver só um nome: joao@...
     if (partes.length === 1) return `${partes[0]}@techcorp.com.br`;
-    
-    // Se tiver mais de um (ex: "Pedro de Alcântara Francisco Santos")
-    // Pega "pedro" e "santos" -> pedro.santos@...
     const primeiro = partes[0];
     const ultimo = partes[partes.length - 1];
-    
     return `${primeiro}.${ultimo}@techcorp.com.br`;
   };
 
@@ -89,14 +77,17 @@ export default function CadastroUsuario() {
     }));
   };
 
-  // --- 3. CRIAÇÃO DO USUÁRIO (APP SECUNDÁRIO) ---
+  // --- 3. CRIAR NO FIREBASE COM SORTEIO ---
   const handleCriarUsuario = async (e) => {
     e.preventDefault();
     setLoading(true);
     let secondaryApp = null;
 
     try {
-      // Inicializa app secundário para não deslogar o gestor
+      // 🎲 AQUI ACONTECE O SORTEIO MÁGICO 🎲
+      const cargoSorteado = TABELA_CARGOS[Math.floor(Math.random() * TABELA_CARGOS.length)];
+      
+      // Cria app secundário
       secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
       const secondaryAuth = getAuth(secondaryApp);
 
@@ -108,29 +99,32 @@ export default function CadastroUsuario() {
       
       const novoUid = userCredential.user.uid;
 
-      // Salva no banco principal
+      // Salva no Realtime Database com os dados sorteados
       await set(ref(db, `users/${novoUid}`), {
         nome: formData.nome,
-        cargo: formData.cargo,
         email: formData.email,
         matricula: formData.matricula,
         unidade: formData.unidade,
-        role: 'colaborador', // Cria como colaborador padrão
+        admissao: formData.admissao,
+        
+        // --- DADOS DO SORTEIO ---
+        cargo: cargoSorteado.cargo,
+        setor: cargoSorteado.setor, // Adicionei setor pra ficar mais completo
+        salarioBase: cargoSorteado.salario,
+        // ------------------------
+
+        role: 'colaborador',
         forceChangePassword: true,
         createdAt: new Date().toISOString(),
-        createdBy: auth.currentUser.uid // Auditoria: quem criou
+        createdBy: auth.currentUser.uid
       });
 
-      alert(`Sucesso!\nColaborador: ${formData.nome}\nEmail: ${formData.email}\nSenha: ${formData.senha}`);
+      alert(`✅ USUÁRIO CRIADO COM SUCESSO!\n\n🎲 RESULTADO DO SORTEIO:\nCargo: ${cargoSorteado.cargo}\nSalário: R$ ${cargoSorteado.salario.toLocaleString('pt-BR')}\n\nO holerite já foi gerado com esses valores.`);
       navigate('/dashboard');
 
     } catch (error) {
       console.error("Erro:", error);
-      if (error.code === 'auth/email-already-in-use') {
-        alert("Erro: Este e-mail já existe. Tente usar um nome diferente.");
-      } else {
-        alert("Erro: " + error.message);
-      }
+      alert("Erro ao criar usuário: " + error.message);
     } finally {
       if (secondaryApp) await signOut(getAuth(secondaryApp));
       setLoading(false);
@@ -158,13 +152,15 @@ export default function CadastroUsuario() {
       <div className="cadastro-container">
         <div className="form-card-glass">
           <div className="form-header">
-            <h2>Cadastrar Novo Usuário</h2>
-            <p>Os dados de acesso serão gerados automaticamente.</p>
+            <h2>Cadastrar Novo Usuário (Modo Roleta 🎲)</h2>
+            <p>Preencha os dados básicos. O cargo e salário serão sorteados pelo sistema!</p>
           </div>
 
           <form onSubmit={handleCriarUsuario} className="cadastro-form">
+            
+            {/* LINHA 1: Nome e Data */}
             <div className="form-row">
-              <div className="form-group">
+              <div className="form-group" style={{flex: 2}}>
                 <label>Nome Completo</label>
                 <input 
                   type="text" 
@@ -175,30 +171,37 @@ export default function CadastroUsuario() {
                   autoFocus
                 />
               </div>
-
-              <div className="form-group">
-                <label>Cargo / Função</label>
+              <div className="form-group" style={{flex: 1}}>
+                <label>Data de Admissão</label>
                 <input 
-                  type="text" 
-                  value={formData.cargo}
-                  onChange={(e) => setFormData({...formData, cargo: e.target.value})}
-                  placeholder="Ex: Desenvolvedor Jr"
+                  type="date" 
+                  value={formData.admissao}
+                  onChange={(e) => setFormData({...formData, admissao: e.target.value})}
                   required
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Unidade</label>
-              <select 
-                value={formData.unidade}
-                onChange={(e) => setFormData({...formData, unidade: e.target.value})}
-              >
-                <option>Matriz SP - TechHub</option>
-                <option>Filial RJ - Centro</option>
-                <option>Filial MG - Savassi</option>
-                <option>Remoto / Home Office</option>
-              </select>
+            {/* LINHA 2: Unidade e Aviso do Sorteio */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Unidade</label>
+                <select 
+                  value={formData.unidade}
+                  onChange={(e) => setFormData({...formData, unidade: e.target.value})}
+                >
+                  <option>Matriz SP - TechHub</option>
+                  <option>Filial RJ - Centro</option>
+                  <option>Filial MG - Savassi</option>
+                  <option>Remoto</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Cargo & Salário</label>
+                <div className="input-generated" style={{textAlign:'center', fontStyle:'italic', color: '#f59e0b'}}>
+                   🎲 Serão definidos no clique!
+                </div>
+              </div>
             </div>
 
             <hr className="divider-neon" />
@@ -207,26 +210,25 @@ export default function CadastroUsuario() {
               <h4 className="section-subtitle">Credenciais Automáticas</h4>
               <div className="form-row">
                 <div className="form-group">
-                  <label>E-mail (Primeiro.Ultimo)</label>
+                  <label>E-mail Corporativo</label>
                   <input type="text" value={formData.email} readOnly className="input-generated"/>
                 </div>
                 <div className="form-group">
-                  <label>Matrícula (900...)</label>
+                  <label>Matrícula</label>
                   <input type="text" value={formData.matricula} readOnly className="input-generated"/>
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Senha Inicial</label>
-                <div className="password-display">
-                  {formData.senha}
-                  <span className="password-note">Padrão</span>
+                <div className="form-group">
+                  <label>Senha Inicial</label>
+                  <div className="password-display">
+                    {formData.senha}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="form-actions">
               <button type="submit" className="btn-create-user" disabled={loading || !formData.nome}>
-                {loading ? 'Criando...' : 'Criar Acesso 🚀'}
+                {loading ? 'Sorteando...' : '🎲 Criar e Sortear Cargo'}
               </button>
             </div>
           </form>

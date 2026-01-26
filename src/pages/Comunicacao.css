@@ -1,8 +1,9 @@
+/* src/pages/Comunicacao.css */
+
 /* =========================================
-   MURAL DE COMUNICAÇÃO - TEMA TECH/DARK
+   MURAL DE COMUNICAÇÃO - FIX DE SCROLL
    ========================================= */
 
-/* Variáveis Locais (caso não estejam globais) */
 .tech-comunicacao-layout {
   --bg-dark: #0f172a;       
   --glass-bg: rgba(17, 25, 40, 0.75);
@@ -18,22 +19,26 @@
 
   background-color: var(--bg-dark);
   color: var(--text-primary);
-  min-height: 100vh;
+  
+  /* --- CORREÇÃO AQUI --- */
+  height: 100vh; /* Mudado de min-height para height fixo */
+  width: 100%;
   position: relative;
-  overflow: hidden; /* Importante para as luzes não criarem scroll */
+  overflow: hidden; /* Impede scroll na página inteira, forçando o scroll interno */
   display: flex;
   flex-direction: column;
   font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-/* --- Luzes de Fundo (Copiadas do Dashboard) --- */
+/* --- Luzes de Fundo --- */
 .ambient-light {
-  position: absolute;
+  position: fixed; /* Mudado para fixed para não rolar junto */
   border-radius: 50%;
   filter: blur(80px);
   z-index: 0;
   opacity: 0.4;
   animation: float 20s infinite ease-in-out alternate;
+  pointer-events: none;
 }
 
 .light-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-purple), transparent 70%); }
@@ -45,13 +50,22 @@
   100% { transform: translate(20px, 30px) scale(1.1); }
 }
 
-/* --- Scroll Container --- */
+/* --- Scroll Container (Área que rola) --- */
 .comunicacao-content-scroll {
   flex: 1;
-  overflow-y: auto;
-  z-index: 1; /* Fica acima das luzes */
-  padding-bottom: 40px;
+  overflow-y: auto; /* Habilita o scroll vertical aqui */
+  overflow-x: hidden;
+  z-index: 1;
+  padding-bottom: 60px;
+  position: relative;
+  width: 100%;
 }
+
+/* Scrollbar personalizada para ficar bonito */
+.comunicacao-content-scroll::-webkit-scrollbar { width: 8px; }
+.comunicacao-content-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.comunicacao-content-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.comunicacao-content-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 .comunicacao-container {
   max-width: 1200px;
@@ -68,8 +82,10 @@
   padding: 0 30px;
   border-bottom: 1px solid var(--glass-border);
   z-index: 10;
-  position: sticky;
-  top: 0;
+  /* Sticky não é necessário se o pai tem height fixo, mas não atrapalha */
+  position: relative; 
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .glass-effect {
@@ -80,189 +96,83 @@
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
+.header-left { display: flex; align-items: center; gap: 15px; }
 .header-left .divider { color: var(--glass-border); font-size: 1.5rem; }
 .header-left .page-title { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); }
 
 .tech-back-btn {
-  background: rgba(255,255,255,0.05);
-  color: var(--text-secondary);
-  border: 1px solid var(--glass-border);
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
+  background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.3s;
 }
-
-.tech-back-btn:hover {
-  background: var(--neon-blue);
-  color: white;
-  border-color: var(--neon-blue);
-}
+.tech-back-btn:hover { background: var(--neon-blue); color: white; border-color: var(--neon-blue); }
 
 /* --- Títulos da Página --- */
-.page-header-tech {
-  margin: 30px 0;
-}
-
+.page-header-tech { margin: 30px 0; }
 .page-header-tech h2 {
-  font-size: 2rem;
-  margin: 0 0 5px 0;
+  font-size: 2rem; margin: 0 0 5px 0;
   background: linear-gradient(to right, #fff, #94a3b8);
-  
-  /* Adicione esta linha para corrigir o aviso: */
-  background-clip: text; 
-  
-  /* Mantenha estas duas que já existiam: */
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-
 .page-header-tech p { color: var(--text-secondary); margin: 0; }
 
 /* --- Grid Principal --- */
-.layout-grid-tech {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-}
+.layout-grid-tech { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
 
 /* --- Filtros --- */
-.news-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
-  overflow-x: auto;
-  padding-bottom: 5px;
-}
-
+.news-filters { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
 .tech-filter-badge {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary);
-  padding: 8px 18px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: all 0.3s; white-space: nowrap;
 }
-
-.tech-filter-badge:hover {
-  background: rgba(255,255,255,0.1);
-  color: white;
-}
-
-.tech-filter-badge.active {
-  background: var(--neon-blue);
-  color: white;
-  border-color: var(--neon-blue);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
-}
+.tech-filter-badge:hover { background: rgba(255,255,255,0.1); color: white; }
+.tech-filter-badge.active { background: var(--neon-blue); color: white; border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
 /* --- Cards de Notícias --- */
 .news-list { display: flex; flex-direction: column; gap: 20px; }
+.tech-news-card { padding: 25px; transition: transform 0.3s; position: relative; overflow: hidden; }
+.tech-news-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.2); background: rgba(30, 41, 59, 0.6); }
+.tech-news-card.highlight-glow { border-left: 3px solid var(--neon-orange); }
 
-.tech-news-card {
-  padding: 25px;
-  transition: transform 0.3s;
-  position: relative;
-  overflow: hidden;
-}
+.news-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.tech-category-tag { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; padding: 4px 10px; border-radius: 6px; }
 
-.tech-news-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255,255,255,0.2);
-  background: rgba(30, 41, 59, 0.6);
-}
-
-/* Destaque para notícias importantes (Borda brilhante) */
-.tech-news-card.highlight-glow {
-  border-left: 3px solid var(--neon-orange);
-}
-
-.news-header {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
-}
-
-.tech-category-tag {
-  font-size: 0.7rem; text-transform: uppercase; font-weight: bold; padding: 4px 10px; border-radius: 6px;
-}
-
-/* Cores das Tags (estilo neon dark) */
 .tech-category-tag.rh { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
 .tech-category-tag.ti { background: rgba(139, 92, 246, 0.15); color: var(--neon-purple); border: 1px solid rgba(139, 92, 246, 0.3); }
 .tech-category-tag.eventos { background: rgba(236, 72, 153, 0.15); color: var(--neon-pink); border: 1px solid rgba(236, 72, 153, 0.3); }
 .tech-category-tag.geral { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
 
 .tech-news-date { font-size: 0.8rem; color: var(--text-secondary); }
-
 .tech-news-card h3 { margin: 0 0 10px 0; color: #fff; font-size: 1.3rem; }
-
 .tech-news-content p { color: #cbd5e1; line-height: 1.6; font-size: 0.95rem; }
 
-.tech-read-more {
-  background: none; border: none; color: var(--neon-blue); font-weight: 600; cursor: pointer; padding: 10px 0 0 0; margin-top: 10px;
-  transition: color 0.2s;
-}
+.tech-read-more { background: none; border: none; color: var(--neon-blue); font-weight: 600; cursor: pointer; padding: 10px 0 0 0; margin-top: 10px; transition: color 0.2s; }
 .tech-read-more:hover { color: #60a5fa; text-decoration: underline; }
 
 /* --- Sidebar Right --- */
 .tech-sidebar-right { display: flex; flex-direction: column; gap: 20px; }
-
 .tech-sidebar-card { padding: 25px; }
-
-.card-header-tech {
-  display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;
-}
+.card-header-tech { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px; }
 .card-header-tech h3 { margin: 0; font-size: 1.1rem; color: #fff; }
-
 .month-badge { font-size: 0.75rem; background: var(--neon-purple); color: white; padding: 2px 8px; border-radius: 4px; }
 
-/* Aniversariantes */
 .tech-birthday-list { list-style: none; padding: 0; margin: 0; }
-
-.tech-birthday-item {
-  display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--glass-border);
-}
+.tech-birthday-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--glass-border); }
 .tech-birthday-item:last-child { border-bottom: none; }
-
 .tech-bday-avatar { font-size: 1.5rem; }
 .tech-bday-info { flex: 1; }
 .tech-bday-info strong { display: block; font-size: 0.9rem; color: #fff; }
 .tech-bday-info span { font-size: 0.75rem; color: var(--text-secondary); }
+.tech-bday-date { background: rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; }
 
-.tech-bday-date {
-  background: rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 8px; border-radius: 8px; font-size: 0.75rem;
-}
-
-.tech-btn-congrats {
-  width: 100%; margin-top: 15px; background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;
-  transition: opacity 0.3s;
-}
+.tech-btn-congrats { width: 100%; margin-top: 15px; background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: opacity 0.3s; }
 .tech-btn-congrats:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
 
-/* Links Úteis */
 .tech-quick-links { list-style: none; padding: 0; margin: 0; }
 .tech-quick-links li { margin-bottom: 8px; }
-.tech-quick-links a {
-  text-decoration: none; color: var(--text-secondary); display: block; padding: 10px; border-radius: 8px; transition: all 0.3s;
-  border: 1px solid transparent;
-}
-.tech-quick-links a:hover {
-  background: rgba(255,255,255,0.05); color: var(--neon-blue); border-color: var(--glass-border); transform: translateX(5px);
-}
+.tech-quick-links a { text-decoration: none; color: var(--text-secondary); display: block; padding: 10px; border-radius: 8px; transition: all 0.3s; border: 1px solid transparent; }
+.tech-quick-links a:hover { background: rgba(255,255,255,0.05); color: var(--neon-blue); border-color: var(--glass-border); transform: translateX(5px); }
 
 /* --- OVERLAY POPUP --- */
-.celebration-overlay {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 999;
-}
-.celebration-content {
-  padding: 40px; text-align: center; border: 2px solid var(--neon-purple); animation: popIn 0.4s ease-out; background: #0f172a;
-}
+.celebration-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 999; }
+.celebration-content { padding: 40px; text-align: center; border: 2px solid var(--neon-purple); animation: popIn 0.4s ease-out; background: #0f172a; }
 .emojis { font-size: 3rem; margin-bottom: 15px; animation: bounce 1s infinite; }
 .celebration-content h3 { color: var(--neon-purple); margin: 0 0 10px 0; }
 .celebration-content p { color: #fff; }

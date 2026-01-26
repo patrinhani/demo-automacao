@@ -19,12 +19,14 @@
   
   /* LAYOUT VERTICAL PADRÃO */
   display: flex;
-  flex-direction: column; /* Corrige o "espaço na esquerda" */
+  flex-direction: column;
   
-  /* Configuração para Scroll Único */
-  min-height: 100vh; 
+  /* --- CORREÇÃO DO SCROLL AQUI --- */
+  height: 100vh;       /* Altura fixa igual à da tela */
   width: 100%;
-  overflow: visible; /* Deixa o navegador controlar o scroll */
+  overflow-y: auto;    /* Habilita a barra de rolagem vertical */
+  overflow-x: hidden;  /* Esconde a barra horizontal */
+  position: relative;
 }
 
 /* --- LUZES DE FUNDO (Fixas) --- */

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
-import './Helpdesk.css'; // CSS Novo
+import './Helpdesk.css'; // Importa o CSS isolado
 
 export default function Helpdesk() {
   const navigate = useNavigate();
@@ -72,7 +72,7 @@ export default function Helpdesk() {
   // Helper para cor da prioridade
   const getPriorityColor = (prio) => {
     switch(prio) {
-      case 'Alta': return 'var(--danger)'; // Vermelho
+      case 'Alta': return 'var(--danger)'; // Vermelho definido no CSS
       case 'Média': return 'var(--warning)'; // Amarelo
       case 'Baixa': return 'var(--success)'; // Verde
       default: return '#fff';
@@ -80,162 +80,165 @@ export default function Helpdesk() {
   };
 
   return (
-    <div className="tech-layout">
+    // CLASSE RENOMEADA PARA EVITAR CONFLITO COM DASHBOARD
+    <div className="helpdesk-layout">
+      
       {/* LUZES DE FUNDO */}
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
-      <div className="ambient-light light-3"></div>
 
-      <div className="tech-main">
-        {/* HEADER TECH */}
-        <header className="tech-header">
-          <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor:'pointer'}}>
-            <Logo /> <span style={{color:'white', marginLeft:'10px'}}>Helpdesk</span>
-          </div>
-          <div className="tech-profile" onClick={() => navigate('/dashboard')}>
-            <span style={{color:'var(--text-secondary)', fontSize:'0.9rem'}}>Voltar ao Menu ↩</span>
-          </div>
-        </header>
+      {/* HEADER ESPECÍFICO (SEM SIDEBAR) */}
+      <header className="helpdesk-header">
+        <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor:'pointer'}}>
+          <div style={{transform: 'scale(0.8)'}}><Logo /></div> 
+          <span style={{color:'white', marginLeft:'10px', fontWeight: 'bold', fontSize: '1.2rem'}}>Helpdesk</span>
+        </div>
+        <div className="tech-profile" onClick={() => navigate('/dashboard')}>
+          <span style={{color:'#94a3b8', fontSize:'0.9rem'}}>Voltar ao Menu ↩</span>
+        </div>
+      </header>
 
-        <div className="tech-scroll-content">
-          <div className="page-header-tech">
-            <h2>Central de Suporte TI</h2>
-            <div className="breadcrumbs-tech">Serviços / Helpdesk / Chamados</div>
-          </div>
+      {/* CONTEÚDO COM SCROLL ISOLADO */}
+      <div className="helpdesk-scroll-content">
+        
+        <div className="page-header-tech">
+          <h2>Central de Suporte TI</h2>
+          <div className="breadcrumbs-tech">Serviços / Helpdesk / Chamados</div>
+        </div>
 
-          {/* TABS DE NAVEGAÇÃO */}
-          <div className="helpdesk-tabs-glass">
-            <button 
-              className={`tab-glass-btn ${activeTab === 'meus_chamados' ? 'active' : ''}`}
-              onClick={() => setActiveTab('meus_chamados')}
-            >
-              📂 Meus Chamados
-            </button>
-            <button 
-              className={`tab-glass-btn ${activeTab === 'novo_chamado' ? 'active' : ''}`}
-              onClick={() => setActiveTab('novo_chamado')}
-            >
-              🎧 Novo Chamado
-            </button>
-          </div>
+        {/* TABS DE NAVEGAÇÃO */}
+        <div className="helpdesk-tabs-glass">
+          <button 
+            className={`tab-glass-btn ${activeTab === 'meus_chamados' ? 'active' : ''}`}
+            onClick={() => setActiveTab('meus_chamados')}
+          >
+            📂 Meus Chamados
+          </button>
+          <button 
+            className={`tab-glass-btn ${activeTab === 'novo_chamado' ? 'active' : ''}`}
+            onClick={() => setActiveTab('novo_chamado')}
+          >
+            🎧 Novo Chamado
+          </button>
+        </div>
 
-          {/* === LISTA DE CHAMADOS === */}
-          {activeTab === 'meus_chamados' && (
-            <div className="tickets-grid-tech" style={{animation: 'fadeIn 0.5s'}}>
-              {chamados.map((ticket) => (
-                <div key={ticket.id} className="ticket-card-glass">
-                  <div className={`status-badge-neon ${ticket.status.toLowerCase().replace(' ', '-')}`}>
-                    {ticket.status}
-                  </div>
+        {/* === ABA: LISTA DE CHAMADOS === */}
+        {activeTab === 'meus_chamados' && (
+          <div className="tickets-grid-tech" style={{animation: 'fadeIn 0.5s'}}>
+            {chamados.map((ticket) => (
+              <div key={ticket.id} className="ticket-card-glass">
+                {/* Badge de Status */}
+                <div className={`status-badge-neon ${ticket.status.toLowerCase().replace(' ', '-')}`}>
+                  {ticket.status}
+                </div>
+                
+                <div className="ticket-glass-header">
+                  <span className="ticket-id-tech">{ticket.id}</span>
+                  <span className="ticket-date-tech">{ticket.data}</span>
+                </div>
+
+                <div className="ticket-glass-body">
+                  <h3 className="ticket-subject">{ticket.assunto}</h3>
                   
-                  <div className="ticket-glass-header">
-                    <span className="ticket-id-tech">{ticket.id}</span>
-                    <span className="ticket-date-tech">{ticket.data}</span>
-                  </div>
-
-                  <div className="ticket-glass-body">
-                    <h3 className="ticket-subject">{ticket.assunto}</h3>
-                    
-                    <div className="ticket-meta-row">
-                      <div className="meta-item">
-                        <span className="meta-label">Categoria</span>
-                        <span className="meta-value">{ticket.categoria}</span>
-                      </div>
-                      <div className="meta-item">
-                        <span className="meta-label">Prioridade</span>
-                        <span className="meta-value" style={{color: getPriorityColor(ticket.prioridade)}}>
-                          {ticket.prioridade}
-                        </span>
-                      </div>
+                  <div className="ticket-meta-row">
+                    <div className="meta-item">
+                      <span className="meta-label">Categoria</span>
+                      <span className="meta-value">{ticket.categoria}</span>
+                    </div>
+                    <div className="meta-item">
+                      <span className="meta-label">Prioridade</span>
+                      <span className="meta-value" style={{color: getPriorityColor(ticket.prioridade)}}>
+                        {ticket.prioridade}
+                      </span>
                     </div>
                   </div>
-
-                  <div className="ticket-glass-footer">
-                    <button className="btn-glass-sm">Ver Detalhes</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* === FORMULÁRIO DE NOVO CHAMADO === */}
-          {activeTab === 'novo_chamado' && (
-            <div className="form-glass-container" style={{animation: 'fadeIn 0.5s'}}>
-              <h3 className="neon-title">Abertura de Chamado</h3>
-              
-              <form onSubmit={handleSubmit} className="glass-form">
-                <div className="form-row-tech">
-                  <div className="form-group-tech" style={{flex: 2}}>
-                    <label>Assunto</label>
-                    <input 
-                      className="glass-input"
-                      name="assunto" 
-                      value={novoChamado.assunto} 
-                      onChange={handleInputChange} 
-                      placeholder="Resumo do problema..." 
-                      required 
-                    />
-                  </div>
-                  <div className="form-group-tech" style={{flex: 1}}>
-                    <label>Categoria</label>
-                    <select 
-                      className="glass-input"
-                      name="categoria" 
-                      value={novoChamado.categoria} 
-                      onChange={handleInputChange} 
-                      required
-                    >
-                      <option value="">Selecione...</option>
-                      <option value="Hardware">Hardware (Computador/Periféricos)</option>
-                      <option value="Software">Software / Sistemas</option>
-                      <option value="Acesso">Acesso / Senhas</option>
-                      <option value="Rede">Internet / Rede</option>
-                    </select>
-                  </div>
                 </div>
 
-                <div className="form-row-tech">
-                  <div className="form-group-tech">
-                    <label>Prioridade</label>
-                    <select 
-                      className="glass-input"
-                      name="prioridade" 
-                      value={novoChamado.prioridade} 
-                      onChange={handleInputChange}
-                    >
-                      <option value="Baixa">🟢 Baixa (Não urgente)</option>
-                      <option value="Média">🟡 Média (Impacto parcial)</option>
-                      <option value="Alta">🔴 Alta (Sistema parado)</option>
-                    </select>
-                  </div>
+                <div className="ticket-glass-footer">
+                  <button className="btn-glass-sm">Ver Detalhes</button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-                <div className="form-group-tech">
-                  <label>Descrição Detalhada</label>
-                  <textarea 
+        {/* === ABA: NOVO CHAMADO === */}
+        {activeTab === 'novo_chamado' && (
+          <div className="form-glass-container" style={{animation: 'fadeIn 0.5s'}}>
+            <h3 className="neon-title">Abertura de Chamado</h3>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="form-row-tech">
+                <div className="form-group-tech" style={{flex: 2}}>
+                  <label>Assunto</label>
+                  <input 
                     className="glass-input"
-                    name="descricao" 
-                    value={novoChamado.descricao} 
+                    name="assunto" 
+                    value={novoChamado.assunto} 
                     onChange={handleInputChange} 
-                    rows="5" 
-                    placeholder="Descreva o erro ou solicitação com detalhes..." 
+                    placeholder="Resumo do problema..." 
+                    required 
+                  />
+                </div>
+                <div className="form-group-tech" style={{flex: 1}}>
+                  <label>Categoria</label>
+                  <select 
+                    className="glass-input"
+                    name="categoria" 
+                    value={novoChamado.categoria} 
+                    onChange={handleInputChange} 
                     required
-                  ></textarea>
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="Hardware">Hardware (PC/Periféricos)</option>
+                    <option value="Software">Software / Sistemas</option>
+                    <option value="Acesso">Acesso / Senhas</option>
+                    <option value="Rede">Internet / Rede</option>
+                  </select>
                 </div>
+              </div>
 
-                <div className="form-actions-tech">
-                  <button type="button" className="btn-glass-cancel" onClick={() => setActiveTab('meus_chamados')}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn-neon-submit" disabled={loading}>
-                    {loading ? 'Enviando...' : '🚀 Abrir Chamado'}
-                  </button>
+              <div className="form-row-tech">
+                <div className="form-group-tech">
+                  <label>Prioridade</label>
+                  <select 
+                    className="glass-input"
+                    name="prioridade" 
+                    value={novoChamado.prioridade} 
+                    onChange={handleInputChange}
+                  >
+                    <option value="Baixa">🟢 Baixa (Não urgente)</option>
+                    <option value="Média">🟡 Média (Impacto parcial)</option>
+                    <option value="Alta">🔴 Alta (Sistema parado)</option>
+                  </select>
                 </div>
-              </form>
-            </div>
-          )}
+              </div>
 
-        </div>
+              <div className="form-group-tech">
+                <label>Descrição Detalhada</label>
+                <textarea 
+                  className="glass-input"
+                  name="descricao" 
+                  value={novoChamado.descricao} 
+                  onChange={handleInputChange} 
+                  rows="5" 
+                  placeholder="Descreva o erro ou solicitação com detalhes..." 
+                  required
+                ></textarea>
+              </div>
+
+              <div className="form-actions-tech">
+                <button type="button" className="btn-glass-cancel" onClick={() => setActiveTab('meus_chamados')}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-neon-submit" disabled={loading}>
+                  {loading ? 'Enviando...' : '🚀 Abrir Chamado'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
       </div>
     </div>
   );

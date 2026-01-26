@@ -17,40 +17,105 @@ export default function FolhaPonto() {
   const [modalAberto, setModalAberto] = useState(false);
   const [pontoSelecionado, setPontoSelecionado] = useState(null);
   const [tipoJustificativa, setTipoJustificativa] = useState('');
-  const [tipoAbono, setTipoAbono] = useState('parcial'); // Mantido para compatibilidade
 
   const printRef = useRef();
 
-  const [pontos, setPontos] = useState([
-    { id: 1, data: '01/10/24', dia: 'Terça', e1: '08:00', s1: '12:00', e2: '13:00', s2: '17:00', total: '08:00', status: 'OK' },
-    { id: 2, data: '02/10/24', dia: 'Quarta', e1: '08:05', s1: '12:10', e2: '13:10', s2: '17:05', total: '08:00', status: 'OK' },
-    { id: 3, data: '03/10/24', dia: 'Quinta', e1: '07:55', s1: '12:00', e2: '13:00', s2: '17:00', total: '08:05', status: 'OK' },
-    { id: 4, data: '04/10/24', dia: 'Sexta', e1: '--:--', s1: '--:--', e2: '--:--', s2: '--:--', total: '00:00', status: 'FALTA' },
-  ]);
+  // --- FUNÇÃO PARA GERAR DIAS DINÂMICOS ---
+  const gerarHistoricoDinamico = () => {
+    const listaDias = [];
+    let diaAnalise = new Date();
+    
+    // Começa a analisar a partir de "ontem" para pegar o histórico passado
+    diaAnalise.setDate(diaAnalise.getDate() - 1);
+
+    while (listaDias.length < 5) { // Queremos os 5 últimos dias úteis
+      const diaSemana = diaAnalise.getDay(); // 0 = Domingo, 6 = Sábado
+
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        // Se for dia útil, adiciona no INÍCIO do array (unshift) para manter ordem cronológica
+        listaDias.unshift(new Date(diaAnalise));
+      }
+      // Volta mais um dia
+      diaAnalise.setDate(diaAnalise.getDate() - 1);
+    }
+
+    // Transforma as datas em objetos de ponto
+    return listaDias.map((data, index) => {
+      // Formata data: DD/MM/YY
+      const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      
+      // Formata dia da semana: "Segunda", "Terça"...
+      let nomeDia = data.toLocaleDateString('pt-BR', { weekday: 'long' });
+      nomeDia = nomeDia.charAt(0).toUpperCase() + nomeDia.slice(1).split('-')[0]; // Capitaliza e remove "-feira" se quiser
+
+      // Simula dados variados para não ficar tudo igual
+      let mock = { e1: '08:00', s1: '12:00', e2: '13:00', s2: '17:00', total: '08:00', status: 'OK' };
+
+      // Simula uma "FALTA" no dia mais recente (último do array) para exemplo
+      if (index === 4) {
+         mock = { e1: '--:--', s1: '--:--', e2: '--:--', s2: '--:--', total: '00:00', status: 'FALTA' };
+      } 
+      // Simula uns minutos quebrados em outro dia
+      else if (index === 2) {
+         mock = { e1: '08:05', s1: '12:05', e2: '13:05', s2: '17:05', total: '08:00', status: 'OK' };
+      }
+
+      return {
+        id: index,
+        data: dataFormatada,
+        dia: nomeDia,
+        ...mock
+      };
+    });
+  };
+
+  // Inicializa o estado com a função geradora
+  const [pontos, setPontos] = useState(gerarHistoricoDinamico());
 
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const formatDateForInput = (dateStr) => { // Mantido auxiliar
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-    let [day, month, year] = parts;
-    if (year.length === 2) year = `20${year}`;
-    return `${year}-${month}-${day}`;
-  };
-
   const handleRegistrar = () => {
     setProcessando(true);
+
     setTimeout(() => {
       const agora = new Date();
-      const dataHoje = agora.toLocaleDateString();
-      const horaFormatada = agora.toLocaleTimeString().slice(0, 5);
-      
-      // Lógica simplificada para demo visual
-      alert(`✅ Ponto registrado com sucesso: ${horaFormatada}`);
+      const dataHoje = agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const horaAgora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const diaSemanaRaw = agora.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const diaSemana = diaSemanaRaw.charAt(0).toUpperCase() + diaSemanaRaw.slice(1).split('-')[0];
+
+      setPontos(prevPontos => {
+        // Verifica se hoje já está na lista (pode ser que o usuário registre num dia que acabou de virar útil)
+        const indexHoje = prevPontos.findIndex(p => p.data === dataHoje);
+
+        if (indexHoje !== -1) {
+          // Atualiza registro existente
+          const novosPontos = [...prevPontos];
+          const ponto = { ...novosPontos[indexHoje] };
+
+          if (ponto.e1 === '--:--') { ponto.e1 = horaAgora; ponto.status = 'EM ABERTO'; }
+          else if (ponto.s1 === '--:--') { ponto.s1 = horaAgora; ponto.status = 'INTERVALO'; }
+          else if (ponto.e2 === '--:--') { ponto.e2 = horaAgora; ponto.status = 'EM ABERTO'; }
+          else if (ponto.s2 === '--:--') { ponto.s2 = horaAgora; ponto.status = 'OK'; ponto.total = 'Calculando...'; }
+          else { alert("Todos os registros de hoje já foram realizados!"); return prevPontos; }
+
+          novosPontos[indexHoje] = ponto;
+          return novosPontos;
+        } else {
+          // Adiciona hoje na lista se não existir
+          const novoPonto = {
+            id: Date.now(), // ID único
+            data: dataHoje,
+            dia: diaSemana,
+            e1: horaAgora, s1: '--:--', e2: '--:--', s2: '--:--', total: '--:--', status: 'EM ABERTO'
+          };
+          return [...prevPontos, novoPonto];
+        }
+      });
+
       setProcessando(false);
     }, 1500);
   };
@@ -90,14 +155,11 @@ export default function FolhaPonto() {
   };
 
   return (
-    // AQUI ESTÁ A MUDANÇA PRINCIPAL: Usando a classe 'tech-ponto-layout'
     <div className="tech-ponto-layout">
       
-      {/* Luzes de Fundo (Tech Ambient) */}
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
 
-      {/* Header Tech Glass */}
       <header className="tech-header-glass">
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
@@ -111,18 +173,16 @@ export default function FolhaPonto() {
 
       <div className="ponto-container-tech">
         
-        {/* Título e Relógio */}
         <div className="top-row-flex">
           <div className="page-header-tech">
             <h2>Espelho de Ponto</h2>
-            <p>RH &gt; Controle de Jornada &gt; Outubro/2026</p>
+            <p>RH &gt; Controle de Jornada &gt; {new Date().toLocaleDateString('pt-BR', {month:'long', year:'numeric'})}</p>
           </div>
           <div className="clock-display-tech">
             {horaAtual.toLocaleTimeString()}
           </div>
         </div>
 
-        {/* KPIs (Cards de Resumo com estilo Tech) */}
         <div className="summary-grid-tech">
             <div className="summary-card-tech blue">
                 <span className="summary-label">Horas Trabalhadas</span>
@@ -141,7 +201,6 @@ export default function FolhaPonto() {
             </div>
         </div>
 
-        {/* Botão Principal de Registro (Estilo Neon) */}
         <div className="register-area-tech">
           <p style={{color: '#94a3b8', marginBottom: '20px', fontSize: '0.95rem'}}>
             Sistema de registro biométrico digital. Clique abaixo para marcar seu ponto.
@@ -151,10 +210,9 @@ export default function FolhaPonto() {
           </button>
         </div>
 
-        {/* Tabela de Dados (Glass Container) */}
         <div className="table-glass-container">
           <div className="table-header-actions">
-             <span>Detalhamento Diário</span>
+             <span>Detalhamento Diário (Últimos 5 dias úteis)</span>
              <button className="btn-adjust-tech">📅 Filtrar Período</button>
           </div>
           <table className="tech-table">
@@ -202,7 +260,6 @@ export default function FolhaPonto() {
         </div>
       </div>
 
-      {/* ================= MODAL DE AJUSTE (Tech Style) ================= */}
       {modalAberto && (
         <div className="modal-overlay">
           <div className="modal-content-tech">
@@ -246,7 +303,6 @@ export default function FolhaPonto() {
         </div>
       )}
 
-      {/* ÁREA DE IMPRESSÃO (Mantida oculta e padrão branco para o papel) */}
       <div className="print-hidden-wrapper">
         <div ref={printRef} className="print-a4-page">
            <div style={{display:'flex', justifyContent:'space-between', borderBottom:'2px solid #000', paddingBottom:'20px'}}>
@@ -257,8 +313,8 @@ export default function FolhaPonto() {
               </div>
            </div>
            <table className="print-table">
-                <thead><tr><th>DATA</th><th>ENTRADA</th><th>SAÍDA ALMOÇO</th><th>VOLTA ALMOÇO</th><th>SAÍDA</th><th>TOTAL</th><th>STATUS</th></tr></thead>
-                <tbody>{pontos.map((p,i)=>(<tr key={i}><td>{p.data}</td><td>{p.e1}</td><td>{p.s1}</td><td>{p.e2}</td><td>{p.s2}</td><td>{p.total}</td><td>{p.status}</td></tr>))}</tbody>
+               <thead><tr><th>DATA</th><th>ENTRADA</th><th>SAÍDA ALMOÇO</th><th>VOLTA ALMOÇO</th><th>SAÍDA</th><th>TOTAL</th><th>STATUS</th></tr></thead>
+               <tbody>{pontos.map((p,i)=>(<tr key={i}><td>{p.data}</td><td>{p.e1}</td><td>{p.s1}</td><td>{p.e2}</td><td>{p.s2}</td><td>{p.total}</td><td>{p.status}</td></tr>))}</tbody>
            </table>
            <div style={{marginTop:'50px', borderTop:'1px solid #000', width:'40%', paddingTop:'5px', textAlign:'center', marginLeft:'auto'}}>Assinatura do Gestor</div>
         </div>
