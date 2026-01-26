@@ -1,290 +1,239 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo';
 import { db, auth } from '../firebase';
-import { ref, push, get, onValue } from 'firebase/database'; // Adicionado onValue
+import { ref, push, onValue } from 'firebase/database';
+import { onAuthStateChanged } from 'firebase/auth';
+import Logo from '../components/Logo';
 import './Helpdesk.css';
 
 export default function Helpdesk() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('meus_chamados');
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState({});
+  const [user, setUser] = useState(null);
   
-  // Começa vazio, pois vamos buscar do banco
-  const [chamados, setChamados] = useState([]);
+  // Estado dos Chamados
+  const [meusChamados, setMeusChamados] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 1. Busca dados do usuário (Nome/Cargo)
+  // Estado do Formulário
+  const [novoChamado, setNovoChamado] = useState({
+    titulo: '',
+    categoria: 'hardware', // hardware, software, rede, acesso
+    prioridade: 'normal',
+    descricao: ''
+  });
+
+  const [modalAberto, setModalAberto] = useState(false);
+
+  // 1. MONITORAR AUTH E BUSCAR CHAMADOS
   useEffect(() => {
-     const u = auth.currentUser;
-     if(u) get(ref(db, `users/${u.uid}`)).then(s => s.exists() && setUserData(s.val()));
-  }, []);
-
-  // 2. Busca Chamados em Tempo Real (Escuta o Firebase)
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const chamadosRef = ref(db, 'solicitacoes/helpdesk');
-    
-    // Ouve mudanças (onValue)
-    const unsubscribe = onValue(chamadosRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Converte objeto em array e filtra APENAS os meus
-        const meusChamados = Object.entries(data)
-          .map(([id, valor]) => ({ id, ...valor }))
-          .filter(item => item.userId === user.uid);
+    const authUnsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
         
-        // Ordena do mais recente para o mais antigo
-        meusChamados.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        setChamados(meusChamados);
+        const chamadosRef = ref(db, 'chamados');
+        onValue(chamadosRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Converte objeto em array e filtra pelo dono
+            const lista = Object.entries(data)
+              .map(([id, valor]) => ({ id, ...valor }))
+              .filter(item => item.userId === currentUser.uid)
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Mais recentes primeiro
+            
+            setMeusChamados(lista);
+          } else {
+            setMeusChamados([]);
+          }
+          setLoading(false);
+        });
+
       } else {
-        setChamados([]);
+        navigate('/');
       }
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => authUnsubscribe();
+  }, [navigate]);
 
-  const handleSubmit = async (e) => {
+  // 2. ENVIAR NOVO CHAMADO
+  const handleAbrirChamado = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    
+    if (!novoChamado.titulo.trim() || !user) return;
+
     try {
-        await push(ref(db, 'solicitacoes/helpdesk'), {
-            userId: auth.currentUser.uid,
-            solicitanteNome: userData.nome || 'Usuário',
-            solicitanteCargo: userData.cargo || 'Cargo',
-            ...novoChamado,
-            status: 'pendente',
-            createdAt: new Date().toISOString()
-        });
-        alert("✅ Chamado aberto com sucesso! A equipe de TI já foi notificada.");
-        
-        // Limpa o form
-        setNovoChamado({ 
-            assunto: '', categoria: '', prioridade: 'Média', descricao: '',
-            ramal: '', localizacao: '', patrimonio: ''
-        });
-        setActiveTab('meus_chamados');
-        
+      const chamadosRef = ref(db, 'chamados');
+      const protocolo = `HD-${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}`;
+      
+      await push(chamadosRef, {
+        ...novoChamado,
+        protocolo,
+        userId: user.uid,
+        userEmail: user.email,
+        status: 'aberto', // aberto, em_andamento, concluido
+        createdAt: new Date().toISOString(),
+        respostas: [] // Para futuro sistema de chat no chamado
+      });
+
+      alert(`Chamado ${protocolo} aberto com sucesso!`);
+      setNovoChamado({ titulo: '', categoria: 'hardware', prioridade: 'normal', descricao: '' });
+      setModalAberto(false);
+
     } catch (error) {
-        alert("Erro: " + error.message);
-    } finally {
-        setLoading(false);
+      console.error("Erro ao abrir chamado:", error);
+      alert("Erro ao conectar com o servidor.");
     }
   };
 
-  const [novoChamado, setNovoChamado] = useState({ 
-    assunto: '', categoria: '', prioridade: 'Média', descricao: '',
-    ramal: '', localizacao: '', patrimonio: ''
-  });
-
-  const handleInputChange = (e) => setNovoChamado({ ...novoChamado, [e.target.name]: e.target.value });
-
-  // Helper de Cores
-  const getPriorityColor = (prio) => {
-    switch(prio) {
-      case 'Alta': return 'var(--danger)';
-      case 'Média': return 'var(--warning)';
-      case 'Baixa': return 'var(--success)';
-      default: return '#fff';
+  // Cores e Ícones por Status
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'aberto': return { label: 'Aberto', cor: 'var(--neon-blue)', icon: '🆕' };
+      case 'em_andamento': return { label: 'Em Análise', cor: 'var(--neon-purple)', icon: '⚙️' };
+      case 'concluido': return { label: 'Resolvido', cor: 'var(--neon-green)', icon: '✅' };
+      default: return { label: status, cor: '#ccc', icon: '❓' };
     }
-  };
-
-  // Helper de Data
-  const formatarData = (dataIso) => {
-    if (!dataIso) return '---';
-    return new Date(dataIso).toLocaleDateString('pt-BR');
   };
 
   return (
-    <div className="helpdesk-layout">
+    <div className="tech-layout-helpdesk">
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
 
-      <header className="helpdesk-header">
-        <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor:'pointer'}}>
-          <div style={{transform:'scale(0.8)'}}><Logo/></div>
-          <span style={{color:'#fff', marginLeft:'10px', fontWeight: 'bold', fontSize: '1.2rem'}}>Helpdesk</span>
+      <header className="tech-header-glass">
+        <div className="header-left">
+           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+           <span className="divider">|</span>
+           <span className="page-title">Suporte Técnico</span>
         </div>
-        <div className="tech-profile" onClick={()=>navigate('/dashboard')}>
-          <span style={{color:'#94a3b8', fontSize:'0.9rem'}}>Voltar ao Menu ↩</span>
-        </div>
+        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
+          Voltar ao Menu ↩
+        </button>
       </header>
 
-      <div className="helpdesk-scroll-content">
+      <div className="helpdesk-container">
         
-        <div className="page-header-tech">
-          <h2>Central de Suporte TI</h2>
-          <div className="breadcrumbs-tech">Serviços / Helpdesk / Chamados</div>
-        </div>
-
-        {/* TABS */}
-        <div className="helpdesk-tabs-glass">
-          <button 
-            className={`tab-glass-btn ${activeTab === 'meus_chamados' ? 'active' : ''}`}
-            onClick={() => setActiveTab('meus_chamados')}
-          >
-            📂 Meus Chamados
-          </button>
-          <button 
-            className={`tab-glass-btn ${activeTab === 'novo_chamado' ? 'active' : ''}`}
-            onClick={() => setActiveTab('novo_chamado')}
-          >
-            🎧 Novo Chamado
+        <div className="page-header-row">
+          <div className="text-group">
+            <h2>Meus Chamados</h2>
+            <p>Gerencie suas solicitações de suporte e TI.</p>
+          </div>
+          <button className="btn-new-ticket" onClick={() => setModalAberto(true)}>
+            + Abrir Chamado
           </button>
         </div>
 
-        {/* LISTA DE CHAMADOS */}
-        {activeTab === 'meus_chamados' && (
-          <div className="tickets-container" style={{width: '100%', maxWidth: '1200px'}}>
-            
-            {chamados.length === 0 ? (
-                // --- ESTADO VAZIO ---
-                <div style={{
-                    textAlign: 'center', 
-                    padding: '60px', 
-                    background: 'rgba(255,255,255,0.03)', 
-                    borderRadius: '16px', 
-                    border: '1px dashed rgba(255,255,255,0.1)',
-                    marginTop: '20px'
-                }}>
-                    <span style={{fontSize: '3rem', display: 'block', marginBottom: '15px'}}>🎫</span>
-                    <h3 style={{color: '#fff', margin: '0 0 10px 0'}}>Nenhum chamado solicitado ainda</h3>
-                    <p style={{color: '#94a3b8'}}>Seus tickets de suporte aparecerão aqui.</p>
-                    <button 
-                        onClick={() => setActiveTab('novo_chamado')}
-                        style={{
-                            marginTop: '20px',
-                            padding: '10px 20px',
-                            background: 'var(--neon-blue)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        Abrir meu primeiro chamado
-                    </button>
-                </div>
-            ) : (
-                // --- GRID DE TICKETS ---
-                <div className="tickets-grid-tech" style={{animation: 'fadeIn 0.5s'}}>
-                    {chamados.map((ticket) => (
-                    <div key={ticket.id} className="ticket-card-glass">
-                        <div className={`status-badge-neon ${ticket.status ? ticket.status.toLowerCase().replace(' ', '-') : 'pendente'}`}>
-                        {ticket.status ? ticket.status.toUpperCase() : 'PENDENTE'}
-                        </div>
-                        
-                        <div className="ticket-glass-header">
-                        <span className="ticket-id-tech">#{ticket.id.slice(-6).toUpperCase()}</span>
-                        <span className="ticket-date-tech">{formatarData(ticket.createdAt)}</span>
-                        </div>
-                        
-                        <div className="ticket-glass-body">
-                        <h3 className="ticket-subject">{ticket.assunto}</h3>
-                        <div className="ticket-meta-row">
-                            <div className="meta-item">
-                            <span className="meta-label">Categoria</span>
-                            <span className="meta-value">{ticket.categoria}</span>
-                            </div>
-                            <div className="meta-item">
-                            <span className="meta-label">Prioridade</span>
-                            <span className="meta-value" style={{color: getPriorityColor(ticket.prioridade)}}>
-                                {ticket.prioridade}
-                            </span>
-                            </div>
-                        </div>
-                        </div>
-                        
-                        <div className="ticket-glass-footer">
-                        <button className="btn-glass-sm">Ver Detalhes</button>
-                        </div>
-                    </div>
-                    ))}
-                </div>
-            )}
-          </div>
-        )}
+        {/* LISTAGEM */}
+        <div className="tickets-grid">
+          {loading ? (
+             <p className="loading-text">Carregando seus chamados...</p>
+          ) : meusChamados.length === 0 ? (
+             <div className="empty-state-hd">
+                <span style={{fontSize:'3rem'}}>🎧</span>
+                <p>Nenhum chamado aberto. Tudo funcionando!</p>
+             </div>
+          ) : (
+             meusChamados.map(ticket => {
+               const statusInfo = getStatusInfo(ticket.status);
+               return (
+                 <div key={ticket.id} className="ticket-card" style={{borderLeft: `4px solid ${statusInfo.cor}`}}>
+                   <div className="ticket-header">
+                     <span className="protocolo">{ticket.protocolo}</span>
+                     <span className="date">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                   </div>
+                   
+                   <h3 className="ticket-title">{ticket.titulo}</h3>
+                   
+                   <div className="ticket-tags">
+                      <span className="tag-cat">{ticket.categoria.toUpperCase()}</span>
+                      <span className={`tag-prio ${ticket.prioridade}`}>{ticket.prioridade}</span>
+                   </div>
 
-        {/* FORMULÁRIO */}
-        {activeTab === 'novo_chamado' && (
-          <div className="form-glass-container" style={{animation: 'fadeIn 0.5s'}}>
-            <h3 className="neon-title">Novo Chamado Técnico</h3>
-            
-            <form onSubmit={handleSubmit}>
-                <div className="form-row-tech">
-                    <div className="form-group-tech" style={{flex: 2}}>
-                        <label>Assunto / Título *</label>
-                        <input className="glass-input" name="assunto" value={novoChamado.assunto} onChange={handleInputChange} placeholder="Ex: Monitor não liga" required />
-                    </div>
-                    <div className="form-group-tech" style={{flex: 1}}>
-                        <label>Categoria *</label>
-                        <select className="glass-input" name="categoria" value={novoChamado.categoria} onChange={handleInputChange} required>
-                            <option value="">Selecione...</option>
-                            <option value="Hardware">Hardware / Periféricos</option>
-                            <option value="Software">Software / Instalação</option>
-                            <option value="Acesso">Acesso / Senhas</option>
-                            <option value="Rede">Rede / Internet</option>
-                            <option value="Impressora">Impressoras</option>
-                        </select>
-                    </div>
-                </div>
+                   <p className="ticket-desc">
+                     {ticket.descricao || 'Sem descrição.'}
+                   </p>
 
-                <div className="form-row-tech">
-                    <div className="form-group-tech">
-                        <label>Ramal ou Celular *</label>
-                        <input className="glass-input" name="ramal" value={novoChamado.ramal} onChange={handleInputChange} placeholder="Ex: 4002" required />
-                    </div>
-                    <div className="form-group-tech">
-                        <label>Sua Localização *</label>
-                        <input className="glass-input" name="localizacao" value={novoChamado.localizacao} onChange={handleInputChange} placeholder="Ex: Mesa 12 - 2º Andar" required />
-                    </div>
-                </div>
-
-                <div className="form-row-tech">
-                    <div className="form-group-tech">
-                        <label>Patrimônio (Se houver)</label>
-                        <input className="glass-input" name="patrimonio" value={novoChamado.patrimonio} onChange={handleInputChange} placeholder="Ex: NTB-0043" />
-                    </div>
-                    <div className="form-group-tech">
-                        <label>Nível de Urgência</label>
-                        <select className="glass-input" name="prioridade" value={novoChamado.prioridade} onChange={handleInputChange}>
-                            <option value="Baixa">🟢 Baixa</option>
-                            <option value="Média">🟡 Média</option>
-                            <option value="Alta">🔴 Alta</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="form-group-tech">
-                    <label>Descrição Detalhada do Problema *</label>
-                    <textarea 
-                        className="glass-input" 
-                        name="descricao" 
-                        value={novoChamado.descricao} 
-                        onChange={handleInputChange} 
-                        rows="5" 
-                        placeholder="Descreva o passo a passo do erro ou o que você precisa..." 
-                        required 
-                    ></textarea>
-                </div>
-
-                <div className="form-actions-tech">
-                    <button type="button" className="btn-glass-cancel" onClick={() => setActiveTab('meus_chamados')}>Cancelar</button>
-                    <button type="submit" className="btn-neon-submit" disabled={loading}>
-                        {loading ? 'Enviando...' : '🚀 Abrir Chamado'}
-                    </button>
-                </div>
-            </form>
-          </div>
-        )}
+                   <div className="ticket-footer">
+                     <div className="status-badge-hd" style={{color: statusInfo.cor, borderColor: statusInfo.cor}}>
+                        {statusInfo.icon} {statusInfo.label}
+                     </div>
+                   </div>
+                 </div>
+               );
+             })
+          )}
+        </div>
 
       </div>
+
+      {/* MODAL DE NOVO CHAMADO */}
+      {modalAberto && (
+        <div className="modal-overlay" onClick={() => setModalAberto(false)}>
+          <div className="modal-content-hd" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-hd">
+              <h3>Novo Chamado de Suporte</h3>
+              <button className="close-btn" onClick={() => setModalAberto(false)}>✖</button>
+            </div>
+            
+            <form onSubmit={handleAbrirChamado}>
+              <div className="form-group-hd">
+                <label>Assunto Resumido</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Monitor não liga..." 
+                  value={novoChamado.titulo}
+                  onChange={(e) => setNovoChamado({...novoChamado, titulo: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="form-row-hd">
+                <div className="form-group-hd">
+                  <label>Categoria</label>
+                  <select 
+                    value={novoChamado.categoria}
+                    onChange={(e) => setNovoChamado({...novoChamado, categoria: e.target.value})}
+                  >
+                    <option value="hardware">Hardware / Equipamento</option>
+                    <option value="software">Software / Programas</option>
+                    <option value="rede">Internet / Rede</option>
+                    <option value="acesso">Login / Senha</option>
+                    <option value="impressora">Impressoras</option>
+                  </select>
+                </div>
+
+                <div className="form-group-hd">
+                  <label>Prioridade</label>
+                  <select 
+                    value={novoChamado.prioridade}
+                    onChange={(e) => setNovoChamado({...novoChamado, prioridade: e.target.value})}
+                  >
+                    <option value="baixa">Baixa (Pode esperar)</option>
+                    <option value="normal">Normal</option>
+                    <option value="alta">Alta (Urgente)</option>
+                    <option value="critica">Crítica (Parou tudo)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group-hd">
+                <label>Descrição Detalhada</label>
+                <textarea 
+                  rows="5"
+                  placeholder="Descreva o problema e se possível como reproduzi-lo..."
+                  value={novoChamado.descricao}
+                  onChange={(e) => setNovoChamado({...novoChamado, descricao: e.target.value})}
+                  required
+                ></textarea>
+              </div>
+
+              <div className="modal-actions-hd">
+                <button type="button" className="btn-cancel" onClick={() => setModalAberto(false)}>Cancelar</button>
+                <button type="submit" className="btn-submit-hd">Enviar Solicitação</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

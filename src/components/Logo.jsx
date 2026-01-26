@@ -1,44 +1,62 @@
-import '../App.css';
+import React from 'react';
 
-export default function Logo({ lightMode = false, size = 1 }) {
-  const primaryColor = lightMode ? 'var(--corp-blue)' : 'white';
-  const secondaryColor = lightMode ? 'white' : 'var(--corp-blue)';
-
-  // Cálculos de tamanho nativos
-  const iconSize = 36 * size;
-  const titleSize = 1.3 * size;
-  const subSize = 0.65 * size;
-  const gap = 12 * size;
+// Aceita props 'size' para ajustar tamanho e 'lightMode' para PDF (fundo branco)
+export default function Logo({ size = 1, lightMode = false }) {
+  const scale = size;
+  
+  // Cores: Se for lightMode (para PDF), usa cores escuras. Senão, usa Neon.
+  const primaryColor = lightMode ? "#0ea5e9" : "#3b82f6"; // Azul
+  const secondaryColor = lightMode ? "#7c3aed" : "#8b5cf6"; // Roxo
+  const textColor = lightMode ? "#1e293b" : "#ffffff";
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: `${gap}px`, fontFamily: 'Segoe UI, sans-serif' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', transform: `scale(${scale})`, transformOrigin: 'left center' }}>
       
-      {/* SVG com tamanho explícito */}
-      <svg width={iconSize} height={iconSize} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="32" height="32" rx="6" fill={primaryColor} stroke={primaryColor} strokeWidth="2"/>
-        <path d="M8 26L14 18L20 22L28 10" stroke={secondaryColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="28" cy="10" r="2.5" fill={secondaryColor}/>
+      {/* Ícone Tech Hexagonal com Gradiente */}
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="tech-gradient" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor={primaryColor} />
+            <stop offset="100%" stopColor={secondaryColor} />
+          </linearGradient>
+        </defs>
+        
+        {/* Forma Hexagonal Externa */}
+        <path 
+          d="M20 2L37.32 12V32L20 42L2.68 32V12L20 2Z" 
+          stroke="url(#tech-gradient)" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        />
+        
+        {/* Circuito Interno */}
+        <path 
+          d="M20 12V20M20 20L27 24M20 20L13 24" 
+          stroke="url(#tech-gradient)" 
+          strokeWidth="3" 
+          strokeLinecap="round"
+        />
+        <circle cx="20" cy="20" r="3" fill="url(#tech-gradient)" />
       </svg>
 
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      {/* Texto da Logo */}
+      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1' }}>
         <span style={{ 
-          color: primaryColor, 
-          fontWeight: 800, 
-          fontSize: `${titleSize}rem`, 
-          lineHeight: 1,
-          letterSpacing: '1px'
+          color: textColor, 
+          fontWeight: '800', 
+          fontSize: '1.2rem', 
+          letterSpacing: '-0.5px' 
         }}>
-          TECHCORP
+          TECH<span style={{ color: primaryColor }}>CORP</span>
         </span>
         <span style={{ 
-          color: primaryColor, 
-          fontSize: `${subSize}rem`, 
-          fontWeight: 600,
-          opacity: 0.8, 
+          color: lightMode ? "#64748b" : "#94a3b8", 
+          fontSize: '0.6rem', 
           letterSpacing: '2px',
           textTransform: 'uppercase'
         }}>
-          Solutions S.A.
+          Solutions
         </span>
       </div>
     </div>
