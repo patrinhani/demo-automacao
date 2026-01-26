@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+// --- COMPONENTE GLOBAL DE NOTIFICAÇÃO (NOVO) ---
+import NotificationPopup from './components/NotificationPopup';
+
 // --- PÁGINAS DE ACESSO E CONTA ---
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -8,8 +11,7 @@ import TrocarSenha from './pages/TrocarSenha'; // Segurança: Troca Obrigatória
 
 // --- PÁGINAS ADMINISTRATIVAS ---
 import CadastroUsuario from './pages/CadastroUsuario'; // Criar novos usuários
-import GestaoReembolsos from './pages/GestaoReembolsos'; // Aprovar solicitações (NOVO)
-import GestaoAprovacoes from './pages/GestaoAprovaçoes';
+import GestaoReembolsos from './pages/GestaoReembolsos'; // Aprovar solicitações
 
 // --- MÓDULOS FINANCEIROS ---
 import Solicitacao from './pages/Solicitacao';
@@ -27,7 +29,6 @@ import Carreira from './pages/Carreira';
 import GestaoViagens from './pages/GestaoViagens';
 import Helpdesk from './pages/Helpdesk';
 import ReservaSalas from './pages/ReservaSalas';
-import HistoricoSolicitacoes from './pages/HistoricoSolicitacoes'; // <--- Nova página Geral
 
 // --- COMUNICAÇÃO E COLABORAÇÃO ---
 import Comunicacao from './pages/Comunicacao';
@@ -43,6 +44,13 @@ import './App.css';
 function App() {
   return (                               
     <BrowserRouter>
+      
+      {/* O NotificationPopup fica AQUI, fora das rotas.
+          Assim ele existe em todas as páginas e pode mostrar 
+          o aviso "Nova mensagem de Fulano" a qualquer momento.
+      */}
+      <NotificationPopup />
+
       <Routes>
         {/* =======================================================
             ROTAS PÚBLICAS / INICIAIS
@@ -63,7 +71,6 @@ function App() {
         {/* --- ÁREA DO GESTOR / ADMIN --- */}
         <Route path="/cadastro-usuario" element={<CadastroUsuario />} />
         <Route path="/gestao-reembolsos" element={<GestaoReembolsos />} />
-        <Route path="/aprovacoes-gerais" element={<GestaoAprovacoes />} />
 
         {/* --- OPERACIONAIS --- */}
         <Route path="/solicitacao" element={<Solicitacao />} />
@@ -78,11 +85,12 @@ function App() {
 
         <Route path="/viagens" element={<GestaoViagens />} />
         <Route path="/helpdesk" element={<Helpdesk />} />
-        <Route path="/reservas" element={<ReservaSalas />} />
-        <Route path="/historico-solicitacoes" element={<HistoricoSolicitacoes />} /> {/* Rota do Histórico */}
+        <Route path="/reservas" element={<ReservaSalas />} /> 
 
         <Route path="/comunicacao" element={<Comunicacao />} />
         <Route path="/portal-cliente" element={<PortalCliente />} />
+        
+        {/* Chat Corporativo */}
         <Route path="/chat" element={<ChatInterno />} />
 
         <Route path="/tarefas" element={<Tarefas />} />

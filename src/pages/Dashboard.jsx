@@ -2,167 +2,120 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db, auth } from '../firebase';
-import { ref, onValue, get } from 'firebase/database'; // Adicionado 'get'
+import { ref, onValue } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth"; 
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // Estado do Usuário
   const [userProfile, setUserProfile] = useState({
     nome: 'Carregando...',
     cargo: '...',
     role: 'colaborador'
   });
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Contadores Separados (Para evitar bugs de soma)
-  const [contagemTarefas, setContagemTarefas] = useState(0);
-  const [contagemReembolsos, setContagemReembolsos] = useState(0);
-  const [contagemGeral, setContagemGeral] = useState(0); // Férias, Viagens, Helpdesk
-  const [proxFerias, setProxFerias] = useState('---');
+  const [kpis, setKpis] = useState({
+    tarefas: 0,
+    solicitacoes: 0,
+    ferias: '---'
+  });
 
   useEffect(() => {
-    // Monitora autenticação
+    let dbUnsubscribes = [];
+
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) return navigate('/');
-
-      // 1. BUSCAR PERFIL E DEFINIR PERMISSÃO
-      const userRef = ref(db, `users/${user.uid}`);
-      onValue(userRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setUserProfile({
-            nome: data.nome || 'Usuário',
-            cargo: data.cargo || 'Cargo não definido',
-            role: data.role || 'colaborador'
-          });
-          
-          // Verifica se é Gestor/CEO
-          const ehChefe = data.role === 'admin' || data.role === 'gestor' || (data.cargo && data.cargo.includes('C.E.O'));
-          setIsAdmin(ehChefe);
-        }
-      });
-
-      // 2. BUSCAR TAREFAS (Sempre pessoais)
-      const tarefasRef = ref(db, 'tarefas');
-      onValue(tarefasRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const total = Object.values(snapshot.val()).filter(t => t.userId === user.uid && t.status !== 'done').length;
-          setContagemTarefas(total);
-        } else {
-          setContagemTarefas(0);
-        }
-      });
-
-      // 3. BUSCAR FÉRIAS
-      const feriasRef = ref(db, 'ferias/proximoPeriodo'); 
-      onValue(feriasRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.inicio) {
-          const dateObj = new Date(data.inicio);
-          setProxFerias(dateObj.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-        } else {
-          setProxFerias('A definir');
-        }
-      });
-
-    });
-
-    return () => authUnsubscribe();
-  }, [navigate]);
-
-  // --- 4. USE EFFECT DEDICADO PARA OS CONTADORES DE SOLICITAÇÃO ---
-  // Roda sempre que 'isAdmin' mudar ou o usuário mudar, garantindo a lógica correta
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    // A. Listener de Reembolsos (Estrutura Antiga)
-    const reembolsosRef = ref(db, 'reembolsos');
-    const unsubReembolsos = onValue(reembolsosRef, (snapshot) => {
-      let count = 0;
-      if (snapshot.exists()) {
-        Object.values(snapshot.val()).forEach(item => {
-          // Admin vê tudo que é 'em_analise' | Colaborador vê tudo que é dele
-          if (isAdmin) {
-            if (item.status === 'em_analise') count++;
-          } else {
-            if (item.userId === user.uid) count++;
+      if (user) {
+        // --- A. Busca Perfil ---
+        const userRef = ref(db, `users/${user.uid}`);
+        dbUnsubscribes.push(onValue(userRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            setUserProfile({
+              nome: data.nome || 'Usuário',
+              cargo: data.cargo || 'Cargo não definido',
+              role: data.role || 'colaborador'
+            });
           }
-        });
-      }
-      setContagemReembolsos(count);
-    });
+        }));
 
-    // B. Listener de Solicitações Gerais (Estrutura Nova: Férias, Viagens, Helpdesk)
-    const solicitacoesRef = ref(db, 'solicitacoes');
-    const unsubGerais = onValue(solicitacoesRef, (snapshot) => {
-      let count = 0;
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        // Itera sobre categorias (ferias, viagens...)
-        Object.values(data).forEach(categoria => {
-          // Itera sobre itens
-          Object.values(categoria).forEach(item => {
-            // Normaliza status para minúsculo para evitar erro de digitação
-            const statusItem = item.status ? item.status.toLowerCase() : 'pendente';
+        // --- B. Busca Tarefas ---
+        const tarefasRef = ref(db, 'tarefas');
+        dbUnsubscribes.push(onValue(tarefasRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            const minhasPendentes = Object.values(data).filter(t => 
+              t.userId === user.uid && t.status !== 'done'
+            ).length;
+            setKpis(prev => ({ ...prev, tarefas: minhasPendentes }));
+          } else {
+            setKpis(prev => ({ ...prev, tarefas: 0 }));
+          }
+        }));
+
+        // --- C. Busca Solicitações (Reembolsos) ---
+        const solicitacoesRef = ref(db, 'reembolsos');
+        dbUnsubscribes.push(onValue(solicitacoesRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            const minhasSolicitacoes = Object.values(data).filter(s => 
+              s.userId === user.uid
+            ).length;
+            setKpis(prev => ({ ...prev, solicitacoes: minhasSolicitacoes }));
+          } else {
+            setKpis(prev => ({ ...prev, solicitacoes: 0 }));
+          }
+        }));
+
+        // --- D. Busca Férias (INTEGRAÇÃO FEITA!) ---
+        // Agora busca no nó específico do usuário: ferias/UID
+        const feriasRef = ref(db, `ferias/${user.uid}`);
+        dbUnsubscribes.push(onValue(feriasRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Transforma em array e ordena por data (pega a última solicitada)
+            const listaFerias = Object.values(data).sort((a, b) => 
+              new Date(b.dataInicio) - new Date(a.dataInicio)
+            );
             
-            if (isAdmin) {
-              // Admin conta apenas PENDENTES
-              if (statusItem === 'pendente') count++;
-            } else {
-              // Colaborador conta TUDO que é dele (Aprovado, Pendente, etc) para ter histórico
-              if (item.userId === user.uid) count++;
+            // Pega a mais recente
+            const ultimaFerias = listaFerias[0];
+            
+            if (ultimaFerias) {
+              const dateObj = new Date(ultimaFerias.dataInicio);
+              // Exemplo: "10 de Jan"
+              const diaMes = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+              setKpis(prev => ({ ...prev, ferias: diaMes }));
             }
-          });
-        });
+          } else {
+            setKpis(prev => ({ ...prev, ferias: 'Não agendado' }));
+          }
+        }));
+
+      } else {
+        setUserProfile({ nome: '...', cargo: '...', role: 'colaborador' });
       }
-      setContagemGeral(count);
     });
 
     return () => {
-      unsubReembolsos();
-      unsubGerais();
+      authUnsubscribe();
+      dbUnsubscribes.forEach(unsub => unsub());
     };
-  }, [isAdmin]); // Importante: Recalcula quando o status de Admin é carregado
-
-  // --- CONFIGURAÇÃO DOS CARDS E MENU ---
-  const totalSolicitacoes = contagemReembolsos + contagemGeral;
+  }, [navigate]);
 
   const stats = [
-    { 
-      titulo: 'Tarefas Pendentes', 
-      valor: contagemTarefas.toString(), 
-      icon: '⚡', 
-      cor: 'var(--neon-blue)',
-      rota: '/tarefas'
-    },
-    { 
-      // Muda o título e ícone dinamicamente
-      titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
-      valor: totalSolicitacoes.toString(), 
-      icon: isAdmin ? '✅' : '📂', 
-      cor: 'var(--neon-purple)',
-      rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes' 
-    },
-    { 
-      titulo: 'Próx. Férias', 
-      valor: proxFerias, 
-      icon: '🌴', 
-      cor: 'var(--neon-green)',
-      rota: '/ferias'
-    },
+    { titulo: 'Tarefas Pendentes', valor: kpis.tarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)' },
+    { titulo: 'Solicitações', valor: kpis.solicitacoes.toString(), icon: '📂', cor: 'var(--neon-purple)' },
+    { titulo: 'Próx. Férias', valor: kpis.ferias, icon: '🌴', cor: 'var(--neon-green)' },
   ];
 
+  const ehAdmin = userProfile.role === 'admin' || userProfile.role === 'gestor' || (userProfile.cargo && userProfile.cargo.toLowerCase().includes('gestor'));
+
   const acessos = [
-    ...(isAdmin ? [
+    ...(ehAdmin ? [
       { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
-      { titulo: 'Aprovações Gerais', desc: 'Férias, Viagens, TI e $', icon: '✅', rota: '/aprovacoes-gerais' }
+      { titulo: 'Aprovar Reembolsos', desc: 'Central de Aprovações', icon: '💰', rota: '/gestao-reembolsos' }
     ] : []),
-    
-    { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
@@ -172,6 +125,7 @@ export default function Dashboard() {
     { titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
     { titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },
     { titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
+    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' }, // Link adicionado/confirmado
   ];
 
   return (
@@ -189,7 +143,6 @@ export default function Dashboard() {
             <h1>Visão Geral</h1>
             <p>Bem-vindo ao <strong>TechPortal</strong></p>
           </div>
-          
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
               <span className="name">{userProfile.nome}</span>
@@ -207,11 +160,7 @@ export default function Dashboard() {
               <div 
                 key={i} 
                 className="glass-stat-card" 
-                style={{ 
-                  borderTopColor: stat.cor,
-                  cursor: 'pointer' 
-                }}
-                onClick={() => stat.rota && navigate(stat.rota)}
+                style={{ borderTopColor: stat.cor, cursor: 'default' }}
               >
                 <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
                   {stat.icon}
