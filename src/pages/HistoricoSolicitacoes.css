@@ -1,0 +1,198 @@
+/* src/pages/HistoricoSolicitacoes.css */
+
+.historico-layout {
+  --bg-dark: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --neon-blue: #3b82f6;
+  
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.historico-container {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+/* --- Filtros --- */
+.filter-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.filter-tab {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.filter-tab:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.filter-tab.active {
+    background: var(--neon-blue);
+    color: white;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+/* --- Tabela de Vidro --- */
+.table-responsive-glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    overflow-x: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.tech-table {
+    width: 100%;
+    border-collapse: separate; /* Importante para border-radius funcionar nas tr */
+    border-spacing: 0;
+    white-space: nowrap; /* Evita quebra de linha indesejada no cabeçalho */
+}
+
+.tech-table th {
+    text-align: left;
+    padding: 20px;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.tech-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+}
+
+.tech-table tr:last-child td { border-bottom: none; }
+.tech-table tr:hover td { background: rgba(255,255,255,0.03); transition: 0.2s; }
+
+/* --- Estrutura das Células (CORREÇÃO DO "GRUDADO") --- */
+
+/* Define que as células com conteúdo duplo (título/subtítulo) serão colunas flexíveis */
+.user-cell, .date-cell, .details-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* Espaço vertical entre o negrito e o small */
+}
+
+/* Estilo para os títulos (Data, Nome, Resumo Principal) */
+.tech-table td strong {
+    display: block;
+    font-size: 0.95rem;
+    color: white;
+    font-weight: 600;
+}
+
+/* Estilo para os subtítulos (Hora, Cargo, Detalhe Secundário) */
+.tech-table td small {
+    display: block; /* Garante que fique em linha própria se necessário */
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    white-space: normal; /* Permite quebra de linha se o texto for longo */
+}
+
+/* Limita a largura da coluna de detalhes para não esticar demais a tabela */
+.details-cell {
+    max-width: 280px;
+    white-space: normal; /* Permite que o resumo quebre linha */
+}
+
+
+/* --- Badges e Status --- */
+.badge-type {
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+.badge-type.ferias { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-type.viagens { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);}
+.badge-type.helpdesk { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3);}
+.badge-type.reembolso { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3);}
+
+.status-pill {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: inline-block;
+}
+.status-success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.status-warning { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+.status-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+/* --- Célula do Aprovador --- */
+.approver-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #10b981;
+}
+.check-icon { font-size: 1.1rem; }
+.pending-text { color: var(--text-secondary); font-style: italic; font-size: 0.9rem; }
+
+/* --- Loading --- */
+.loading-state {
+    text-align: center;
+    padding: 60px;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.tech-spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+    font-size: 1.5rem;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Responsivo Básico para Tabela */
+@media (max-width: 768px) {
+    .historico-container { padding: 20px 10px; }
+    .tech-table th, .tech-table td { padding: 12px 15px; }
+    .filter-tabs { gap: 10px; }
+    .filter-tab { padding: 8px 16px; font-size: 0.8rem; }
+}

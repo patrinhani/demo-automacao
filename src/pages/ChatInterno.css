@@ -1,5 +1,5 @@
 /* ======================================================
-   CHAT INTERNO - CORRIGIDO (SCROLL FIXO)
+   CHAT INTERNO - TECHCORP (FINAL)
    ====================================================== */
 
 /* --- RESET SEGURO --- */
@@ -136,7 +136,7 @@ html, body {
 
 /* --- SIDEBAR --- */
 .chat-sidebar {
-  width: 260px;
+  width: 280px; /* Levemente mais largo para caber notificações */
   flex-shrink: 0;
   background: rgba(15,23,42,0.7);
   border-right: 1px solid var(--glass-border);
@@ -169,6 +169,7 @@ html, body {
   border-radius: 8px;
   text-align: left;
   cursor: pointer;
+  margin-bottom: 2px;
 }
 .channel-btn:hover {
   background: rgba(255,255,255,0.05);
@@ -182,11 +183,38 @@ html, body {
   display: block;
   color: white;
   font-weight: 600;
+  font-size: 0.9rem;
 }
 .channel-desc {
   display: block;
   font-size: 0.75rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Estilo da Bolinha de Notificação */
+.badge-notificacao {
+  background-color: #ef4444; /* Vermelho alerta */
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: pulse 2s infinite;
+  margin-left: 8px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .user-profile-mini {
@@ -196,6 +224,24 @@ html, body {
   gap: 10px;
   align-items: center;
 }
+
+.avatar-status {
+  font-size: 1.5rem;
+  position: relative;
+}
+.status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: #22c55e; /* Verde online */
+  border-radius: 50%;
+  border: 2px solid #0f172a;
+}
+.user-info strong { color: white; display: block; font-size: 0.9rem; }
+.user-info span { color: var(--text-secondary); font-size: 0.75rem; }
+
 
 /* --- ÁREA DE CHAT --- */
 .chat-area {
@@ -218,7 +264,7 @@ html, body {
   color: white;
 }
 
-/* --- MENSAGENS (AQUI ESTÁ A MÁGICA) --- */
+/* --- MENSAGENS --- */
 .messages-scroll {
   flex: 1;
   height: 0; /* FIX: Força o cálculo correto da altura no flexbox */
@@ -236,6 +282,7 @@ html, body {
   opacity: 0.6;
   text-align: center;
 }
+.empty-chat span { font-size: 2rem; display: block; margin-bottom: 10px; }
 
 .message-bubble {
   display: flex;
@@ -259,6 +306,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .msg-content {
@@ -301,7 +349,7 @@ html, body {
   word-break: break-word;
 }
 
-/* --- INPUT --- */
+/* --- INPUT AREA (CORRIGIDA) --- */
 .chat-input-area {
   padding: 15px;
   border-top: 1px solid var(--glass-border);
@@ -311,14 +359,26 @@ html, body {
   flex-shrink: 0; /* Garante que o input não suma */
 }
 
+/* FIX: Garante fundo escuro e texto branco */
 .chat-input {
   flex: 1;
   padding: 12px 18px;
   border-radius: 50px;
-  border: 1px solid var(--glass-border);
-  background: rgba(0,0,0,0.4);
-  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #1e293b !important; /* Azul escuro sólido */
+  color: #ffffff !important; /* Texto branco */
   outline: none;
+  font-size: 0.95rem;
+}
+
+.chat-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.chat-input:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .btn-send {
@@ -330,6 +390,19 @@ html, body {
   color: white;
   font-size: 1.2rem;
   cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-send:hover:not(:disabled) {
+  transform: scale(1.05);
+  background: #2563eb;
+}
+.btn-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #64748b;
 }
 
 /* --- MOBILE --- */
@@ -356,9 +429,10 @@ html, body {
     transform: translateX(-100%);
     z-index: 100;
     background: #0f172a;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
   }
 
   .chat-sidebar.menu-aberto {
     transform: translateX(0);
   }
-}/
+}
