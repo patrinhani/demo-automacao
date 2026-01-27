@@ -4,10 +4,6 @@ import { db, auth } from '../firebase';
 import { ref, onValue } from "firebase/database";
 import './NotificationPopup.css';
 
-// --- IMPORTAÇÃO DO SOM LOCAL ---
-// IMPORTANTE: Troque 'notification.mp3' pelo nome exato do seu arquivo na pasta assets
-import somAlerta from '../assets/ms-teams-notification.mp3'; 
-
 export default function NotificationPopup() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +39,7 @@ export default function NotificationPopup() {
               avatar: ultimaMsg.avatar || '👤'
             });
 
-            // Chama a função atualizada
-            tocarSomLocal();
+            tocarSom();
 
             setTimeout(() => setNotificacao(null), 5000);
           }
@@ -55,18 +50,17 @@ export default function NotificationPopup() {
     return () => unsubscribe();
   }, [location.pathname]);
 
-  // --- FUNÇÃO DE SOM LOCAL ATUALIZADA ---
-  const tocarSomLocal = () => {
-    try {
-      // Usa a variável importada 'somAlerta' em vez de uma URL
-      const audio = new Audio(somAlerta);
-      
-      audio.play().catch(erro => {
-        console.warn("Som bloqueado pelo navegador (precisa de interação):", erro);
-      });
-    } catch (e) {
-      console.error("Erro ao tocar som", e);
-    }
+  const tocarSom = () => {
+    // --- OPÇÃO 1: SEU ARQUIVO LOCAL (Coloque na pasta 'public') ---
+    const audioLocal = new Audio('/ms-teams-notification.mp3');
+    
+    // --- OPÇÃO 2: LINK ONLINE (Backup se o arquivo falhar) ---
+    // const audioOnline = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+
+    // Tenta tocar o local. Se der erro, avisa no console.
+    audioLocal.play().catch(erro => {
+        console.warn("Som bloqueado ou arquivo não encontrado na pasta public:", erro);
+    });
   };
 
   if (!notificacao) return null;

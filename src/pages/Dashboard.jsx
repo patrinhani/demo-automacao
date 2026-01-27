@@ -9,26 +9,21 @@ import './Dashboard.css';
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // Estado do Usuário
-  const [userProfile, setUserProfile] = useState({
-    nome: 'Carregando...',
-    cargo: '...',
-    role: 'colaborador'
-  });
+  const [userProfile, setUserProfile] = useState({ nome: '...', cargo: '...', role: 'colaborador' });
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Contadores Separados
+  // Contadores Separados para garantir a soma correta
   const [contagemTarefas, setContagemTarefas] = useState(0);
-  const [contagemReembolsos, setContagemReembolsos] = useState(0);
-  const [contagemGeral, setContagemGeral] = useState(0);
+  const [contagemReembolsos, setContagemReembolsos] = useState(0); // Antigo
+  const [contagemViagens, setContagemViagens] = useState(0);       // Novo (Root)
+  const [contagemGeral, setContagemGeral] = useState(0);           // Novos (Solicitações)
   const [proxFerias, setProxFerias] = useState('---');
 
   useEffect(() => {
-    // Monitora autenticação
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) return navigate('/');
 
-      // 1. BUSCAR PERFIL E DEFINIR PERMISSÃO
+      // 1. Perfil
       const userRef = ref(db, `users/${user.uid}`);
       onValue(userRef, (snapshot) => {
         const data = snapshot.val();
@@ -38,145 +33,113 @@ export default function Dashboard() {
             cargo: data.cargo || 'Cargo não definido',
             role: data.role || 'colaborador'
           });
-          
-          // Verifica se é Gestor/CEO
           const ehChefe = data.role === 'admin' || data.role === 'gestor' || (data.cargo && data.cargo.includes('C.E.O'));
           setIsAdmin(ehChefe);
         }
       });
 
-      // 2. BUSCAR TAREFAS (Sempre pessoais)
-      const tarefasRef = ref(db, 'tarefas');
-      onValue(tarefasRef, (snapshot) => {
+      // 2. Tarefas
+      onValue(ref(db, 'tarefas'), (snapshot) => {
         if (snapshot.exists()) {
-          const total = Object.values(snapshot.val()).filter(t => t.userId === user.uid && t.status !== 'done').length;
-          setContagemTarefas(total);
-        } else {
-          setContagemTarefas(0);
-        }
+          setContagemTarefas(Object.values(snapshot.val()).filter(t => t.userId === user.uid && t.status !== 'done').length);
+        } else setContagemTarefas(0);
       });
 
-      // 3. BUSCAR FÉRIAS (Lógica Restaurada: Busca do nó do usuário)
-      const feriasRef = ref(db, `ferias/${user.uid}`);
-      onValue(feriasRef, (snapshot) => {
+      // 3. Férias
+      onValue(ref(db, `ferias/${user.uid}`), (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Pega a solicitação mais recente
-          const listaFerias = Object.values(data).sort((a, b) => 
-            new Date(b.dataInicio) - new Date(a.dataInicio)
-          );
-          
-          const ultimaFerias = listaFerias[0];
-          
-          if (ultimaFerias) {
-            const dateObj = new Date(ultimaFerias.dataInicio);
-            const diaMes = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-            setProxFerias(diaMes);
-          }
-        } else {
-          setProxFerias('A definir');
-        }
+          const lista = Object.values(data).sort((a, b) => new Date(b.dataInicio) - new Date(a.dataInicio));
+          if (lista[0]) setProxFerias(new Date(lista[0].dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+        } else setProxFerias('A definir');
       });
-
     });
-
     return () => authUnsubscribe();
   }, [navigate]);
 
-  // --- 4. LISTENER DEDICADO PARA SOLICITAÇÕES ---
+  // --- 4. CONTADORES UNIFICADOS ---
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
 
-    // A. Listener de Reembolsos
-    const reembolsosRef = ref(db, 'reembolsos');
-    const unsubReembolsos = onValue(reembolsosRef, (snapshot) => {
-      let count = 0;
-      if (snapshot.exists()) {
-        Object.values(snapshot.val()).forEach(item => {
-          if (isAdmin) {
-            if (item.status === 'em_analise') count++;
-          } else {
-            if (item.userId === user.uid) count++;
-          }
-        });
-      }
-      setContagemReembolsos(count);
-    });
-
-    // B. Listener de Solicitações Gerais
-    const solicitacoesRef = ref(db, 'solicitacoes');
-    const unsubGerais = onValue(solicitacoesRef, (snapshot) => {
-      let count = 0;
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        Object.values(data).forEach(categoria => {
-          Object.values(categoria).forEach(item => {
-            const statusItem = item.status ? item.status.toLowerCase() : 'pendente';
-            
-            if (isAdmin) {
-              if (statusItem === 'pendente') count++;
-            } else {
-              if (item.userId === user.uid) count++;
-            }
-          });
-        });
-      }
-      setContagemGeral(count);
-    });
-
-    return () => {
-      unsubReembolsos();
-      unsubGerais();
+    // Helper: Verifica se status é pendente (considera várias grafias)
+    const isPendente = (s) => {
+        if (!s) return true;
+        return ['pendente', 'em analise', 'em análise', 'solicitado', 'aguardando'].includes(s.toLowerCase());
     };
-  }, [isAdmin]); 
 
-  // --- CONFIGURAÇÃO VISUAL ---
-  const totalSolicitacoes = contagemReembolsos + contagemGeral;
+    // A. Reembolsos (Antigo)
+    const unsubReembolsos = onValue(ref(db, 'reembolsos'), (snap) => {
+      let c = 0;
+      if (snap.exists()) {
+        Object.values(snap.val()).forEach(item => {
+          const pendente = item.status === 'em_analise';
+          if (isAdmin ? pendente : (item.userId === user.uid && pendente)) c++;
+        });
+      }
+      setContagemReembolsos(c);
+    });
+
+    // B. Viagens (Estrutura Aninhada: viagens/{uid}/{tripId})
+    const unsubViagens = onValue(ref(db, 'viagens'), (snap) => {
+        let c = 0;
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(uid => {
+                const userTrips = data[uid];
+                Object.values(userTrips).forEach(trip => {
+                    if (isPendente(trip.status)) {
+                        if (isAdmin) c++;
+                        else if (uid === user.uid) c++;
+                    }
+                });
+            });
+        }
+        setContagemViagens(c);
+    });
+
+    // C. Solicitações Gerais (Férias, Helpdesk - Estrutura Plana)
+    const unsubGerais = onValue(ref(db, 'solicitacoes'), (snap) => {
+      let c = 0;
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.values(data).forEach(categoria => {
+           if (typeof categoria === 'object') {
+               Object.values(categoria).forEach(item => {
+                   if (isPendente(item.status)) {
+                       if (isAdmin) c++;
+                       else if (item.userId === user.uid) c++;
+                   }
+               });
+           }
+        });
+      }
+      setContagemGeral(c);
+    });
+
+    return () => { unsubReembolsos(); unsubViagens(); unsubGerais(); };
+  }, [isAdmin]);
+
+  // Soma Total
+  const totalSolicitacoes = contagemReembolsos + contagemViagens + contagemGeral;
 
   const stats = [
+    { titulo: 'Tarefas Pendentes', valor: contagemTarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)', rota: '/tarefas' },
     { 
-      titulo: 'Tarefas Pendentes', 
-      valor: contagemTarefas.toString(), 
-      icon: '⚡', 
-      cor: 'var(--neon-blue)',
-      rota: '/tarefas'
+        titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
+        valor: totalSolicitacoes.toString(), 
+        icon: isAdmin ? '✅' : '📂', 
+        cor: 'var(--neon-purple)', 
+        rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes' 
     },
-    { 
-      titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
-      valor: totalSolicitacoes.toString(), 
-      icon: isAdmin ? '✅' : '📂', 
-      cor: 'var(--neon-purple)',
-      // CORREÇÃO: Leva para a central unificada se for Admin
-      rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes'
-    },
-    { 
-      titulo: 'Próx. Férias', 
-      valor: proxFerias, 
-      icon: '🌴', 
-      cor: 'var(--neon-green)',
-      rota: '/ferias'
-    },
+    { titulo: 'Próx. Férias', valor: proxFerias, icon: '🌴', cor: 'var(--neon-green)', rota: '/ferias' },
   ];
 
   const acessos = [
-    // BLOCO GESTOR (CORRIGIDO)
     ...(isAdmin ? [
-      { 
-        titulo: 'Criar Usuário', 
-        desc: 'Cadastrar Colaborador', 
-        icon: '🔐', 
-        rota: '/cadastro-usuario' 
-      },
-      { 
-        titulo: 'Aprovações Gerais',  // Unificado aqui!
-        desc: 'Férias, Viagens, TI e $', 
-        icon: '✅', 
-        rota: '/aprovacoes-gerais' 
-      }
+      { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
+      { titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' }
     ] : []),
-    
-    // BLOCO COMUM
     { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
@@ -196,60 +159,31 @@ export default function Dashboard() {
       <div className="ambient-light light-2"></div>
       <div className="ambient-light light-3"></div>
       <div className="ambient-light light-4"></div>
-
       <Sidebar />
-
       <main className="tech-main">
         <header className="tech-header">
-          <div className="header-content">
-            <h1>Visão Geral</h1>
-            <p>Bem-vindo ao <strong>TechPortal</strong></p>
-          </div>
-          
+          <div className="header-content"><h1>Visão Geral</h1><p>Bem-vindo ao <strong>TechPortal</strong></p></div>
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
-            <div className="profile-info">
-              <span className="name">{userProfile.nome}</span>
-              <span className="role">{userProfile.cargo}</span>
-            </div>
-            <div className="profile-avatar">
-              {userProfile.nome ? userProfile.nome.substring(0,2).toUpperCase() : 'GS'}
-            </div>
+            <div className="profile-info"><span className="name">{userProfile.nome}</span><span className="role">{userProfile.cargo}</span></div>
+            <div className="profile-avatar">{userProfile.nome ? userProfile.nome.substring(0,2).toUpperCase() : 'GS'}</div>
           </div>
         </header>
-
         <div className="tech-scroll-content">
           <section className="stats-row">
             {stats.map((stat, i) => (
-              <div 
-                key={i} 
-                className="glass-stat-card" 
-                style={{ 
-                  borderTopColor: stat.cor,
-                  cursor: 'pointer' 
-                }}
-                onClick={() => stat.rota && navigate(stat.rota)}
-              >
-                <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
-                  {stat.icon}
-                </div>
-                <div className="stat-info">
-                  <h3>{stat.valor}</h3>
-                  <span>{stat.titulo}</span>
-                </div>
+              <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor, cursor: 'pointer' }} onClick={() => stat.rota && navigate(stat.rota)}>
+                <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>{stat.icon}</div>
+                <div className="stat-info"><h3>{stat.valor}</h3><span>{stat.titulo}</span></div>
               </div>
             ))}
           </section>
-
           <section className="modules-section">
             <h2 className="section-title">Acesso Rápido</h2>
             <div className="modules-grid-tech">
               {acessos.map((item, index) => (
                 <div key={index} className="tech-card" onClick={() => navigate(item.rota)}>
                   <div className="tech-icon">{item.icon}</div>
-                  <div className="tech-info">
-                    <h3>{item.titulo}</h3>
-                    <p>{item.desc}</p>
-                  </div>
+                  <div className="tech-info"><h3>{item.titulo}</h3><p>{item.desc}</p></div>
                   <div className="arrow-icon">→</div>
                 </div>
               ))}
