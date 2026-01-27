@@ -5,17 +5,14 @@ import { ref, onValue, push, set } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
-import teams from '../public/teams'
 
-// --- CONFIGURAÇÃO DO SOM ---
-// Opção 1: Link Online (Som de "Bolha/Pop" parecido com o Teams)
-const SOM_ONLINE = 'https://assets.mixkit.co/active_storage/sfx/571/571-preview.mp3';
+// --- ESCOLHA SEU SOM AQUI ---
 
-// Opção 2: Arquivo Local (Para o som EXATO do Teams)
-// 1. Baixe o mp3 do Teams (pesquise "Teams notification sound mp3")
-// 2. Salve o arquivo como 'teams.mp3' dentro da pasta 'public' do seu projeto
-// 3. Mude a linha abaixo para: const SOM_ATIVO = '/teams.mp3';
-const SOM_ATIVO = '/teams.mp3'; 
+// OPÇÃO 2: "Bip" Digital Curto (Estilo App de Mensagem)
+const SOM_OPCAO_1 = 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3';
+
+// Define qual som será usado (Troque por SOM_OPCAO_2 ou SOM_OPCAO_3 para testar)
+const SOM_ATIVO = SOM_OPCAO_1; 
 
 export default function ChatInterno() {
   const navigate = useNavigate();
@@ -38,7 +35,7 @@ export default function ChatInterno() {
   useEffect(() => {
     // Inicializa o áudio
     audioRef.current = new Audio(SOM_ATIVO);
-    audioRef.current.volume = 0.6; // Volume agradável
+    audioRef.current.volume = 0.5; // Volume a 50% para não assustar
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -53,13 +50,15 @@ export default function ChatInterno() {
   // Função segura para tocar o som
   const tocarNotificacao = () => {
     if (audioRef.current) {
-      // Reinicia o áudio para tocar rápido se vierem várias msgs
+      // Reinicia o áudio para o começo (útil se receber msgs rápidas)
       audioRef.current.currentTime = 0;
+      
       const promessa = audioRef.current.play();
       
       if (promessa !== undefined) {
         promessa.catch(error => {
-          console.log("Som bloqueado (necessária interação):", error);
+          // Ignora erro se o navegador bloquear por falta de interação
+          // (Isso é normal até o usuário clicar em algo na página)
         });
       }
     }
@@ -85,6 +84,8 @@ export default function ChatInterno() {
     if (!user) return;
 
     const chatsRef = ref(db, 'chats/direto');
+    
+    // Flag para não tocar som quando carregar as msgs antigas pela primeira vez
     let carregamentoInicial = true;
 
     const unsubscribe = onValue(chatsRef, (snapshot) => {
@@ -103,14 +104,18 @@ export default function ChatInterno() {
 
           atividadesTemp[outroId] = ultimaMsg.timestamp;
 
+          // Regra: Msg não é minha E não estou vendo o chat dela agora
           if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
              const ultimaLida = ultimasAtividades[outroId] || 0;
              
+             // Se é uma mensagem nova (chegou depois da última vez que chequei)
              if (ultimaMsg.timestamp > ultimaLida) {
+                // Incrementa contador
                 if (!novasNaoLidas[outroId] || novasNaoLidas[outroId] <= 0) {
                     novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1;
                 }
                 
+                // Toca som (exceto no load inicial)
                 if (!carregamentoInicial) {
                     deveTocarSom = true;
                 }
