@@ -6,9 +6,7 @@ import Logo from '../components/Logo';
 import './GeradorNota.css';
 
 // --- COMPONENTE DE CÓDIGO DE BARRAS "MANUAL" ---
-// Desenha barras usando divs simples. O html2canvas renderiza isso perfeitamente.
 const TechBarcode = () => {
-  // Padrão visual de larguras (simula um Code 128)
   const bars = [
     2, 1, 3, 1, 1, 2, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1,
     2, 1, 3, 1, 1, 2, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1,
@@ -23,7 +21,6 @@ const TechBarcode = () => {
           style={{ 
             width: `${width}px`, 
             height: '100%', 
-            // Se o índice é par = Preto, se é ímpar = Branco (transparente)
             backgroundColor: i % 2 === 0 ? '#000' : 'transparent', 
             marginRight: '1px'
           }} 
@@ -52,6 +49,7 @@ export default function GeradorNota() {
     e.preventDefault();
     setLoading(true);
 
+    // Pequeno delay para garantir que o DOM renderize o template oculto
     setTimeout(async () => {
       const element = invoiceRef.current;
       
@@ -60,7 +58,11 @@ export default function GeradorNota() {
           scale: 2, 
           backgroundColor: '#ffffff', 
           logging: false,
-          useCORS: true 
+          useCORS: true,
+          // --- CORREÇÃO PRINCIPAL NO JS ---
+          // Garante que capture o elemento completo mesmo se estiver fora da tela ou com scroll
+          scrollY: -window.scrollY, 
+          windowWidth: document.documentElement.offsetWidth
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 0.9);
@@ -81,7 +83,7 @@ export default function GeradorNota() {
       } finally {
         setLoading(false);
       }
-    }, 1000);
+    }, 500);
   };
 
   return (
@@ -240,10 +242,8 @@ export default function GeradorNota() {
             </tbody>
           </table>
 
-          {/* RODAPÉ COM CÓDIGO DE BARRAS VISUAL (DIVS) */}
+          {/* RODAPÉ COM CÓDIGO DE BARRAS VISUAL */}
           <div style={{marginTop: '50px', textAlign: 'center'}}>
-             
-             {/* Componente visual de barras que funciona no PDF */}
              <div style={{display: 'flex', flexDirection:'column', alignItems: 'center', marginBottom: '10px'}}>
                 <TechBarcode />
                 <span style={{fontSize: '0.9rem', letterSpacing: '3px', marginTop: '5px', fontFamily: 'monospace', fontWeight: 'bold'}}>

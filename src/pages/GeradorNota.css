@@ -111,10 +111,12 @@
    ESTILO DA "FOLHA DE PAPEL" (PDF TEMPLATE)
    ========================================= */
 
+/* --- CORREÇÃO AQUI --- */
 .pdf-hidden-template {
-  position: fixed;
-  left: 0; top: 0;
-  z-index: -9999;
+  position: absolute; /* Mudado de fixed para absolute */
+  left: -10000px;     /* Joga o elemento para fora da tela, mas mantendo a renderização */
+  top: 0;
+  z-index: 1000;      /* Traz para "frente" no contexto de renderização, garantindo que não fique "atrás" do fundo */
   pointer-events: none;
   visibility: visible;
 }

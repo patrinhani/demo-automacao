@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase'; 
-import { ref, onValue, push, set, off } from "firebase/database";
+import { ref, onValue, push, set } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
@@ -18,15 +18,14 @@ export default function ChatInterno() {
   const [menuAberto, setMenuAberto] = useState(false);
   
   // Estados para Notificação e Ordem
-  const [ultimasAtividades, setUltimasAtividades] = useState({}); // Mapa: userID -> timestamp
-  const [naoLidas, setNaoLidas] = useState({}); // Mapa: userID -> quantidade
+  const [ultimasAtividades, setUltimasAtividades] = useState({}); 
+  const [naoLidas, setNaoLidas] = useState({}); 
   
   const scrollRef = useRef(null);
-  const audioContextRef = useRef(null); // Para o som de notificação
+  const audioContextRef = useRef(null); 
 
   // --- 1. AUTENTICAÇÃO E SOM ---
   useEffect(() => {
-    // Inicializa AudioContext (para o beep)
     audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -39,7 +38,6 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Função para tocar um "Beep" sutil
   const tocarNotificacao = () => {
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
@@ -78,7 +76,7 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [user]);
 
-  // --- 3. MONITORAR TODAS AS MENSAGENS (PARA NOTIFICAÇÃO E ORDEM) ---
+  // --- 3. MONITORAR MENSAGENS (NOTIFICAÇÃO) ---
   useEffect(() => {
     if (!user) return;
 
@@ -89,28 +87,18 @@ export default function ChatInterno() {
       if (!data) return;
 
       const atividadesTemp = {};
-      const novasNaoLidas = { ...naoLidas }; // Copia estado atual
+      const novasNaoLidas = { ...naoLidas };
       let tocouSom = false;
 
       Object.keys(data).forEach((chatId) => {
-        // Se este chat envolve o usuário logado
         if (chatId.includes(user.uid)) {
           const msgs = Object.values(data[chatId]);
           const ultimaMsg = msgs[msgs.length - 1];
-          
-          // Descobre quem é a outra pessoa no chat (ID1_ID2)
           const outroId = chatId.replace(user.uid, '').replace('_', '');
 
-          // 1. Guarda o horário da última mensagem para ordenar
           atividadesTemp[outroId] = ultimaMsg.timestamp;
 
-          // 2. Lógica de Notificação
-          // Se a msg é nova (mais recente que a última checagem local ou timestamp atual - margem)
-          // E não fui eu que mandei
-          // E eu NÃO estou com esse canal aberto agora
           if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
-             // Verificação simples: se o timestamp mudou em relação ao que eu tinha, é msg nova
-             // (Para um sistema perfeito, precisaria salvar 'lastSeen' no banco, mas isso funciona para a sessão)
              if (ultimaMsg.timestamp > (ultimasAtividades[outroId] || 0)) {
                 novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1;
                 tocouSom = true;
@@ -121,8 +109,6 @@ export default function ChatInterno() {
 
       setUltimasAtividades(prev => ({ ...prev, ...atividadesTemp }));
       
-      // Só atualiza não lidas se houver mudança real para evitar loop, 
-      // mas aqui simplificamos para atualizar quando detecta novidade na sessão
       if (tocouSom) {
         setNaoLidas(novasNaoLidas);
         tocarNotificacao();
@@ -130,13 +116,12 @@ export default function ChatInterno() {
     });
 
     return () => unsubscribe();
-  }, [user, canalAtivo.id]); // Dependência crucial: canalAtivo.id para saber se deve notificar
+  }, [user, canalAtivo.id]); 
 
-  // --- 4. CARREGAR MENSAGENS DO CANAL ATIVO ---
+  // --- 4. CARREGAR MENSAGENS DO CANAL ---
   useEffect(() => {
     if (!user) return;
 
-    // Ao entrar num canal, limpa as notificações dele
     if (naoLidas[canalAtivo.id]) {
       setNaoLidas(prev => {
         const nova = { ...prev };
@@ -163,7 +148,7 @@ export default function ChatInterno() {
     });
 
     return () => unsubscribe();
-  }, [canalAtivo, user]); // Removemos 'naoLidas' da dependência para evitar loop
+  }, [canalAtivo, user]); 
 
   // --- 5. SCROLL E ENVIO ---
   useEffect(() => {
@@ -193,7 +178,6 @@ export default function ChatInterno() {
       avatar: '👤'
     });
     
-    // Atualiza timestamp local imediatamente para jogar pro topo
     if (canalAtivo.id !== 'geral') {
       setUltimasAtividades(prev => ({...prev, [canalAtivo.id]: Date.now()}));
     }
@@ -211,12 +195,10 @@ export default function ChatInterno() {
     setMenuAberto(false);
   };
 
-  // --- LÓGICA DE ORDENAÇÃO ---
-  // Cria uma lista nova ordenada
   const usuariosOrdenados = [...usuarios].sort((a, b) => {
     const tempoA = ultimasAtividades[a.id] || 0;
     const tempoB = ultimasAtividades[b.id] || 0;
-    return tempoB - tempoA; // O maior (mais recente) vem primeiro
+    return tempoB - tempoA;
   });
 
   return (
@@ -257,7 +239,6 @@ export default function ChatInterno() {
               Mensagens Diretas
             </div>
 
-            {/* LISTA ORDENADA AUTOMATICAMENTE */}
             {usuariosOrdenados.map(u => (
               <button 
                 key={u.id} 
@@ -270,7 +251,6 @@ export default function ChatInterno() {
                     <span className="channel-desc">{u.cargo}</span>
                   </div>
                   
-                  {/* BOLINHA DE NOTIFICAÇÃO */}
                   {naoLidas[u.id] > 0 && (
                     <div className="badge-notificacao">
                       {naoLidas[u.id]}
@@ -327,6 +307,7 @@ export default function ChatInterno() {
             ))}
           </div>
 
+          {/* ÁREA DE INPUT AJUSTADA */}
           <form className="chat-input-area" onSubmit={enviarMensagem}>
             <input 
               type="text" 
@@ -335,7 +316,9 @@ export default function ChatInterno() {
               onChange={(e) => setNovaMensagem(e.target.value)}
               className="chat-input"
             />
-            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
+            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>
+              ➤
+            </button>
           </form>
         </main>
       </div>
