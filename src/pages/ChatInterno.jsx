@@ -5,6 +5,17 @@ import { ref, onValue, push, set } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
+import teams from '../public/teams'
+
+// --- CONFIGURAÇÃO DO SOM ---
+// Opção 1: Link Online (Som de "Bolha/Pop" parecido com o Teams)
+const SOM_ONLINE = 'https://assets.mixkit.co/active_storage/sfx/571/571-preview.mp3';
+
+// Opção 2: Arquivo Local (Para o som EXATO do Teams)
+// 1. Baixe o mp3 do Teams (pesquise "Teams notification sound mp3")
+// 2. Salve o arquivo como 'teams.mp3' dentro da pasta 'public' do seu projeto
+// 3. Mude a linha abaixo para: const SOM_ATIVO = '/teams.mp3';
+const SOM_ATIVO = '/teams.mp3'; 
 
 export default function ChatInterno() {
   const navigate = useNavigate();
@@ -17,16 +28,17 @@ export default function ChatInterno() {
   const [novaMensagem, setNovaMensagem] = useState('');
   const [menuAberto, setMenuAberto] = useState(false);
   
-  // Estados para Notificação e Ordem
   const [ultimasAtividades, setUltimasAtividades] = useState({}); 
   const [naoLidas, setNaoLidas] = useState({}); 
   
   const scrollRef = useRef(null);
-  const audioContextRef = useRef(null); 
+  const audioRef = useRef(null); 
 
-  // --- 1. AUTENTICAÇÃO E SOM ---
+  // --- 1. CONFIGURAÇÃO INICIAL ---
   useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    // Inicializa o áudio
+    audioRef.current = new Audio(SOM_ATIVO);
+    audioRef.current.volume = 0.6; // Volume agradável
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -38,32 +50,26 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [navigate]);
 
+  // Função segura para tocar o som
   const tocarNotificacao = () => {
-    if (!audioContextRef.current) return;
-    const ctx = audioContextRef.current;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(500, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
+    if (audioRef.current) {
+      // Reinicia o áudio para tocar rápido se vierem várias msgs
+      audioRef.current.currentTime = 0;
+      const promessa = audioRef.current.play();
+      
+      if (promessa !== undefined) {
+        promessa.catch(error => {
+          console.log("Som bloqueado (necessária interação):", error);
+        });
+      }
+    }
   };
 
   // --- 2. CARREGAR LISTA DE USUÁRIOS ---
   useEffect(() => {
     if (!user) return;
-
     const usersRef = ref(db, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
+    onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const lista = Object.keys(data)
@@ -72,8 +78,6 @@ export default function ChatInterno() {
         setUsuarios(lista);
       }
     });
-
-    return () => unsubscribe();
   }, [user]);
 
   // --- 3. MONITORAR MENSAGENS (NOTIFICAÇÃO) ---
@@ -81,14 +85,15 @@ export default function ChatInterno() {
     if (!user) return;
 
     const chatsRef = ref(db, 'chats/direto');
-    
+    let carregamentoInicial = true;
+
     const unsubscribe = onValue(chatsRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
       const atividadesTemp = {};
       const novasNaoLidas = { ...naoLidas };
-      let tocouSom = false;
+      let deveTocarSom = false;
 
       Object.keys(data).forEach((chatId) => {
         if (chatId.includes(user.uid)) {
@@ -99,9 +104,16 @@ export default function ChatInterno() {
           atividadesTemp[outroId] = ultimaMsg.timestamp;
 
           if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
-             if (ultimaMsg.timestamp > (ultimasAtividades[outroId] || 0)) {
-                novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1;
-                tocouSom = true;
+             const ultimaLida = ultimasAtividades[outroId] || 0;
+             
+             if (ultimaMsg.timestamp > ultimaLida) {
+                if (!novasNaoLidas[outroId] || novasNaoLidas[outroId] <= 0) {
+                    novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1;
+                }
+                
+                if (!carregamentoInicial) {
+                    deveTocarSom = true;
+                }
              }
           }
         }
@@ -109,10 +121,15 @@ export default function ChatInterno() {
 
       setUltimasAtividades(prev => ({ ...prev, ...atividadesTemp }));
       
-      if (tocouSom) {
-        setNaoLidas(novasNaoLidas);
+      if (JSON.stringify(novasNaoLidas) !== JSON.stringify(naoLidas)) {
+          setNaoLidas(novasNaoLidas);
+      }
+
+      if (deveTocarSom) {
         tocarNotificacao();
       }
+
+      carregamentoInicial = false;
     });
 
     return () => unsubscribe();
@@ -307,7 +324,6 @@ export default function ChatInterno() {
             ))}
           </div>
 
-          {/* ÁREA DE INPUT AJUSTADA */}
           <form className="chat-input-area" onSubmit={enviarMensagem}>
             <input 
               type="text" 

@@ -30,7 +30,9 @@ export default function Helpdesk() {
       if (currentUser) {
         setUser(currentUser);
         
-        const chamadosRef = ref(db, 'chamados');
+        // --- ALTERAÇÃO 1: Caminho padronizado ---
+        const chamadosRef = ref(db, 'solicitacoes/helpdesk');
+        
         onValue(chamadosRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
@@ -61,7 +63,8 @@ export default function Helpdesk() {
     if (!novoChamado.titulo.trim() || !user) return;
 
     try {
-      const chamadosRef = ref(db, 'chamados');
+      // --- ALTERAÇÃO 2: Caminho padronizado ---
+      const chamadosRef = ref(db, 'solicitacoes/helpdesk');
       const protocolo = `HD-${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}`;
       
       await push(chamadosRef, {
@@ -69,9 +72,11 @@ export default function Helpdesk() {
         protocolo,
         userId: user.uid,
         userEmail: user.email,
-        status: 'aberto', // aberto, em_andamento, concluido
+        nome: user.displayName || 'Colaborador', // Importante para o Gestor ver o nome
+        // --- ALTERAÇÃO 3: Status padronizado para a Central de Aprovações ---
+        status: 'pendente', 
         createdAt: new Date().toISOString(),
-        respostas: [] // Para futuro sistema de chat no chamado
+        respostas: [] 
       });
 
       alert(`Chamado ${protocolo} aberto com sucesso!`);
@@ -84,14 +89,23 @@ export default function Helpdesk() {
     }
   };
 
-  // Cores e Ícones por Status
+  // Cores e Ícones por Status (Adaptado para ler os status do banco)
   const getStatusInfo = (status) => {
-    switch (status) {
-      case 'aberto': return { label: 'Aberto', cor: 'var(--neon-blue)', icon: '🆕' };
-      case 'em_andamento': return { label: 'Em Análise', cor: 'var(--neon-purple)', icon: '⚙️' };
-      case 'concluido': return { label: 'Resolvido', cor: 'var(--neon-green)', icon: '✅' };
-      default: return { label: status, cor: '#ccc', icon: '❓' };
-    }
+    const s = status ? status.toLowerCase() : '';
+    
+    // Mapeia 'pendente' (banco) para 'Aberto' (visual)
+    if (s === 'pendente' || s === 'aberto') return { label: 'Aberto', cor: 'var(--neon-blue)', icon: '🆕' };
+    
+    // Mapeia 'aprovado' ou 'em_andamento' para 'Em Atendimento'
+    if (s === 'aprovado' || s === 'em_andamento') return { label: 'Em Atendimento', cor: 'var(--neon-purple)', icon: '⚙️' };
+    
+    // Concluído
+    if (s === 'concluido' || s === 'resolvido') return { label: 'Resolvido', cor: 'var(--neon-green)', icon: '✅' };
+    
+    // Cancelado/Rejeitado
+    if (s === 'cancelado' || s === 'rejeitado') return { label: 'Fechado', cor: '#ef4444', icon: '✖' };
+
+    return { label: status, cor: '#ccc', icon: '❓' };
   };
 
   return (

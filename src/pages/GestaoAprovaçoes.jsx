@@ -11,37 +11,46 @@ export default function GestaoAprovacoes() {
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Segurança
+  // 1. SEGURANÇA
   useEffect(() => {
     const checkUser = async () => {
       const user = auth.currentUser;
       if (!user) return navigate('/');
+      
       const userRef = ref(db, `users/${user.uid}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-      const ehCEO = userData && (userData.cargo?.includes('C.E.O') || userData.role === 'admin' || userData.role === 'gestor');
-      if (!ehCEO) {
-         // alert("Acesso restrito."); 
-      }
+      get(userRef).then((snapshot) => {
+          const userData = snapshot.val();
+          // Lógica de proteção opcional (descomente se quiser bloquear não-gestores)
+          // const ehGestor = userData && (userData.cargo?.includes('C.E.O') || userData.role === 'admin' || userData.role === 'gestor');
+          // if (!ehGestor) { alert("Acesso restrito."); navigate('/dashboard'); }
+      });
     };
     checkUser();
   }, [navigate]);
 
-  // Helper de Status
+  // HELPER DE STATUS
   const isPendente = (s) => {
       if (!s) return true;
-      return ['pendente', 'em analise', 'em análise', 'solicitado', 'aguardando'].includes(s.toLowerCase());
+      // Aceita variações de status pendente
+      return ['pendente', 'em analise', 'em análise', 'solicitado', 'aguardando', 'aberto'].includes(s.toLowerCase());
   };
 
-  // 2. Busca de Dados
+  // 2. BUSCA INTELIGENTE DE DADOS
   useEffect(() => {
     setLoading(true);
     setDados([]); 
     
     let dbRef;
-    if (abaAtiva === 'viagens') dbRef = ref(db, 'viagens');
-    else if (abaAtiva === 'reembolsos') dbRef = ref(db, 'reembolsos');
-    else dbRef = ref(db, `solicitacoes/${abaAtiva}`);
+    
+    // --- ROTEAMENTO DE PASTAS ---
+    if (abaAtiva === 'viagens') {
+        dbRef = ref(db, 'viagens'); // Pasta Raiz de Viagens
+    } else if (abaAtiva === 'reembolsos') {
+        dbRef = ref(db, 'reembolsos'); // Pasta Raiz de Reembolsos
+    } else {
+        // Padrão para Ferias e Helpdesk (solicitacoes/ferias, solicitacoes/helpdesk)
+        dbRef = ref(db, `solicitacoes/${abaAtiva}`);
+    }
 
     const unsubscribe = onValue(dbRef, (snapshot) => {
       const data = snapshot.val();
@@ -49,30 +58,39 @@ export default function GestaoAprovacoes() {
 
       if (data) {
         if (abaAtiva === 'viagens') {
-          // Flatten Viagens
-          Object.keys(data).forEach((uid) => {
-            const viagensUser = data[uid];
+          // --- CASO ESPECIAL: VIAGENS (Aninhado por Usuário) ---
+          Object.keys(data).forEach((uidUsuario) => {
+            const viagensUser = data[uidUsuario];
             if (viagensUser) {
-                Object.keys(viagensUser).forEach((tripId) => {
-                  const viagem = viagensUser[tripId];
+                Object.keys(viagensUser).forEach((chaveFirebase) => {
+                  const viagem = viagensUser[chaveFirebase];
                   if (isPendente(viagem.status)) {
-                    lista.push({ id: tripId, uidOriginal: uid, ...viagem });
+                    lista.push({ 
+                        ...viagem, 
+                        firebaseKey: chaveFirebase, 
+                        uidOriginal: uidUsuario 
+                    });
                   }
                 });
             }
           });
         } else {
-          // Flatten Padrão
+          // --- CASO PADRÃO (Lista Simples: Férias, Reembolsos, Helpdesk) ---
           lista = Object.entries(data)
-            .map(([id, valor]) => ({ id, ...valor }))
+            .map(([chaveFirebase, valor]) => ({ 
+                ...valor, 
+                firebaseKey: chaveFirebase,
+                // Garante que temos um ID visual para mostrar
+                id: valor.protocolo || valor.id || chaveFirebase 
+            }))
             .filter(item => isPendente(item.status));
         }
       }
       
-      // Ordenação
+      // Ordena por data (mais recentes primeiro)
       lista.sort((a, b) => {
-          const dA = new Date(a.createdAt || a.data_criacao || a.dataInicio || 0);
-          const dB = new Date(b.createdAt || b.data_criacao || b.dataInicio || 0);
+          const dA = new Date(a.createdAt || a.data_criacao || a.data_ida || 0);
+          const dB = new Date(b.createdAt || b.data_criacao || b.data_ida || 0);
           return dB - dA;
       });
 
@@ -83,12 +101,13 @@ export default function GestaoAprovacoes() {
     return () => unsubscribe();
   }, [abaAtiva]);
 
-  // 3. Ação de Aprovar
+  // 3. AÇÃO DE APROVAR / REJEITAR
   const handleAvaliar = async (item, decisao) => {
-    if (!window.confirm(`Confirma ${decisao.toUpperCase()} esta solicitação?`)) return;
+    const textoAcao = decisao === 'aprovado' ? 'APROVAR' : 'REJEITAR';
+    if (!window.confirm(`Deseja ${textoAcao} esta solicitação?`)) return;
 
-    // --- OTIMISMO: Remove da tela imediatamente ---
-    setDados(prev => prev.filter(d => d.id !== item.id));
+    // Feedback visual imediato (Otimista)
+    setDados(prev => prev.filter(d => d.firebaseKey !== item.firebaseKey));
 
     try {
       let itemRef;
@@ -96,36 +115,40 @@ export default function GestaoAprovacoes() {
       const user = auth.currentUser;
 
       if (abaAtiva === 'viagens') {
-          if (!item.uidOriginal) throw new Error("ID de usuário não encontrado na viagem.");
-          itemRef = ref(db, `viagens/${item.uidOriginal}/${item.id}`);
+          // Viagens precisa do ID do dono original
+          itemRef = ref(db, `viagens/${item.uidOriginal}/${item.firebaseKey}`);
           updateData = {
             status: decisao === 'aprovado' ? 'APROVADO' : 'REJEITADO',
             aprovadoPor: user.email,
             dataAprovacao: new Date().toISOString()
           };
       } else if (abaAtiva === 'reembolsos') {
-          itemRef = ref(db, `reembolsos/${item.id}`);
+          itemRef = ref(db, `reembolsos/${item.firebaseKey}`);
           updateData = { 
               status: decisao, 
-              avaliadoPor: user.uid,
-              dataAvaliacao: new Date().toISOString()
+              avaliadoPor: user.uid 
           };
       } else {
-          itemRef = ref(db, `solicitacoes/${abaAtiva}/${item.id}`);
-          updateData = { 
-              status: decisao,
-              avaliadoPor: user.uid,
-              dataAvaliacao: new Date().toISOString()
-          };
+          // Férias e Helpdesk caem aqui
+          itemRef = ref(db, `solicitacoes/${abaAtiva}/${item.firebaseKey}`);
+          
+          if (abaAtiva === 'helpdesk') {
+             // Helpdesk: Aprovado vira 'em_andamento' (Em Atendimento)
+             updateData = {
+                 status: decisao === 'aprovado' ? 'em_andamento' : 'cancelado',
+                 atendidoPor: user.uid
+             };
+          } else {
+             // Férias
+             updateData = { status: decisao, avaliadoPor: user.uid };
+          }
       }
 
       await update(itemRef, updateData);
-      // alert("Sucesso!"); // Opcional, já removemos visualmente
       
     } catch (error) {
       console.error(error);
-      alert("Erro ao salvar no banco: " + error.message);
-      // Se der erro, recarregamos a página para voltar o item (fallback simples)
+      alert("Erro ao salvar. A página será recarregada.");
       window.location.reload();
     }
   };
@@ -148,7 +171,7 @@ export default function GestaoAprovacoes() {
         <div style={{display:'flex', gap:'10px', marginBottom:'20px', justifyContent:'center', flexWrap:'wrap'}}>
             <button onClick={() => setAbaAtiva('ferias')} style={estiloAba(abaAtiva === 'ferias')}>🏖 Férias</button>
             <button onClick={() => setAbaAtiva('viagens')} style={estiloAba(abaAtiva === 'viagens')}>✈ Viagens</button>
-            <button onClick={() => setAbaAtiva('helpdesk')} style={estiloAba(abaAtiva === 'helpdesk')}>🎧 TI / Helpdesk</button>
+            <button onClick={() => setAbaAtiva('helpdesk')} style={estiloAba(abaAtiva === 'helpdesk')}>🎧 Helpdesk</button>
             <button onClick={() => setAbaAtiva('reembolsos')} style={estiloAba(abaAtiva === 'reembolsos')}>💰 Reembolsos</button>
         </div>
 
@@ -159,29 +182,39 @@ export default function GestaoAprovacoes() {
         ) : (
           <div className="grid-cards">
             {dados.map(item => (
-              <div key={item.id} className="card-aprovacao">
+              <div key={item.firebaseKey} className="card-aprovacao">
                 <div className="card-header">
-                  <span className="protocolo">{abaAtiva === 'reembolsos' ? (item.protocolo || item.id.slice(-6)) : item.id.slice(-8).toUpperCase()}</span>
+                  <span className="protocolo">
+                    {(item.protocolo || item.id || 'ID').toString().substring(0,10).toUpperCase()}
+                  </span>
                   <span className="data">{new Date(item.createdAt || item.data_criacao || item.dataInicio || Date.now()).toLocaleDateString()}</span>
                 </div>
                 
                 <div className="card-body">
-                  <h3>{item.solicitanteNome || item.nome || 'Colaborador'}</h3>
-                  <p className="cargo-info">{item.solicitanteCargo || (item.matricula ? `Mat: ${item.matricula}` : 'TechTeam')}</p>
+                  <h3>{item.solicitanteNome || item.nome || item.userEmail || 'Colaborador'}</h3>
+                  <p className="cargo-info">{item.solicitanteCargo || item.categoria || (item.matricula ? `Mat: ${item.matricula}` : 'TechTeam')}</p>
                   
+                  {/* RENDERIZAÇÃO CONDICIONAL POR TIPO */}
                   {abaAtiva === 'ferias' && (
                       <><div className="detalhe-row"><span>Início:</span><p>{item.inicio ? new Date(item.inicio).toLocaleDateString() : '---'}</p></div>
                         <div className="detalhe-row"><span>Dias:</span><p>{item.dias} dias</p></div></>
                   )}
+                  
                   {abaAtiva === 'viagens' && (
                       <><div className="detalhe-row"><span>Rota:</span><p>{item.origem} ➝ {item.destino}</p></div>
                         <div className="detalhe-row"><span>Motivo:</span><p>{item.motivo}</p></div>
                         <div className="detalhe-row"><span>Valor:</span><p className="valor-destaque">R$ {item.adiantamento || '0,00'}</p></div></>
                   )}
+                  
                   {abaAtiva === 'helpdesk' && (
-                      <><div className="detalhe-row"><span>Assunto:</span><p>{item.assunto}</p></div>
-                        <div className="detalhe-row"><span>Prioridade:</span><span style={{color:'red'}}>{item.prioridade}</span></div></>
+                      <>
+                        {/* CORREÇÃO IMPORTANTE: Helpdesk usa 'titulo', Férias usa 'motivo' */}
+                        <div className="detalhe-row"><span>Assunto:</span><p><strong>{item.titulo || item.assunto}</strong></p></div>
+                        <div className="detalhe-row"><span>Categoria:</span><p>{item.categoria}</p></div>
+                        <div className="detalhe-row"><span>Prioridade:</span><span style={{color: ['alta','critica'].includes(item.prioridade) ? 'red' : 'inherit'}}>{item.prioridade}</span></div>
+                      </>
                   )}
+                  
                   {abaAtiva === 'reembolsos' && (
                       <><div className="detalhe-row"><span>Motivo:</span><p>{item.motivo}</p></div>
                         <div className="detalhe-row"><span>Valor:</span><p className="valor-destaque">R$ {item.valor}</p></div></>
@@ -189,8 +222,8 @@ export default function GestaoAprovacoes() {
                 </div>
 
                 <div className="card-actions">
-                  <button className="btn-reject" onClick={() => handleAvaliar(item, 'rejeitado')}>✖ Negar</button>
-                  <button className="btn-approve" onClick={() => handleAvaliar(item, 'aprovado')}>✔ Aprovar</button>
+                  <button className="btn-reject" onClick={() => handleAvaliar(item, 'rejeitado')}>✖ {abaAtiva === 'helpdesk' ? 'Cancelar' : 'Negar'}</button>
+                  <button className="btn-approve" onClick={() => handleAvaliar(item, 'aprovado')}>✔ {abaAtiva === 'helpdesk' ? 'Atender' : 'Aprovar'}</button>
                 </div>
               </div>
             ))}
