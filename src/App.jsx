@@ -12,6 +12,7 @@ import TrocarSenha from './pages/TrocarSenha'; // Segurança: Troca Obrigatória
 // --- PÁGINAS ADMINISTRATIVAS ---
 import CadastroUsuario from './pages/CadastroUsuario'; // Criar novos usuários
 import GestaoReembolsos from './pages/GestaoReembolsos'; // Aprovar solicitações
+import GestaoAprovacoes from './pages/GestaoAprovaçoes';
 
 // --- MÓDULOS FINANCEIROS ---
 import Solicitacao from './pages/Solicitacao';
@@ -29,6 +30,7 @@ import Carreira from './pages/Carreira';
 import GestaoViagens from './pages/GestaoViagens';
 import Helpdesk from './pages/Helpdesk';
 import ReservaSalas from './pages/ReservaSalas';
+import HistoricoSolicitacoes from './pages/HistoricoSolicitacoes';
 
 // --- COMUNICAÇÃO E COLABORAÇÃO ---
 import Comunicacao from './pages/Comunicacao';
@@ -71,6 +73,7 @@ function App() {
         {/* --- ÁREA DO GESTOR / ADMIN --- */}
         <Route path="/cadastro-usuario" element={<CadastroUsuario />} />
         <Route path="/gestao-reembolsos" element={<GestaoReembolsos />} />
+        <Route path="/aprovacoes-gerais" element={<GestaoAprovacoes />} />
 
         {/* --- OPERACIONAIS --- */}
         <Route path="/solicitacao" element={<Solicitacao />} />
@@ -86,6 +89,7 @@ function App() {
         <Route path="/viagens" element={<GestaoViagens />} />
         <Route path="/helpdesk" element={<Helpdesk />} />
         <Route path="/reservas" element={<ReservaSalas />} /> 
+        <Route path="/historico-solicitacoes" element={<HistoricoSolicitacoes />} />
 
         <Route path="/comunicacao" element={<Comunicacao />} />
         <Route path="/portal-cliente" element={<PortalCliente />} />

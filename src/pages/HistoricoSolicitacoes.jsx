@@ -132,7 +132,7 @@ export default function HistoricoSolicitacoes() {
       </header>
 
       <div className="historico-container">
-        <div className="page-header-tech">
+        <div className="page-header-techHi">
             <h2>Histórico de Solicitações</h2>
             <p>Visualizando registros de <strong>{listaCompleta.length}</strong> operações.</p>
         </div>

@@ -1,9 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react'; // Adicionado useEffect
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
 import './GestaoViagens.css'; // CSS Isolado
+
+// --- IMPORTAÇÕES DO FIREBASE ---
+import { db, auth } from '../firebase';
+import { ref, push, onValue } from "firebase/database";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function GestaoViagens() {
   const navigate = useNavigate();
@@ -13,19 +18,43 @@ export default function GestaoViagens() {
   const printRef = useRef();
   
   const [voucherParaImpressao, setVoucherParaImpressao] = useState(null);
+  const [user, setUser] = useState(null);
 
-  const [viagens, setViagens] = useState([
-    { 
-      id: 'TRIP-9021', origem: 'São Paulo (GRU)', destino: 'Rio de Janeiro (SDU)', 
-      data_ida: '2024-11-10', data_volta: '2024-11-12', motivo: 'Visita Cliente Petrobras', 
-      status: 'APROVADO', custo: 'R$ 1.250,00', voo: 'LA3402', hotel: 'Windsor Barra'
-    },
-    { 
-      id: 'TRIP-8840', origem: 'São Paulo (CGH)', destino: 'Brasília (BSB)', 
-      data_ida: '2024-10-05', data_volta: '2024-10-06', motivo: 'Reunião Regulatória', 
-      status: 'CONCLUÍDO', custo: 'R$ 2.100,00', voo: 'G3 1440', hotel: 'B Hotel'
-    }
-  ]);
+  // Estado das viagens agora começa vazio e será preenchido pelo Firebase
+  const [viagens, setViagens] = useState([]);
+
+  // --- EFEITO PARA CARREGAR DADOS DO FIREBASE ---
+  useEffect(() => {
+    // Monitora o estado de autenticação para garantir que temos o usuário
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        
+        // Referência ao nó de viagens deste usuário específico
+        const viagensRef = ref(db, `viagens/${currentUser.uid}`);
+        
+        // Listener em tempo real (onValue)
+        onValue(viagensRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Transforma o objeto do Firebase em array e mantém a ordem (mais recentes primeiro, se quiser inverter use reverse())
+            const listaViagens = Object.keys(data).map(key => ({
+              firebaseKey: key, // Guarda a chave original do Firebase se precisar
+              ...data[key]
+            })).reverse(); // Inverte para mostrar as últimas adicionadas no topo
+            setViagens(listaViagens);
+          } else {
+            setViagens([]);
+          }
+        });
+      } else {
+        setUser(null);
+        setViagens([]); // Limpa se não houver usuário logado
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   const [formData, setFormData] = useState({
     projeto: '', centro_custo: '', motivo: '', origem: '', destino: '', data_ida: '', data_volta: '',
@@ -36,22 +65,49 @@ export default function GestaoViagens() {
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
+  // --- SUBMIT ATUALIZADO PARA O FIREBASE ---
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!user) {
+      alert("Erro: Usuário não identificado. Faça login novamente.");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      const novaViagem = {
-        id: `TRIP-${Math.floor(Math.random() * 10000)}`,
-        origem: formData.origem || 'São Paulo', destino: formData.destino || 'Destino X',
-        data_ida: formData.data_ida, data_volta: formData.data_volta, motivo: formData.motivo,
-        status: 'PENDENTE', custo: 'A Calcular', voo: 'A Definir', hotel: formData.precisa_hotel === 'sim' ? 'A Definir' : '-'
-      };
-      setViagens([novaViagem, ...viagens]);
-      setLoading(false);
-      alert('Solicitação enviada para aprovação!');
-      setActiveTab('minhas_viagens');
-      setStep(1);
-    }, 1500);
+
+    // Cria o objeto da viagem mantendo a estrutura visual que você já tinha
+    const novaViagem = {
+      id: `TRIP-${Math.floor(Math.random() * 10000)}`, // Mantém o ID visual "TRIP-XXXX"
+      origem: formData.origem || 'São Paulo', 
+      destino: formData.destino || 'Destino X',
+      data_ida: formData.data_ida, 
+      data_volta: formData.data_volta, 
+      motivo: formData.motivo,
+      status: 'PENDENTE', 
+      custo: 'A Calcular', 
+      voo: 'A Definir', 
+      hotel: formData.precisa_hotel === 'sim' ? 'A Definir' : '-',
+      createdAt: Date.now() // Útil para ordenação se precisar
+    };
+
+    // Envia para o Firebase (push gera uma chave única automaticamente)
+    push(ref(db, `viagens/${user.uid}`), novaViagem)
+      .then(() => {
+        setLoading(false);
+        alert('Solicitação enviada para aprovação!');
+        setActiveTab('minhas_viagens');
+        setStep(1);
+        // Limpa o formulário
+        setFormData({
+          projeto: '', centro_custo: '', motivo: '', origem: '', destino: '', data_ida: '', data_volta: '',
+          precisa_hotel: 'nao', hotel_pref: '', adiantamento: '0'
+        });
+      })
+      .catch((error) => {
+        console.error("Erro ao salvar viagem:", error);
+        setLoading(false);
+        alert("Erro ao salvar a solicitação.");
+      });
   };
 
   const gerarVoucher = async (viagem) => {
@@ -105,29 +161,33 @@ export default function GestaoViagens() {
         {/* ABA 1: LISTA */}
         {activeTab === 'minhas_viagens' && (
           <div className="trip-grid-tech" style={{animation: 'fadeIn 0.5s', width: '100%', maxWidth: '1000px'}}>
-            {viagens.map(trip => (
-              <div key={trip.id} className="trip-card-glass">
-                <div className={`trip-status-neon ${trip.status.toLowerCase()}`}>{trip.status}</div>
-                <div className="trip-glass-header">
-                  <span className="trip-route-tech">{trip.origem.slice(0,3).toUpperCase()} <span className="arrow">➝</span> {trip.destino.slice(0,3).toUpperCase()}</span>
-                  <span className="trip-id-tech">{trip.id}</span>
-                </div>
-                <div className="trip-glass-body">
-                  <div className="trip-row-tech">
-                    <div><span className="trip-label-tech">IDA</span><span className="trip-value-tech">{trip.data_ida}</span></div>
-                    <div style={{textAlign:'right'}}><span className="trip-label-tech">VOLTA</span><span className="trip-value-tech">{trip.data_volta}</span></div>
+            {viagens.length === 0 ? (
+              <div style={{color: 'white', textAlign: 'center', padding: '20px'}}>Nenhuma viagem encontrada. Crie uma nova solicitação!</div>
+            ) : (
+              viagens.map(trip => (
+                <div key={trip.firebaseKey || trip.id} className="trip-card-glass">
+                  <div className={`trip-status-neon ${trip.status.toLowerCase()}`}>{trip.status}</div>
+                  <div className="trip-glass-header">
+                    <span className="trip-route-tech">{trip.origem.slice(0,3).toUpperCase()} <span className="arrow">➝</span> {trip.destino.slice(0,3).toUpperCase()}</span>
+                    <span className="trip-id-tech">{trip.id}</span>
                   </div>
-                  <div className="trip-row-tech"><div><span className="trip-label-tech">MOTIVO</span><span className="trip-value-tech">{trip.motivo}</span></div></div>
-                  <div className="tags-container">
-                    <div className="glass-tag">🏨 {trip.hotel}</div>
-                    <div className="glass-tag">✈ {trip.voo}</div>
+                  <div className="trip-glass-body">
+                    <div className="trip-row-tech">
+                      <div><span className="trip-label-tech">IDA</span><span className="trip-value-tech">{trip.data_ida}</span></div>
+                      <div style={{textAlign:'right'}}><span className="trip-label-tech">VOLTA</span><span className="trip-value-tech">{trip.data_volta}</span></div>
+                    </div>
+                    <div className="trip-row-tech"><div><span className="trip-label-tech">MOTIVO</span><span className="trip-value-tech">{trip.motivo}</span></div></div>
+                    <div className="tags-container">
+                      <div className="glass-tag">🏨 {trip.hotel}</div>
+                      <div className="glass-tag">✈ {trip.voo}</div>
+                    </div>
+                  </div>
+                  <div className="trip-glass-actions">
+                    <button className="btn-neon-outline" onClick={() => gerarVoucher(trip)}>📄 Baixar Voucher</button>
                   </div>
                 </div>
-                <div className="trip-glass-actions">
-                  <button className="btn-neon-outline" onClick={() => gerarVoucher(trip)}>📄 Baixar Voucher</button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
 

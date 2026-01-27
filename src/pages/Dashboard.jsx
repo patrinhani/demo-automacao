@@ -57,12 +57,11 @@ export default function Dashboard() {
       });
 
       // 3. BUSCAR FÉRIAS (Lógica Restaurada: Busca do nó do usuário)
-      // Antes estava buscando de 'ferias/proximoPeriodo' (estático), agora busca de 'ferias/UID'
       const feriasRef = ref(db, `ferias/${user.uid}`);
       onValue(feriasRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Pega a solicitação mais recente (ordena por dataInicio decrescente)
+          // Pega a solicitação mais recente
           const listaFerias = Object.values(data).sort((a, b) => 
             new Date(b.dataInicio) - new Date(a.dataInicio)
           );
@@ -71,7 +70,6 @@ export default function Dashboard() {
           
           if (ultimaFerias) {
             const dateObj = new Date(ultimaFerias.dataInicio);
-            // Formata: "10 de Jan"
             const diaMes = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             setProxFerias(diaMes);
           }
@@ -85,7 +83,7 @@ export default function Dashboard() {
     return () => authUnsubscribe();
   }, [navigate]);
 
-  // --- 4. LISTENER DEDICADO PARA SOLICITAÇÕES (Admin vs Colaborador) ---
+  // --- 4. LISTENER DEDICADO PARA SOLICITAÇÕES ---
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
@@ -149,7 +147,8 @@ export default function Dashboard() {
       valor: totalSolicitacoes.toString(), 
       icon: isAdmin ? '✅' : '📂', 
       cor: 'var(--neon-purple)',
-      rota: isAdmin ? '/gestao-reembolsos' : '/solicitacao' // Ajustei rotas para existirem
+      // CORREÇÃO: Leva para a central unificada se for Admin
+      rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes'
     },
     { 
       titulo: 'Próx. Férias', 
@@ -161,16 +160,27 @@ export default function Dashboard() {
   ];
 
   const acessos = [
-    // BLOCO GESTOR
+    // BLOCO GESTOR (CORRIGIDO)
     ...(isAdmin ? [
-      { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
-      { titulo: 'Gestão Reembolsos', desc: 'Aprovar pagamentos', icon: '💰', rota: '/gestao-reembolsos' }
+      { 
+        titulo: 'Criar Usuário', 
+        desc: 'Cadastrar Colaborador', 
+        icon: '🔐', 
+        rota: '/cadastro-usuario' 
+      },
+      { 
+        titulo: 'Aprovações Gerais',  // Unificado aqui!
+        desc: 'Férias, Viagens, TI e $', 
+        icon: '✅', 
+        rota: '/aprovacoes-gerais' 
+      }
     ] : []),
     
     // BLOCO COMUM
+    { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
     { titulo: 'Minhas Tarefas', desc: 'Kanban e organização', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Reembolsos', desc: 'Gerenciar pedidos', icon: '💸', rota: '/solicitacao' },
-    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' }, // RESTAURADO!
+    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' },
     { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
     { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
     { titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },
