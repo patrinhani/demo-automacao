@@ -139,7 +139,13 @@
 .btn-secondary-tech { background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 .btn-primary-tech { background: var(--neon-green); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-.pdf-hidden-template { position: absolute; top: -10000px; left: 0; visibility: hidden; }
+.pdf-hidden-template2 {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: -9999;
+  pointer-events: none;
+  visibility: visible;
+}
 
 @media (max-width: 768px) {
   .layout-grid-ferias { grid-template-columns: 1fr; }

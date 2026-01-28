@@ -6,14 +6,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
 
-// --- ESCOLHA SEU SOM AQUI ---
-
-// OPÇÃO 2: "Bip" Digital Curto (Estilo App de Mensagem)
-const SOM_OPCAO_1 = 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3';
-
-// Define qual som será usado (Troque por SOM_OPCAO_2 ou SOM_OPCAO_3 para testar)
-const SOM_ATIVO = SOM_OPCAO_1; 
-
 export default function ChatInterno() {
   const navigate = useNavigate();
   
@@ -25,206 +17,184 @@ export default function ChatInterno() {
   const [novaMensagem, setNovaMensagem] = useState('');
   const [menuAberto, setMenuAberto] = useState(false);
   
-  const [ultimasAtividades, setUltimasAtividades] = useState({}); 
   const [naoLidas, setNaoLidas] = useState({}); 
   
   const scrollRef = useRef(null);
-  const audioRef = useRef(null); 
+  const timestampsRef = useRef({}); // Guarda o horário da última mensagem vista
 
-  // --- 1. CONFIGURAÇÃO INICIAL ---
-  useEffect(() => {
-    // Inicializa o áudio
-    audioRef.current = new Audio(SOM_ATIVO);
-    audioRef.current.volume = 0.5; // Volume a 50% para não assustar
+  // --- 1. GERADOR DE SOM (Sintetizador) ---
+  // Cria um som suave estilo "Teams/Notification" sem precisar de arquivo
+  const tocarSomNotificacao = () => {
+    try {
+      // Cria o contexto de áudio
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return; // Navegador muito antigo
+      
+      const ctx = new AudioContext();
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        navigate('/');
+      // Se o áudio estiver suspenso (comum no Edge/Chrome), tenta retomar
+      if (ctx.state === 'suspended') {
+        ctx.resume();
       }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      // Configuração do "Bloop" (Senoide suave)
+      const now = ctx.currentTime;
+      osc.type = 'sine';
+      
+      // Frequência: Desliza de 500Hz para 800Hz (efeito "Tu-dum" rápido)
+      osc.frequency.setValueAtTime(500, now);
+      osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+
+      // Volume: Ataque rápido e decaimento suave
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.01); // Volume máx 30%
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      osc.start(now);
+      osc.stop(now + 0.5); // Para após 0.5 segundos
+
+    } catch (e) {
+      console.error("Erro ao tocar som sintetizado:", e);
+    }
+  };
+
+  // --- 2. CONFIGURAÇÃO INICIAL ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) setUser(currentUser);
+      else navigate('/');
     });
     return () => unsubscribe();
   }, [navigate]);
 
-  // Função segura para tocar o som
-  const tocarNotificacao = () => {
-    if (audioRef.current) {
-      // Reinicia o áudio para o começo (útil se receber msgs rápidas)
-      audioRef.current.currentTime = 0;
-      
-      const promessa = audioRef.current.play();
-      
-      if (promessa !== undefined) {
-        promessa.catch(error => {
-          // Ignora erro se o navegador bloquear por falta de interação
-          // (Isso é normal até o usuário clicar em algo na página)
-        });
-      }
-    }
-  };
-
-  // --- 2. CARREGAR LISTA DE USUÁRIOS ---
+  // --- 3. CARREGAR LISTA DE USUÁRIOS ---
   useEffect(() => {
     if (!user) return;
     const usersRef = ref(db, 'users');
     onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const lista = Object.keys(data)
-          .map(id => ({ id, ...data[id] }))
-          .filter(u => u.id !== user.uid);
-        setUsuarios(lista);
+        setUsuarios(Object.keys(data).map(id => ({ id, ...data[id] })).filter(u => u.id !== user.uid));
       }
     });
   }, [user]);
 
-  // --- 3. MONITORAR MENSAGENS (NOTIFICAÇÃO) ---
+  // --- 4. MONITORAR MENSAGENS (LÓGICA DE NOTIFICAÇÃO) ---
   useEffect(() => {
     if (!user) return;
 
     const chatsRef = ref(db, 'chats/direto');
-    
-    // Flag para não tocar som quando carregar as msgs antigas pela primeira vez
-    let carregamentoInicial = true;
+    let primeiraCarga = true;
 
     const unsubscribe = onValue(chatsRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      const atividadesTemp = {};
+      let deveTocar = false;
       const novasNaoLidas = { ...naoLidas };
-      let deveTocarSom = false;
 
       Object.keys(data).forEach((chatId) => {
         if (chatId.includes(user.uid)) {
           const msgs = Object.values(data[chatId]);
+          if (msgs.length === 0) return;
+
           const ultimaMsg = msgs[msgs.length - 1];
           const outroId = chatId.replace(user.uid, '').replace('_', '');
+          const ultimoVisto = timestampsRef.current[outroId] || 0;
 
-          atividadesTemp[outroId] = ultimaMsg.timestamp;
+          // Se a mensagem é nova (horário maior que o último visto)
+          if (ultimaMsg.timestamp > ultimoVisto) {
+            timestampsRef.current[outroId] = ultimaMsg.timestamp;
 
-          // Regra: Msg não é minha E não estou vendo o chat dela agora
-          if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
-             const ultimaLida = ultimasAtividades[outroId] || 0;
-             
-             // Se é uma mensagem nova (chegou depois da última vez que chequei)
-             if (ultimaMsg.timestamp > ultimaLida) {
-                // Incrementa contador
-                if (!novasNaoLidas[outroId] || novasNaoLidas[outroId] <= 0) {
+            // Se não sou eu e não estou no canal dessa pessoa
+            if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
+                // Se não for a primeira carga (histórico), é notificação real
+                if (!primeiraCarga) {
+                    console.log(`🔔 Nova mensagem de ${outroId}`);
                     novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1;
+                    deveTocar = true;
                 }
-                
-                // Toca som (exceto no load inicial)
-                if (!carregamentoInicial) {
-                    deveTocarSom = true;
-                }
-             }
+            }
           }
         }
       });
 
-      setUltimasAtividades(prev => ({ ...prev, ...atividadesTemp }));
-      
-      if (JSON.stringify(novasNaoLidas) !== JSON.stringify(naoLidas)) {
-          setNaoLidas(novasNaoLidas);
+      if (deveTocar) {
+        tocarSomNotificacao();
+        setNaoLidas(novasNaoLidas);
       }
-
-      if (deveTocarSom) {
-        tocarNotificacao();
-      }
-
-      carregamentoInicial = false;
+      primeiraCarga = false;
     });
 
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // --- 4. CARREGAR MENSAGENS DO CANAL ---
+  // --- 5. CARREGAR MENSAGENS DO CANAL ATUAL ---
   useEffect(() => {
     if (!user) return;
 
+    // Limpa badge ao entrar
     if (naoLidas[canalAtivo.id]) {
-      setNaoLidas(prev => {
-        const nova = { ...prev };
-        delete nova[canalAtivo.id];
-        return nova;
-      });
+      setNaoLidas(prev => { const n = {...prev}; delete n[canalAtivo.id]; return n; });
     }
 
-    let path = '';
-    if (canalAtivo.id === 'geral') {
-      path = 'chats/geral';
-    } else {
-      const ids = [user.uid, canalAtivo.id].sort();
-      path = `chats/direto/${ids[0]}_${ids[1]}`;
-    }
+    let path = canalAtivo.id === 'geral' ? 'chats/geral' : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
     
-    const chatRef = ref(db, path);
-    const unsubscribe = onValue(chatRef, (snapshot) => {
+    const unsubscribe = onValue(ref(db, path), (snapshot) => {
       const data = snapshot.val();
-      const listaMensagens = data 
-        ? Object.entries(data).map(([key, value]) => ({ id: key, ...value }))
-        : [];
-      setMensagens(listaMensagens);
+      setMensagens(data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : []);
     });
-
     return () => unsubscribe();
   }, [canalAtivo, user]); 
 
-  // --- 5. SCROLL E ENVIO ---
+  // Scroll automático
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [mensagens]);
 
+  // --- 6. ENVIAR MENSAGEM ---
   const enviarMensagem = async (e) => {
     e.preventDefault();
     if (!novaMensagem.trim() || !user) return;
 
-    let path = '';
-    if (canalAtivo.id === 'geral') {
-      path = 'chats/geral';
-    } else {
-      const ids = [user.uid, canalAtivo.id].sort();
-      path = `chats/direto/${ids[0]}_${ids[1]}`;
-    }
+    let path = canalAtivo.id === 'geral' ? 'chats/geral' : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
+    
+    // Tocar som baixinho ao enviar para confirmar que áudio funciona (Feedback)
+    // tocarSomNotificacao(); 
 
-    const novaMsgRef = push(ref(db, path));
-    await set(novaMsgRef, {
+    const msgData = {
       usuario: user.displayName || user.email.split('@')[0],
       uid: user.uid,
       texto: novaMensagem,
       timestamp: Date.now(),
       avatar: '👤'
-    });
+    };
+
+    await set(push(ref(db, path)), msgData);
     
-    if (canalAtivo.id !== 'geral') {
-      setUltimasAtividades(prev => ({...prev, [canalAtivo.id]: Date.now()}));
-    }
-    
+    if (canalAtivo.id !== 'geral') timestampsRef.current[canalAtivo.id] = msgData.timestamp;
     setNovaMensagem('');
   };
 
-  const formatarHora = (timestamp) => {
-    if(!timestamp) return '';
-    return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
 
-  const selecionarCanal = (canal) => {
-    setCanalAtivo(canal);
-    setMenuAberto(false);
-  };
-
-  const usuariosOrdenados = [...usuarios].sort((a, b) => {
-    const tempoA = ultimasAtividades[a.id] || 0;
-    const tempoB = ultimasAtividades[b.id] || 0;
-    return tempoB - tempoA;
-  });
+  const usuariosOrdenados = [...usuarios].sort((a, b) => (timestampsRef.current[b.id] || 0) - (timestampsRef.current[a.id] || 0));
 
   return (
-    <div className="tech-layout-chat">
+    // O onClick aqui garante o desbloqueio do áudio na primeira interação do usuário com a página
+    <div className="tech-layout-chat" onClick={() => {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            const ctx = new AudioContext();
+            if (ctx.state === 'suspended') ctx.resume();
+        }
+    }}>
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
 
@@ -236,93 +206,76 @@ export default function ChatInterno() {
            </div>
            <span className="divider">|</span>
            <span className="page-title">Chat</span>
+           
+           {/* BOTÃO DE TESTE DE SOM (Para debug, pode remover depois) */}
+           <button 
+             onClick={(e) => { e.stopPropagation(); tocarSomNotificacao(); }} 
+             style={{
+               marginLeft: '15px', 
+               padding: '6px 12px', 
+               background: 'rgba(59, 130, 246, 0.3)', 
+               border: '1px solid #3b82f6', 
+               borderRadius: '6px', 
+               cursor: 'pointer', 
+               color: '#fff', 
+               fontSize: '0.75rem',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '5px'
+             }}
+           >
+             🔊 Testar Som
+           </button>
         </div>
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Sair</button>
       </header>
 
       <div className="chat-container glass-effect">
-        
         <aside className={`chat-sidebar ${menuAberto ? 'menu-aberto' : ''}`}>
           <div className="sidebar-title">
-            Canais 
-            {menuAberto && <span onClick={() => setMenuAberto(false)} style={{float:'right', cursor:'pointer'}}>✕</span>}
+            Canais {menuAberto && <span onClick={() => setMenuAberto(false)} style={{float:'right'}}>✕</span>}
           </div>
           
           <div className="channels-list">
             <button 
               className={`channel-btn ${canalAtivo.id === 'geral' ? 'active' : ''}`}
-              onClick={() => selecionarCanal({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' })}
+              onClick={() => { setCanalAtivo({ id: 'geral', nome: '📢 Geral' }); setMenuAberto(false); }}
             >
               <span className="channel-name">📢 Geral</span>
-              <span className="channel-desc">Para todos</span>
             </button>
 
-            <div style={{margin: '15px 10px 5px', fontSize: '0.7rem', color: '#94a3b8', textTransform:'uppercase', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px'}}>
-              Mensagens Diretas
+            <div style={{margin: '15px 10px 5px', fontSize: '0.7rem', color: '#94a3b8', textTransform:'uppercase', borderTop: '1px solid #ffffff1a', paddingTop: '10px'}}>
+              Diretas
             </div>
 
             {usuariosOrdenados.map(u => (
               <button 
                 key={u.id} 
                 className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`}
-                onClick={() => selecionarCanal({ id: u.id, nome: u.nome, desc: u.cargo })}
+                onClick={() => { setCanalAtivo({ id: u.id, nome: u.nome, desc: u.cargo }); setMenuAberto(false); }}
               >
                 <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
-                  <div>
-                    <span className="channel-name">👤 {u.nome}</span>
-                    <span className="channel-desc">{u.cargo}</span>
-                  </div>
-                  
-                  {naoLidas[u.id] > 0 && (
-                    <div className="badge-notificacao">
-                      {naoLidas[u.id]}
-                    </div>
-                  )}
+                  <div><span className="channel-name">👤 {u.nome}</span><span className="channel-desc">{u.cargo}</span></div>
+                  {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
                 </div>
               </button>
             ))}
           </div>
-          
-          <div className="user-profile-mini">
-            <div className="avatar-status">
-              👤 <span className="status-dot"></span>
-            </div>
-            <div className="user-info">
-              <strong>{user?.displayName || 'Você'}</strong>
-              <span>Online</span>
-            </div>
-          </div>
         </aside>
 
-        {menuAberto && (
-          <div 
-            style={{position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', zIndex:90}} 
-            onClick={() => setMenuAberto(false)}
-          ></div>
-        )}
+        {menuAberto && <div className="overlay-menu" onClick={() => setMenuAberto(false)}></div>}
 
         <main className="chat-area">
-          <div className="chat-header">
-            <h3>{canalAtivo.nome}</h3>
-            <span>{mensagens.length} msg</span>
-          </div>
+          <div className="chat-header"><h3>{canalAtivo.nome}</h3><span>{mensagens.length} msg</span></div>
 
           <div className="messages-scroll" ref={scrollRef}>
-            {mensagens.length === 0 && (
-              <div className="empty-chat">
-                <span>👋</span>
-                <p>Inicie a conversa em <strong>{canalAtivo.nome}</strong>!</p>
-              </div>
-            )}
+            {mensagens.length === 0 && <div className="empty-chat"><span>👋</span><p>Inicie a conversa!</p></div>}
             
             {mensagens.map((msg) => (
               <div key={msg.id} className={`message-bubble ${msg.uid === user?.uid ? 'mine' : 'other'}`}>
                 <div className="msg-avatar">{msg.avatar}</div>
                 <div className="msg-content">
-                  <div className="msg-top">
-                    <span className="msg-user">{msg.usuario}</span>
-                    <span className="msg-time">{formatarHora(msg.timestamp)}</span>
-                  </div>
+                  <div className="msg-top"><span className="msg-user">{msg.usuario}</span><span className="msg-time">{formatarHora(msg.timestamp)}</span></div>
                   <p className="msg-text">{msg.texto}</p>
                 </div>
               </div>
@@ -332,14 +285,12 @@ export default function ChatInterno() {
           <form className="chat-input-area" onSubmit={enviarMensagem}>
             <input 
               type="text" 
-              placeholder={`Mensagem para ${canalAtivo.nome}...`}
+              placeholder="Digite sua mensagem..."
               value={novaMensagem}
               onChange={(e) => setNovaMensagem(e.target.value)}
               className="chat-input"
             />
-            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>
-              ➤
-            </button>
+            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
           </form>
         </main>
       </div>

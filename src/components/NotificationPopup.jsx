@@ -1,81 +1,151 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { ref, onValue } from "firebase/database";
+import { ref, onValue } from 'firebase/database';
+import { onAuthStateChanged } from "firebase/auth";
 import './NotificationPopup.css';
 
-export default function NotificationPopup() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [notificacao, setNotificacao] = useState(null);
-  
-  const tempoInicial = useRef(Date.now());
+// Som "Plink" (Base64) - Curto e limpo
+const SOM_BASE64 = "data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7c1/0xLe3+x2QTXj8/0QGL181NSueutjn//uQRAAABXMwdT0EYAAW4MHT9BGAAJJGl08gAAAAkwaXTyAAAAAmJqj/COAJpmn/we5wP+Cn/wU//7cXS/3Xj/WCPA/AwPAWASLLZIlxaraCBIDrj0J+Ev+Ln/7cI/3Cn/FwAAAAASkU////+7aeDf//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAABvxPAgQAAAAASOAEAAIBCAQAAE7QAAADBwAAECgAAAAOAEAAIAXAAAAo4AAEAgAAAAAA//uQRAAAABiwNH1CMAAGLA0fUIwAAWJMHT9BGABYkwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg";
 
+export default function NotificationPopup() {
+  const [notification, setNotification] = useState(null); 
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  
+  const audioRef = useRef(new Audio(SOM_BASE64));
+  const timestampsRef = useRef({}); 
+
+  // --- 1. CONFIGURAÇÃO E DESBLOQUEIO ---
   useEffect(() => {
-    const chatsRef = ref(db, 'chats/direto');
+    audioRef.current.volume = 1.0;
+
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    // Função que tenta destravar o áudio
+    const unlockAudio = () => {
+      if(audioRef.current) {
+        audioRef.current.play().then(() => {
+          // Se tocou, pausa e reseta. Sucesso!
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          
+          // Remove os listeners pois já conseguimos destravar
+          document.removeEventListener('click', unlockAudio);
+          document.removeEventListener('keydown', unlockAudio);
+          console.log("🔊 Áudio desbloqueado com sucesso!");
+        }).catch((e) => {
+          // Se falhar, NÃO remove os listeners. Tenta no próximo clique.
+          console.log("Ainda bloqueado, aguardando interação...", e);
+        });
+      }
+    };
+
+    // Adiciona os ouvintes globais
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+
+    return () => {
+      unsubAuth();
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
+  // Formata Nome: "joao.silva" -> "Joao Silva"
+  const formatarNome = (nomeSujo) => {
+    if (!nomeSujo) return 'Usuário';
+    return nomeSujo
+      .replace(/\./g, ' ') 
+      .replace(/_/g, ' ')  
+      .replace(/\b\w/g, l => l.toUpperCase()); 
+  };
+
+  const dispararNotificacao = (titulo, texto) => {
+    // Tenta tocar o som
+    if(audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.warn("Som bloqueado:", e));
+    }
+
+    setNotification({ title: titulo, msg: texto });
+    
+    // Limpa notificação anterior se houver timer rodando (opcional, mas bom)
+    const timer = setTimeout(() => setNotification(null), 5000);
+    return () => clearTimeout(timer);
+  };
+
+  // --- 2. MONITORAMENTO GLOBAL ---
+  useEffect(() => {
+    if (!user) return;
+
+    const chatsRef = ref(db, 'chats'); 
+    let primeiraCarga = true;
 
     const unsubscribe = onValue(chatsRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      const user = auth.currentUser;
-      if (!user) return;
+      // --- Verifica GERAL ---
+      if (data.geral) {
+        const msgs = Object.values(data.geral);
+        const ultima = msgs[msgs.length - 1];
+        
+        // Se timestamp da última msg > timestamp salvo localmente
+        if (ultima && ultima.timestamp > (timestampsRef.current['geral'] || 0)) {
+          timestampsRef.current['geral'] = ultima.timestamp;
 
-      Object.keys(data).forEach((chatId) => {
-        if (chatId.includes(user.uid)) {
-          const mensagens = Object.values(data[chatId]);
-          const ultimaMsg = mensagens[mensagens.length - 1];
-
-          if (
-            ultimaMsg.timestamp > tempoInicial.current &&
-            ultimaMsg.uid !== user.uid &&
-            location.pathname !== '/chat'
-          ) {
-            tempoInicial.current = ultimaMsg.timestamp;
-            
-            setNotificacao({
-              nome: ultimaMsg.usuario,
-              texto: ultimaMsg.texto,
-              avatar: ultimaMsg.avatar || '👤'
-            });
-
-            tocarSom();
-
-            setTimeout(() => setNotificacao(null), 5000);
+          // Se não fui eu e não é histórico inicial
+          if (ultima.uid !== user.uid && !primeiraCarga) {
+             const nome = formatarNome(ultima.usuario);
+             dispararNotificacao(`📢 Geral: ${nome}`, ultima.texto);
           }
         }
-      });
+      }
+
+      // --- Verifica DIRETOS ---
+      if (data.direto) {
+        Object.keys(data.direto).forEach((chatId) => {
+          if (chatId.includes(user.uid)) {
+            const msgs = Object.values(data.direto[chatId]);
+            const ultima = msgs[msgs.length - 1];
+            const outroId = chatId.replace(user.uid, '').replace('_', '');
+            
+            if (ultima && ultima.timestamp > (timestampsRef.current[outroId] || 0)) {
+              timestampsRef.current[outroId] = ultima.timestamp;
+
+              if (ultima.uid !== user.uid && !primeiraCarga) {
+                 const nome = formatarNome(ultima.usuario);
+                 dispararNotificacao(`👤 ${nome}`, ultima.texto);
+              }
+            }
+          }
+        });
+      }
+
+      primeiraCarga = false;
     });
 
     return () => unsubscribe();
-  }, [location.pathname]);
+  }, [user]);
 
-  const tocarSom = () => {
-    // --- OPÇÃO 1: SEU ARQUIVO LOCAL (Coloque na pasta 'public') ---
-    const audioLocal = new Audio('/ms-teams-notification.mp3');
-    
-    // --- OPÇÃO 2: LINK ONLINE (Backup se o arquivo falhar) ---
-    // const audioOnline = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-
-    // Tenta tocar o local. Se der erro, avisa no console.
-    audioLocal.play().catch(erro => {
-        console.warn("Som bloqueado ou arquivo não encontrado na pasta public:", erro);
-    });
+  const handlePopupClick = () => {
+    setNotification(null);
+    navigate('/chat');
   };
 
-  if (!notificacao) return null;
+  if (!notification) return null;
 
   return (
-    <div className="notification-toast" onClick={() => {
-      setNotificacao(null);
-      navigate('/chat');
-    }}>
-      <div className="toast-icon">{notificacao.avatar}</div>
-      <div className="toast-content">
-        <strong>{notificacao.nome}</strong>
-        <p>{notificacao.texto}</p>
+    <div className="notification-toast" onClick={handlePopupClick}>
+      <div className="notif-icon">💬</div>
+      <div className="notif-content">
+        <strong>{notification.title}</strong>
+        <p>{notification.msg}</p>
       </div>
-      <div className="toast-close">✖</div>
+      <div className="notif-bar"></div>
     </div>
   );
 }

@@ -238,7 +238,7 @@ export default function Ferias() {
       )}
 
       {/* PDF TEMPLATE */}
-      <div className="pdf-hidden-template">
+      <div className="pdf-hidden-template2">
          <div ref={formRef} style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: '20mm', boxSizing: 'border-box', fontFamily: 'Times New Roman, serif', color: 'black', border: '1px solid black' }}>
             <div style={{textAlign: 'center', borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '20px'}}>
                <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px', transform: 'scale(1.5)'}}><Logo lightMode={true} /></div>
