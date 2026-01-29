@@ -73,15 +73,19 @@ export default function Sidebar() {
         {/* FINANCEIRO */}
         <div className="nav-section">
           <span className="nav-title">Financeiro</span>
+          
+          {/* ITEM NOVO: CONCILIAÇÃO */}
+          <button className={`nav-item ${isActive('/conciliacao')}`} onClick={() => navigate('/conciliacao')}>
+            <span className="icon">🏦</span> Conciliação
+          </button>
+
           <button className={`nav-item ${isActive('/solicitacao')}`} onClick={() => navigate('/solicitacao')}>
             <span className="icon">💸</span> Solicitar Reembolso
           </button>
           
-          {/* --- NOVO BOTÃO ADICIONADO --- */}
           <button className={`nav-item ${isActive('/status-reembolso')}`} onClick={() => navigate('/status-reembolso')}>
             <span className="icon">📊</span> Meus Reembolsos
           </button>
-          {/* ----------------------------- */}
 
           <button className={`nav-item ${isActive('/holerite')}`} onClick={() => navigate('/holerite')}>
             <span className="icon">📄</span> Holerite
@@ -132,7 +136,7 @@ export default function Sidebar() {
             <span className="icon">💬</span> Chat Interno
           </button>
           <button className={`nav-item ${isActive('/portal-cliente')}`} onClick={() => navigate('/portal-cliente')}>
-            <span className="icon">🌐</span> Portal Cliente
+            <span className="icon">🌐</span> Documentações do Colaborador
           </button>
         </div>
 

@@ -1,0 +1,131 @@
+.docs-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-bottom: 50px;
+}
+
+.doc-section {
+    padding: 25px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+}
+
+.icon-section {
+    font-size: 1.8rem;
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 12px;
+}
+
+.section-header h2 {
+    color: var(--neon-blue);
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+/* LISTA DE CARDS */
+.doc-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.doc-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    transition: 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.doc-card:hover {
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* CARD DESTAQUE (RH) */
+.doc-card.destaque {
+    border: 1px solid var(--neon-purple);
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.doc-icon {
+    font-size: 2rem;
+    color: #94a3b8;
+}
+
+.doc-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    color: white;
+}
+
+.doc-info p {
+    margin: 0 0 15px 0;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+/* BOTÕES */
+.btn-download {
+    background: var(--neon-green);
+    color: black;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-download:hover {
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+.btn-view {
+    background: transparent;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.btn-view:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.badge-lock {
+    font-size: 0.75rem;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+@media (max-width: 768px) {
+    .doc-list {
+        grid-template-columns: 1fr;
+    }
+}

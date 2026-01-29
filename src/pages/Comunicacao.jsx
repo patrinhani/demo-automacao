@@ -211,7 +211,7 @@ export default function Comunicacao() {
                   {/* Link 1: Navega para a página interna fictícia */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); navigate('/portal-cliente'); }}>
-                      Portal do Cliente
+                      Documentações do Colaborador
                     </a>
                   </li>
 
