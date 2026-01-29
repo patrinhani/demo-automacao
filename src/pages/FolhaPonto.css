@@ -45,7 +45,7 @@
   text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   margin-bottom: 5px;
   letter-spacing: 2px;
-  font-variant-numeric: tabular-nums; /* Evita que os números "pulem" */
+  font-variant-numeric: tabular-nums;
 }
 
 .date-display {
@@ -70,7 +70,7 @@
 /* --- GRID DE REGISTROS --- */
 .registers-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 Colunas */
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
 
@@ -86,7 +86,6 @@
   transition: all 0.3s ease;
 }
 
-/* Estado: Preenchido (Ponto Batido) */
 .register-card.filled {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.1);
@@ -104,13 +103,12 @@
   font-size: 1.8rem;
   font-weight: bold;
   color: white;
-  min-height: 40px; /* Garante altura mesmo vazio */
+  min-height: 40px;
 }
 .register-card.filled .time-value {
-  color: #60a5fa; /* Azul claro quando preenchido */
+  color: #60a5fa;
 }
 
-/* BOTÃO DE REGISTRAR */
 .btn-register {
   width: 100%;
   padding: 10px;
@@ -119,8 +117,6 @@
   font-weight: bold;
   cursor: pointer;
   transition: 0.2s;
-  
-  /* Padrão: Botão Azul */
   background: #3b82f6;
   color: white;
 }
@@ -137,7 +133,6 @@
   border: 1px solid rgba(255,255,255,0.05);
 }
 
-/* Botão muda para verde/sucesso se já estiver registrado (opcional) ou fica desabilitado */
 .register-card.filled .btn-register {
   background: transparent;
   color: #3b82f6;
@@ -145,33 +140,210 @@
   opacity: 0.7;
 }
 
-/* --- RESUMO --- */
-.daily-summary {
-  background: rgba(255, 255, 255, 0.03);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-}
-.daily-summary h4 { color: white; margin-bottom: 5px; }
-.daily-summary p { color: #94a3b8; font-size: 0.9rem; }
+/* -----------------------------------------------------------
+   NOVOS ESTILOS PARA GESTÃO RH
+   ----------------------------------------------------------- */
 
-/* --- RESPONSIVIDADE --- */
+.toggle-rh-container {
+    display: flex;
+    background: rgba(0,0,0,0.3);
+    padding: 4px;
+    border-radius: 20px;
+    gap: 5px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 8px 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-btn.active {
+    background: var(--neon-purple, #a855f7);
+    color: white;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.badge-pendencia {
+    background: #ef4444;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Tabela de Gestão */
+.gestao-rh-container {
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.rh-header-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.rh-header-section h3 { color: white; font-size: 1.2rem; }
+.rh-header-section p { color: #94a3b8; font-size: 0.9rem; }
+
+.tech-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tech-table th {
+    text-align: left;
+    padding: 12px;
+    color: #64748b;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.tech-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #e2e8f0;
+    vertical-align: middle;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-mini {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.user-cell span {
+    display: block;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Timeline e Badges */
+.timeline-ponto {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.2);
+    padding: 8px;
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.time-pill {
+    background: rgba(255,255,255,0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: monospace;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.time-pill .lbl {
+    font-size: 0.6rem;
+    color: #64748b;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.time-pill.miss {
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.arrow {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.erro-badge {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+/* Botões de Ação */
+.btn-chamar {
+    background: var(--neon-blue);
+    color: #000;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-chamar:hover {
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-resolve-rh {
+    background: transparent;
+    border: 1px solid #22c55e;
+    color: #22c55e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.btn-resolve-rh:hover { background: #22c55e; color: white; }
+
+/* RESPONSIVIDADE */
 @media (max-width: 850px) {
   .registers-grid {
-    grid-template-columns: 1fr 1fr; /* 2 por linha em tablets */
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 500px) {
   .registers-grid {
-    grid-template-columns: 1fr; /* 1 por linha no celular */
+    grid-template-columns: 1fr;
   }
-  
   .time-display {
-    font-size: 3rem; /* Relógio menor no mobile */
+    font-size: 3rem;
   }
-  
   .ponto-container {
     padding: 20px;
   }

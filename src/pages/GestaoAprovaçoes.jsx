@@ -20,19 +20,17 @@ export default function GestaoAprovacoes() {
       const userRef = ref(db, `users/${user.uid}`);
       get(userRef).then((snapshot) => {
           const userData = snapshot.val();
-          // Lógica de proteção opcional (descomente se quiser bloquear não-gestores)
-          // const ehGestor = userData && (userData.cargo?.includes('C.E.O') || userData.role === 'admin' || userData.role === 'gestor');
-          // if (!ehGestor) { alert("Acesso restrito."); navigate('/dashboard'); }
+          // Lógica de proteção opcional
       });
     };
     checkUser();
   }, [navigate]);
 
-  // HELPER DE STATUS
+  // HELPER DE STATUS (CORRIGIDO AQUI)
   const isPendente = (s) => {
       if (!s) return true;
-      // Aceita variações de status pendente
-      return ['pendente', 'em analise', 'em análise', 'solicitado', 'aguardando', 'aberto'].includes(s.toLowerCase());
+      // Adicionado 'em_analise' na lista
+      return ['pendente', 'em analise', 'em_analise', 'em análise', 'solicitado', 'aguardando', 'aberto'].includes(s.toLowerCase());
   };
 
   // 2. BUSCA INTELIGENTE DE DADOS
@@ -44,11 +42,10 @@ export default function GestaoAprovacoes() {
     
     // --- ROTEAMENTO DE PASTAS ---
     if (abaAtiva === 'viagens') {
-        dbRef = ref(db, 'viagens'); // Pasta Raiz de Viagens
+        dbRef = ref(db, 'viagens'); 
     } else if (abaAtiva === 'reembolsos') {
-        dbRef = ref(db, 'reembolsos'); // Pasta Raiz de Reembolsos
+        dbRef = ref(db, 'reembolsos'); 
     } else {
-        // Padrão para Ferias e Helpdesk (solicitacoes/ferias, solicitacoes/helpdesk)
         dbRef = ref(db, `solicitacoes/${abaAtiva}`);
     }
 
@@ -58,7 +55,7 @@ export default function GestaoAprovacoes() {
 
       if (data) {
         if (abaAtiva === 'viagens') {
-          // --- CASO ESPECIAL: VIAGENS (Aninhado por Usuário) ---
+          // --- CASO ESPECIAL: VIAGENS ---
           Object.keys(data).forEach((uidUsuario) => {
             const viagensUser = data[uidUsuario];
             if (viagensUser) {
@@ -75,19 +72,18 @@ export default function GestaoAprovacoes() {
             }
           });
         } else {
-          // --- CASO PADRÃO (Lista Simples: Férias, Reembolsos, Helpdesk) ---
+          // --- CASO PADRÃO ---
           lista = Object.entries(data)
             .map(([chaveFirebase, valor]) => ({ 
                 ...valor, 
                 firebaseKey: chaveFirebase,
-                // Garante que temos um ID visual para mostrar
                 id: valor.protocolo || valor.id || chaveFirebase 
             }))
             .filter(item => isPendente(item.status));
         }
       }
       
-      // Ordena por data (mais recentes primeiro)
+      // Ordena por data
       lista.sort((a, b) => {
           const dA = new Date(a.createdAt || a.data_criacao || a.data_ida || 0);
           const dB = new Date(b.createdAt || b.data_criacao || b.data_ida || 0);
@@ -106,7 +102,6 @@ export default function GestaoAprovacoes() {
     const textoAcao = decisao === 'aprovado' ? 'APROVAR' : 'REJEITAR';
     if (!window.confirm(`Deseja ${textoAcao} esta solicitação?`)) return;
 
-    // Feedback visual imediato (Otimista)
     setDados(prev => prev.filter(d => d.firebaseKey !== item.firebaseKey));
 
     try {
@@ -115,7 +110,6 @@ export default function GestaoAprovacoes() {
       const user = auth.currentUser;
 
       if (abaAtiva === 'viagens') {
-          // Viagens precisa do ID do dono original
           itemRef = ref(db, `viagens/${item.uidOriginal}/${item.firebaseKey}`);
           updateData = {
             status: decisao === 'aprovado' ? 'APROVADO' : 'REJEITADO',
@@ -129,18 +123,15 @@ export default function GestaoAprovacoes() {
               avaliadoPor: user.uid 
           };
       } else {
-          // Férias e Helpdesk caem aqui
           itemRef = ref(db, `solicitacoes/${abaAtiva}/${item.firebaseKey}`);
           
           if (abaAtiva === 'helpdesk') {
-             // Helpdesk: Aprovado vira 'em_andamento' (Em Atendimento)
-             updateData = {
-                 status: decisao === 'aprovado' ? 'em_andamento' : 'cancelado',
-                 atendidoPor: user.uid
-             };
+              updateData = {
+                  status: decisao === 'aprovado' ? 'em_andamento' : 'cancelado',
+                  atendidoPor: user.uid
+              };
           } else {
-             // Férias
-             updateData = { status: decisao, avaliadoPor: user.uid };
+              updateData = { status: decisao, avaliadoPor: user.uid };
           }
       }
 
@@ -194,7 +185,6 @@ export default function GestaoAprovacoes() {
                   <h3>{item.solicitanteNome || item.nome || item.userEmail || 'Colaborador'}</h3>
                   <p className="cargo-info">{item.solicitanteCargo || item.categoria || (item.matricula ? `Mat: ${item.matricula}` : 'TechTeam')}</p>
                   
-                  {/* RENDERIZAÇÃO CONDICIONAL POR TIPO */}
                   {abaAtiva === 'ferias' && (
                       <><div className="detalhe-row"><span>Início:</span><p>{item.inicio ? new Date(item.inicio).toLocaleDateString() : '---'}</p></div>
                         <div className="detalhe-row"><span>Dias:</span><p>{item.dias} dias</p></div></>
@@ -208,7 +198,6 @@ export default function GestaoAprovacoes() {
                   
                   {abaAtiva === 'helpdesk' && (
                       <>
-                        {/* CORREÇÃO IMPORTANTE: Helpdesk usa 'titulo', Férias usa 'motivo' */}
                         <div className="detalhe-row"><span>Assunto:</span><p><strong>{item.titulo || item.assunto}</strong></p></div>
                         <div className="detalhe-row"><span>Categoria:</span><p>{item.categoria}</p></div>
                         <div className="detalhe-row"><span>Prioridade:</span><span style={{color: ['alta','critica'].includes(item.prioridade) ? 'red' : 'inherit'}}>{item.prioridade}</span></div>
