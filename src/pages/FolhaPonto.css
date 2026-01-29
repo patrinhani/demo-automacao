@@ -330,6 +330,97 @@
 }
 .btn-resolve-rh:hover { background: #22c55e; color: white; }
 
+/* ... (Mantenha o CSS anterior dos cards e relógio) ... */
+
+/* HEADER VIDRO COM FLEXBOX */
+.tech-header-glass {
+    display: flex;
+    justify-content: space-between; /* Itens nas pontas */
+    align-items: center;
+    padding: 20px 40px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative; /* Para centralização absoluta */
+}
+
+/* CONTAINER DOS BOTÕES DE TROCA - CENTRALIZADO */
+.toggle-rh-container {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* O segredo da centralização perfeita */
+    display: flex;
+    background: rgba(0,0,0,0.3);
+    padding: 4px;
+    border-radius: 20px;
+    gap: 5px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 8px 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-btn.active {
+    background: var(--neon-purple, #a855f7);
+    color: white;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+/* BOLINHA VERMELHA (BADGE) */
+.badge-alert {
+    background: #ef4444; /* Vermelho forte */
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* ... (Resto do CSS da tabela e timeline) ... */
+.tabela-rh-wrapper { overflow-x: auto; margin-top: 20px; }
+.tech-table { width: 100%; border-collapse: collapse; }
+.tech-table th { text-align: left; padding: 10px; color: #888; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.tech-table td { padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd; vertical-align: middle; }
+
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.avatar-mini { width: 35px; height: 35px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+
+.timeline-ponto { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; width: fit-content; }
+.time-pill { background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+.time-pill.miss { border-color: rgba(239, 68, 68, 0.5); color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.lbl { font-size: 0.6rem; color: #64748b; font-weight: bold; }
+.arrow { color: #64748b; font-size: 0.8rem; }
+
+.erro-badge { background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: inline-block; margin-bottom: 4px; }
+
+.btn-chamar { background: var(--neon-blue); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-chamar:hover { box-shadow: 0 0 10px rgba(0, 243, 255, 0.4); transform: translateY(-2px); }
+
+.btn-resolve-rh { background: transparent; border: 1px solid #22c55e; color: #22c55e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.btn-resolve-rh:hover { background: #22c55e; color: white; }
+
 /* RESPONSIVIDADE */
 @media (max-width: 850px) {
   .registers-grid {
