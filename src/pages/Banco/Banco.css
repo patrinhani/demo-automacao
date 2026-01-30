@@ -12,109 +12,6 @@
   background: #0f172a;
 }
 
-/* TELA DE LOGIN CENTRALIZADA */
-.infinite-layout.login-mode {
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-.login-container-horizon {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 400px;
-}
-
-.login-brand {
-  margin-bottom: 30px;
-  text-align: center;
-}
-.logo-circle-lg {
-  width: 60px; height: 60px;
-  background: linear-gradient(135deg, #f59e0b, #ec4899);
-  border-radius: 16px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 2rem; color: #fff;
-  margin: 0 auto 15px auto;
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
-}
-.login-brand h1 {
-  font-size: 2.5rem; letter-spacing: 4px; font-weight: 300; margin: 0;
-}
-.login-brand small {
-  display: block; font-size: 0.8rem; letter-spacing: 8px; color: #f59e0b; font-weight: 600; margin-top: 5px;
-}
-
-.glass-login-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 40px;
-  border-radius: 24px;
-  width: 100%;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
-.glass-login-card h3 { margin: 0 0 10px 0; font-weight: 400; font-size: 1.5rem; }
-.glass-login-card p { color: #94a3b8; margin-bottom: 30px; font-size: 0.9rem; }
-
-.input-group-horizon { margin-bottom: 20px; }
-.input-group-horizon label { display: block; color: #cbd5e1; font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-.input-group-horizon input {
-  width: 100%;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 12px;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 1rem;
-  font-family: 'Outfit', sans-serif;
-  outline: none;
-  transition: 0.3s;
-  box-sizing: border-box; /* Importante para não quebrar layout */
-}
-.input-group-horizon input:focus { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
-.input-disabled { opacity: 0.5; cursor: not-allowed; }
-
-.btn-login-horizon {
-  width: 100%;
-  background: linear-gradient(90deg, #ec4899, #8b5cf6);
-  border: none;
-  padding: 15px;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: 0.3s;
-  margin-top: 10px;
-  letter-spacing: 1px;
-}
-.btn-login-horizon:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
-.btn-login-horizon:disabled { opacity: 0.7; cursor: wait; }
-
-.error-banner {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.secure-badge {
-  margin-top: 30px;
-  text-align: center;
-  font-size: 0.75rem;
-  color: #64748b;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-}
-
 /* Background Aurora Boreal */
 .aurora-bg {
   position: absolute;
@@ -130,11 +27,7 @@
   100% { transform: translate(-5%, -5%) scale(1.1); }
 }
 
-/* Animação de Entrada */
-.fade-in-up { animation: fadeInUp 0.8s ease-out; }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-/* --- SIDEBAR e LAYOUT PRINCIPAL (MANTIDOS DA VERSÃO ANTERIOR) --- */
+/* SIDEBAR */
 .infinite-sidebar {
   width: 260px;
   background: rgba(255, 255, 255, 0.03);
@@ -144,7 +37,6 @@
 }
 .brand-box { display: flex; align-items: center; gap: 15px; margin-bottom: 50px; }
 .logo-circle { width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b, #ec4899); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; color: #fff; }
-.brand-box span { font-weight: 600; letter-spacing: 2px; font-size: 1.2rem; }
 .infinite-nav { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .infinite-nav button { background: transparent; border: none; color: #94a3b8; padding: 15px; text-align: left; font-size: 1rem; border-radius: 12px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 15px; }
 .infinite-nav button:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
@@ -153,50 +45,102 @@
 .user-profile-mini { display: flex; align-items: center; gap: 10px; }
 .avatar { width: 35px; height: 35px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 .info { display: flex; flex-direction: column; }
-.info strong { font-size: 0.9rem; }
-.info small { font-size: 0.7rem; color: #f59e0b; }
 .btn-logout-infinite { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.8rem; }
 
+/* MAIN */
 .infinite-main { flex: 1; padding: 40px; overflow-y: auto; z-index: 1; position: relative; }
-.main-header-infinite { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-.main-header-infinite h1 { font-weight: 300; font-size: 2.5rem; margin: 0; }
+.main-header-infinite { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.main-header-infinite h1 { font-weight: 300; font-size: 2.2rem; margin: 0; }
 .header-actions { display: flex; align-items: center; gap: 20px; }
 .date-badge { background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; color: #cbd5e1; }
 .btn-notif { background: rgba(255,255,255,0.05); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
 
+/* CARDS GERAIS */
 .infinite-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
 .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 25px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
-.credit-card-visual { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; justify-content: space-between; height: 180px; position: relative; overflow: hidden; }
-.credit-card-visual::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: radial-gradient(circle, rgba(245, 158, 11, 0.3), transparent); filter: blur(30px); }
-.card-top { display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.8; }
-.card-chip { width: 40px; height: 30px; background: linear-gradient(to bottom right, #fcd34d, #d97706); border-radius: 6px; margin: 20px 0; }
-.card-number { font-family: monospace; font-size: 1.4rem; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-.card-bottom { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.8rem; margin-top: auto; }
+.full-width { grid-column: span 3; }
 
-.balance-card h3 { margin: 0 0 10px 0; font-weight: 400; color: #94a3b8; }
-.balance-amount { font-size: 2.5rem; font-weight: 600; margin-bottom: 10px; }
-.balance-amount small { font-size: 1.2rem; opacity: 0.6; }
-.balance-change { color: #10b981; font-size: 0.9rem; background: rgba(16, 185, 129, 0.1); padding: 5px 10px; border-radius: 10px; display: inline-block; }
+/* Dashboard Widgets */
+.balance-card h3, .invest-card-mini h3, .card-mini-fatura h3 { margin: 0 0 10px 0; font-weight: 400; color: #94a3b8; font-size: 1rem; }
+.balance-amount { font-size: 2.2rem; font-weight: 600; }
+.balance-amount small { font-size: 1rem; opacity: 0.6; }
+.mini-stats { display: flex; gap: 15px; font-size: 0.8rem; margin-top: 10px; color: #cbd5e1; }
+.highlight-purple { color: #d8b4fe; }
+.highlight-red { color: #fca5a5; }
+.yield-badge { display: inline-block; background: rgba(216, 180, 254, 0.1); color: #d8b4fe; padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; margin-top: 10px; }
 
+/* Barra de Limite (Dashboard Mini) */
+.limit-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 10px 0 5px 0; }
+.limit-bar { height: 100%; background: #f43f5e; border-radius: 3px; }
+
+/* Botão de Ação RPA */
 .action-card { border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
-.action-card h3 { color: #fbbf24; margin: 0 0 10px 0; }
+.action-card h3 { color: #fbbf24; margin-top: 0; }
 .btn-generate-infinite { width: 100%; background: linear-gradient(90deg, #f59e0b, #ea580c); border: none; padding: 12px; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(234, 88, 12, 0.3); transition: 0.3s; }
 .btn-generate-infinite:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(234, 88, 12, 0.5); }
 
-.full-width { grid-column: span 3; }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.card-header h3 { margin: 0; font-weight: 400; font-size: 1.5rem; }
-.btn-export { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+/* EXTRATO */
+.filters-bar { display: flex; gap: 15px; margin-bottom: 20px; }
+.search-input-bank { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none; }
+.select-input-bank { padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none; }
+.btn-export { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0 20px; border-radius: 12px; cursor: pointer; }
 .table-container { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; padding: 15px; color: #94a3b8; font-weight: 400; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
 td { padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-tr:hover td { background: rgba(255,255,255,0.02); }
 .desc-infinite { font-weight: 500; color: #fff; }
 .mono { font-family: monospace; color: #64748b; }
 .pos { color: #34d399; font-weight: bold; }
 .neg { color: #f87171; font-weight: bold; }
-.tag-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+.tag-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
 .tag-type.C { background: rgba(52, 211, 153, 0.1); color: #34d399; }
 .tag-type.D { background: rgba(248, 113, 113, 0.1); color: #f87171; }
-.empty-msg { text-align: center; padding: 40px; color: #64748b; font-style: italic; }
+
+/* INVESTIMENTOS */
+.invest-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+.total-asset span { color: #94a3b8; font-size: 0.9rem; }
+.total-asset h2 { margin: 5px 0 0 0; font-size: 2.5rem; }
+.btn-new-invest { background: #8b5cf6; color: #fff; border: none; padding: 12px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+.btn-new-invest:hover { background: #7c3aed; box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+.section-title { font-weight: 300; margin-bottom: 20px; font-size: 1.5rem; }
+.assets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.asset-card { display: flex; flex-direction: column; gap: 15px; transition: 0.3s; }
+.asset-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.08); }
+.asset-icon { font-size: 2rem; }
+.asset-info h4 { margin: 0; }
+.asset-type { font-size: 0.8rem; color: #94a3b8; }
+.asset-values strong { display: block; font-size: 1.2rem; }
+.asset-values .yield { font-size: 0.8rem; color: #34d399; }
+.btn-redeem { margin-top: auto; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 8px; border-radius: 8px; cursor: pointer; }
+.btn-redeem:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* CARTÕES */
+.cards-layout { display: flex; gap: 40px; }
+.card-visual-container { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.credit-card-visual.large { height: 240px; }
+.credit-card-visual { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; justify-content: space-between; border-radius: 20px; padding: 25px; position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+.credit-card-visual::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: radial-gradient(circle, rgba(245, 158, 11, 0.3), transparent); filter: blur(30px); }
+.card-top { display: flex; justify-content: space-between; opacity: 0.8; font-size: 1.1rem; }
+.card-chip { width: 50px; height: 35px; background: linear-gradient(to bottom right, #fcd34d, #d97706); border-radius: 6px; }
+.card-number { font-family: monospace; font-size: 1.8rem; letter-spacing: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.card-actions-row { display: flex; gap: 10px; }
+.card-actions-row button { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; padding: 12px; border-radius: 12px; cursor: pointer; }
+.card-actions-row button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.invoice-container { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.invoice-details { text-align: center; }
+.invoice-val { font-size: 2.5rem; margin: 10px 0; color: #f43f5e; }
+.invoice-progress { width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; margin: 20px 0 10px 0; overflow: hidden; }
+.prog-bar { height: 100%; background: #f43f5e; }
+.btn-pay-invoice { width: 100%; background: #f43f5e; color: #fff; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: 0.3s; }
+.btn-pay-invoice:hover { background: #be123c; box-shadow: 0 0 20px rgba(244, 63, 94, 0.4); }
+.btn-pay-invoice:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+
+.last-purchases h4 { margin-top: 0; color: #94a3b8; }
+.purchase-list { list-style: none; padding: 0; margin: 0; }
+.purchase-list li { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.purchase-list li strong { color: #fff; }
+.purchase-list li span { color: #cbd5e1; }
+
+.fade-in-up { animation: fadeInUp 0.5s ease-out; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }

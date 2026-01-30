@@ -7,52 +7,24 @@ import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo';
 import './FolhaPonto.css';
 
-// --- 28 CASOS FICTÍCIOS PARA O RH ---
-const CASOS_PROBLEMA_MOCK = [
-  { id: 'mock_1', nome: "Lucas Mendes", cargo: "Dev. Júnior", setor: "TI", data: "28/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { id: 'mock_2', nome: "Mariana Costa", cargo: "Analista Fin. Jr", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_3', nome: "Roberto Almeida", cargo: "Suporte N2", setor: "TI", data: "28/01", erro: "Atraso Excessivo", status: "Pendente", pontos: { e: '10:45', si: '13:00', vi: '14:00', s: '19:00' } },
-  { id: 'mock_4', nome: "Fernanda Lima", cargo: "Assistente RH", setor: "RH", data: "28/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { id: 'mock_5', nome: "Carlos Eduardo", cargo: "DevOps", setor: "TI", data: "28/01", erro: "Hora Extra N/A", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '22:15' } },
-  { id: 'mock_6', nome: "Juliana Paes", cargo: "Controller", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_7', nome: "Bruno Souza", cargo: "Segurança Info", setor: "TI", data: "27/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { id: 'mock_8', nome: "Patrícia A.", cargo: "Gerente Cultura", setor: "RH", data: "27/01", erro: "Batida Duplicada", status: "Pendente", pontos: { e: '08:00', si: '08:02', vi: '12:00', s: '18:00' } },
-  { id: 'mock_9', nome: "Ricardo O.", cargo: "Analista Fin. Sr", setor: "Financeiro", data: "27/01", erro: "Intervalo < 1h", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '12:35', s: '17:00' } },
-  { id: 'mock_10', nome: "Amanda Silva", cargo: "P.O.", setor: "TI", data: "26/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_11', nome: "Felipe Neto", cargo: "Analista RH", setor: "RH", data: "26/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_12', nome: "Larissa M.", cargo: "Aux. Financeiro", setor: "Financeiro", data: "26/01", erro: "Atraso Excessivo", status: "Pendente", pontos: { e: '11:00', si: '13:00', vi: '14:00', s: '18:00' } },
-  { id: 'mock_13', nome: "Whindersson", cargo: "Dev Fullstack", setor: "TI", data: "25/01", erro: "Ponto Britânico", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { id: 'mock_14', nome: "Tatá Werneck", cargo: "BP RH", setor: "RH", data: "25/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_15', nome: "Fausto Silva", cargo: "CFO", setor: "Financeiro", data: "25/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '09:00', si: '13:00', vi: '15:00', s: '---' } },
-  { id: 'mock_16', nome: "João Kleber", cargo: "Estagiário TI", setor: "TI", data: "24/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_17', nome: "Ana Maria", cargo: "Analista Contábil", setor: "Financeiro", data: "24/01", erro: "Batida Duplicada", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { id: 'mock_18', nome: "Luciano Huck", cargo: "Gerente Vendas", setor: "Comercial", data: "24/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_19', nome: "Xuxa Meneghel", cargo: "Analista Mkt", setor: "Marketing", data: "23/01", erro: "Atraso Excessivo", status: "Pendente", pontos: { e: '10:30', si: '13:00', vi: '14:00', s: '18:00' } },
-  { id: 'mock_20', nome: "Gugu Liberato", cargo: "Coord. Projetos", setor: "TI", data: "23/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { id: 'mock_21', nome: "Ivete Sangalo", cargo: "Analista RH", setor: "RH", data: "23/01", erro: "Hora Extra N/A", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '21:00' } },
-  { id: 'mock_22', nome: "Pelé Arantes", cargo: "Embaixador", setor: "Marketing", data: "22/01", erro: "Falta Injustificada", status: "Pendente", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { id: 'mock_23', nome: "Silvio Santos", cargo: "Dono", setor: "Diretoria", data: "22/01", erro: "Ponto Britânico", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { id: 'mock_24', nome: "Hebe Camargo", cargo: "Recepção", setor: "Adm", data: "22/01", erro: "Intervalo < 1h", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '12:15', s: '17:00' } },
-  { id: 'mock_25', nome: "Ratinho", cargo: "Segurança", setor: "Infra", data: "21/01", erro: "Batida Duplicada", status: "Pendente", pontos: { e: '08:00', si: '08:01', vi: '---', s: '---' } },
-  { id: 'mock_26', nome: "Eliana", cargo: "Secretária", setor: "Adm", data: "21/01", erro: "Marcação Ímpar", status: "Pendente", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { id: 'mock_27', nome: "Celso Portiolli", cargo: "Trainee", setor: "TI", data: "21/01", erro: "Atraso Excessivo", status: "Pendente", pontos: { e: '09:45', si: '13:00', vi: '14:00', s: '17:00' } },
-  { id: 'mock_28', nome: "Maisa Silva", cargo: "Jovem Aprendiz", setor: "RH", data: "20/01", erro: "Hora Extra N/A", status: "Pendente", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '18:30' } }
-];
-
 export default function FolhaPonto() {
   const navigate = useNavigate();
+  
+  // --- 1. DECLARAÇÃO DE ESTADOS (HOOKS) NO INÍCIO ---
   const [user, setUser] = useState(null);
   const [registros, setRegistros] = useState({}); 
   const [horaAtual, setHoraAtual] = useState(new Date());
-  const [dataHoje, setDataHoje] = useState(new Date()); // Variável restaurada
+  const [dataHoje, setDataHoje] = useState(new Date()); // Variável para o HTML
 
-  // Estados de Gestão
   const [modoGestao, setModoGestao] = useState(false);
-  const [isRH, setIsRH] = useState(false);
-  const [listaPendencias, setListaPendencias] = useState(CASOS_PROBLEMA_MOCK);
+  const [isRH, setIsRH] = useState(false); // isRH declarado aqui!
+  const [listaPendencias, setListaPendencias] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
+  // --- 2. EFEITOS (USEEFFECT) DEPOIS DOS ESTADOS ---
+  
+  // Autenticação e Relógio
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -91,6 +63,30 @@ export default function FolhaPonto() {
     return () => { clearInterval(timer); unsubscribeAuth(); };
   }, [navigate]);
 
+  // Carregar Lista RH do Firebase
+  useEffect(() => {
+      // Agora podemos usar isRH porque ele foi declarado lá em cima
+      if (!isRH) return;
+
+      const rhRef = ref(db, 'rh/erros_ponto');
+      const unsubscribe = onValue(rhRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+              const lista = Object.entries(data)
+                  .map(([key, valor]) => ({ id: key, ...valor }))
+                  .filter(item => {
+                      if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
+                      return item.status !== 'Resolvido (Chat)';
+                  });
+              setListaPendencias(lista);
+          } else {
+              setListaPendencias([]);
+          }
+      });
+      return () => unsubscribe();
+  }, [isRH]);
+
+  // --- FUNÇÕES AUXILIARES ---
   const registrarPonto = async (tipo) => {
     if (!user) return;
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -113,14 +109,14 @@ export default function FolhaPonto() {
           });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
+      // Atualiza status e navega
+      update(ref(db, `rh/erros_ponto/${usuarioFicticio.id}`), { status: 'Notificado' });
       navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
-      setListaPendencias(prev => prev.map(p => p.id === usuarioFicticio.id ? {...p, status: 'Notificado'} : p));
   };
 
   const handleResolver = (id) => {
       if(window.confirm("Abonar falha e ajustar ponto manualmente?")) {
-        // Remove da lista -> Contador diminui automaticamente
-        setListaPendencias(prev => prev.filter(item => item.id !== id));
+        update(ref(db, `rh/erros_ponto/${id}`), { status: 'Resolvido (Manual)' });
       }
   };
 
@@ -133,7 +129,6 @@ export default function FolhaPonto() {
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
 
-      {/* HEADER CORRIGIDO COM CENTRALIZAÇÃO E CLASSE ORIGINAL */}
       <header className="tech-header-glass">
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
@@ -141,7 +136,6 @@ export default function FolhaPonto() {
            <span className="page-title">Controle de Ponto</span>
         </div>
         
-        {/* BOTÕES CENTRALIZADOS (Ver CSS) */}
         {isRH && (
             <div className="toggle-rh-container">
                 <button 
@@ -153,7 +147,6 @@ export default function FolhaPonto() {
                     className={`toggle-btn ${modoGestao ? 'active' : ''}`} 
                     onClick={() => setModoGestao(true)}>
                     👮 Gestão RH
-                    {/* BOLINHA VERMELHA CORRIGIDA */}
                     {listaPendencias.length > 0 && <span className="badge-alert">{listaPendencias.length}</span>}
                 </button>
             </div>
@@ -163,7 +156,6 @@ export default function FolhaPonto() {
       </header>
 
       <div className="ponto-container">
-        
         {!modoGestao && (
             <>
                 <div className="clock-card glass-effect">
@@ -171,7 +163,6 @@ export default function FolhaPonto() {
                   <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
                   <div className="status-badge-ponto">Online • Sincronizado</div>
                 </div>
-
                 <div className="registers-grid">
                   {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => (
                     <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''}`}>
@@ -192,7 +183,6 @@ export default function FolhaPonto() {
                     <h3>🔍 Auditoria de Inconsistências</h3>
                     <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
                 </div>
-
                 <div className="tabela-rh-wrapper">
                     <table className="tech-table">
                         <thead>
@@ -238,7 +228,6 @@ export default function FolhaPonto() {
                 </div>
             </div>
         )}
-
       </div>
     </div>
   );

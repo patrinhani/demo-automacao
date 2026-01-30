@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db, auth } from '../firebase'; 
-import { ref, onValue, push, set, get } from "firebase/database";
+import { ref, onValue, push, set, get, update } from "firebase/database"; // Import 'update' adicionado
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
 
-// --- CONSTANTES EMBUTIDAS (SEM IMPORTAÇÃO EXTERNA) ---
+// --- CONSTANTES EMBUTIDAS (Para evitar erro de import) ---
 
 const RESPOSTAS_AUTOMATICAS = [
   "Oi! Nossa, esqueci totalmente de bater o ponto ontem. Vou ajustar aqui, desculpa!",
@@ -29,6 +29,14 @@ const RESPOSTAS_AUTOMATICAS = [
   "Bom dia. O site estava fora do ar pra mim ontem. Vou abrir chamado.",
   "Oi! Esqueci meu crachá em casa ontem, por isso não registrou na catraca.",
   "Olá! Foi mal, sai para almoçar e esqueci de bater na volta. Já ajusto!"
+];
+
+const RESPOSTAS_AJUSTE = [
+    "Prontinho! Já ajustei a batida lá no sistema.",
+    "Oi! Desculpa a demora, acabei de corrigir o horário.",
+    "Feito! Inseri a justificativa e o horário correto.",
+    "Obrigado por avisar. Já regularizei meu ponto.",
+    "Ajustado! Foi falha minha mesmo, desculpe."
 ];
 
 const RESPOSTAS_PRONTAS = {
@@ -99,7 +107,7 @@ export default function ChatInterno() {
           .map(id => ({ id, ...data[id] }))
           .filter(u => u.id !== user.uid);
         
-        // B. Mocks do LocalStorage
+        // B. Mocks do LocalStorage (Persistência)
         const mocksSalvos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
         
         // Combina
@@ -121,38 +129,58 @@ export default function ChatInterno() {
     });
   }, [user, location.state]); 
 
-  // --- ROBÔ AUTO-REPLY ---
+  // --- ROBÔ AUTO-REPLY E RESOLUÇÃO DE PONTO ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
 
-      // Se EU mandei mensagem para um MOCK
-      if (ultimaMsg.uid === user.uid && canalAtivo.id.startsWith('mock_')) {
+      // Verifica se é um Mock do RH
+      const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
+      const isMock = mocksAtivos.find(m => m.id === canalAtivo.id);
+
+      // Se a última mensagem foi MINHA (RH) para o MOCK
+      if (ultimaMsg.uid === user.uid && isMock) {
           
-          // Tempo aleatório entre 10s e 180s
-          const tempoEspera = Math.floor(Math.random() * (180000 - 10000 + 1) + 10000);
+          // Tempo aleatório: 5 a 40 segundos
+          const tempoEspera = Math.floor(Math.random() * (40000 - 5000 + 1) + 5000);
           console.log(`🤖 Auto-reply agendado em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
-              const respostaAleatoria = RESPOSTAS_AUTOMATICAS[Math.floor(Math.random() * RESPOSTAS_AUTOMATICAS.length)];
+              // 1. Responde
+              const msgTexto = RESPOSTAS_AJUSTE[Math.floor(Math.random() * RESPOSTAS_AJUSTE.length)];
               const ids = [user.uid, canalAtivo.id].sort();
               const path = `chats/direto/${ids[0]}_${ids[1]}`;
               
               await set(push(ref(db, path)), {
                   usuario: canalAtivo.nome.replace('👤 ', ''),
                   uid: canalAtivo.id,
-                  texto: respostaAleatoria,
+                  texto: msgTexto,
                   timestamp: Date.now(),
                   avatar: '👤'
               });
+
+              // 2. ATUALIZA O STATUS NA FOLHA DE PONTO (Some da lista)
+              const hideUntil = Date.now() + (3 * 60 * 60 * 1000); // 3 horas
+              
+              const mockRef = ref(db, `rh/erros_ponto/${canalAtivo.id}`);
+              get(mockRef).then((snap) => {
+                  if (snap.exists()) {
+                      update(mockRef, { 
+                          status: 'Resolvido (Chat)',
+                          hiddenUntil: hideUntil 
+                      });
+                      console.log(`✅ Pendência de ${canalAtivo.nome} resolvida.`);
+                  }
+              });
+
           }, tempoEspera);
 
           return () => clearTimeout(timerId);
       }
   }, [mensagens, canalAtivo, user]);
 
-  // 3. MONITORAMENTO
+  // 3. MONITORAMENTO DE MENSAGENS
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
@@ -175,7 +203,7 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // 4. CARREGAR MSG
+  // 4. CARREGAR MSG DO CANAL
   useEffect(() => {
     if (!user) return;
     if (naoLidas[canalAtivo.id]) {
