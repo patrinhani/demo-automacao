@@ -1,89 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/Sidebar'; // Sidebar voltou
 import { useUser } from '../../contexts/UserContext';
 import { db } from '../../firebase';
-import { ref, onValue, update } from 'firebase/database'; // Sem 'remove' ou 'push' aqui
+import { ref, onValue, update } from 'firebase/database';
 import './Conciliacao.css';
 
 export default function Conciliacao() {
   const { user } = useUser();
   const navigate = useNavigate();
   const [faturas, setFaturas] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  // Estados para o Modal de Conciliação
-  const [modalAberto, setModalAberto] = useState(false);
+  // --- ESTADOS PARA INTERAÇÃO ---
+  const [busca, setBusca] = useState('');
   const [faturaSelecionada, setFaturaSelecionada] = useState(null);
-  const [loadingSave, setLoadingSave] = useState(false);
-
-  // Campos do formulário
+  const [showModal, setShowModal] = useState(false);
+  
+  // Campos do Modal de Baixa
   const [dataPagamento, setDataPagamento] = useState('');
   const [bancoDestino, setBancoDestino] = useState('');
-  const [observacao, setObservacao] = useState('');
 
-  // Carrega dados do Firebase
+  // 1. Busca dados ISOLADOS do usuário
   useEffect(() => {
-    if (user) {
-      const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
-      onValue(faturasRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const lista = Array.isArray(data) ? data : Object.entries(data).map(([k, v]) => ({...v, firebaseKey: k}));
-          // Garante que tenha indice se vier de array
-          const listaTratada = lista.map((item, idx) => ({
-             ...item, 
-             firebaseKey: item.firebaseKey || idx 
-          }));
-          setFaturas(listaTratada);
-        } else {
-          setFaturas([]);
-        }
-      });
-    }
+    if (!user) return;
+
+    // CAMINHO EXCLUSIVO DO USUÁRIO (Isolamento de Dados)
+    const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
+    
+    const unsubscribe = onValue(faturasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Transforma o objeto do Firebase em Array
+        const lista = Array.isArray(data) ? data : Object.keys(data).map(key => ({
+          firebaseKey: key, // Guarda a chave para poder atualizar depois
+          ...data[key]
+        }));
+        
+        // Ordena: Pendentes primeiro
+        lista.sort((a, b) => (a.status === 'Pendente' ? -1 : 1));
+        setFaturas(lista);
+      } else {
+        setFaturas([]);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
-  const abrirModalConciliacao = (fatura) => {
+  // 2. Filtro de Busca
+  const faturasFiltradas = faturas.filter(fatura => {
+    const termo = busca.toLowerCase();
+    const valorString = fatura.valor ? fatura.valor.toString() : '';
+    return (
+      fatura.cliente.toLowerCase().includes(termo) ||
+      (fatura.id && fatura.id.toLowerCase().includes(termo)) ||
+      valorString.includes(termo)
+    );
+  });
+
+  const solicitarBaixa = (fatura) => {
     setFaturaSelecionada(fatura);
-    setDataPagamento(''); 
+    setDataPagamento('');
     setBancoDestino('');
-    setObservacao('');
-    setModalAberto(true);
+    setShowModal(true);
   };
 
   const confirmarBaixa = async (e) => {
     e.preventDefault();
-    if (!dataPagamento || !bancoDestino) {
-      alert("ERRO: Preencha os campos obrigatórios.");
-      return;
+    if (!faturaSelecionada) return;
+
+    // Determina a chave correta para atualização (pode ser índice de array ou chave de objeto)
+    const key = faturaSelecionada.firebaseKey !== undefined ? faturaSelecionada.firebaseKey : faturas.indexOf(faturaSelecionada);
+
+    const updates = {};
+    updates[`users/${user.uid}/financeiro/faturas/${key}/status`] = 'Conciliado';
+    updates[`users/${user.uid}/financeiro/faturas/${key}/dataBaixa`] = new Date().toISOString();
+    
+    try {
+      await update(ref(db), updates);
+      setShowModal(false);
+      setFaturaSelecionada(null);
+    } catch (error) {
+      console.error("Erro:", error);
+      alert("Erro ao processar baixa.");
     }
-
-    setLoadingSave(true);
-
-    setTimeout(async () => {
-      if (user && faturaSelecionada) {
-        const updates = {};
-        updates[`users/${user.uid}/financeiro/faturas/${faturaSelecionada.firebaseKey}/status`] = 'Conciliado';
-        await update(ref(db), updates);
-      }
-      setLoadingSave(false);
-      setModalAberto(false);
-    }, 1500);
   };
 
   return (
     <div className="tech-layout">
       <div className="ambient-light light-1"></div>
       <div className="ambient-light light-2"></div>
-      
+
       <Sidebar />
-      
+
       <main className="tech-main">
         <header className="tech-header">
           <div className="header-content">
             <h1>Conciliação Bancária</h1>
-            <p>Módulo de Baixa Manual & Auditoria</p>
+            <p>Auditoria e Baixa de Títulos (Visualização Privada)</p>
           </div>
-          <div className="tech-profile" onClick={() => navigate('/perfil')}>
+          <div className="tech-profile">
             <div className="profile-info">
               <span className="name">Financeiro</span>
               <span className="role">Operacional</span>
@@ -94,44 +112,56 @@ export default function Conciliacao() {
 
         <div className="tech-scroll-content">
           
+          {/* BARRA DE BUSCA E ALERTAS */}
           <div className="conciliacao-alert">
             <span className="alert-icon">⚠️</span>
             <div>
-              <strong>Processo Obrigatório:</strong> Mantenha o 
-              <span className="highlight" onClick={() => window.open('/banco', '_blank')}> Horizon Bank </span> aberto e confira o Excel linha a linha.
+              <strong>Instrução:</strong> Utilize o <span className="highlight" onClick={() => window.open('/banco', '_blank')}>Extrato Bancário</span> para validar as datas de pagamento.
             </div>
           </div>
 
-          {faturas.length === 0 ? (
-            <div className="empty-state-tech">
-              <div className="empty-icon">📂</div>
-              <h3>Nenhuma pendência localizada</h3>
-              <p>Acesse o <strong>Horizon Bank  Extrato</strong> para gerar a carga de trabalho ou solicite ao Admin (DevTools) novos dados.</p>
-              <button className="btn-tech-outline" onClick={() => window.open('/banco', '_blank')}>
-                Ir para o Banco ↗
-              </button>
-            </div>
-          ) : (
-            <div className="tech-card-table-wrapper">
+          <div className="search-bar-container" style={{marginBottom: '20px'}}>
+            <input 
+              type="text" 
+              placeholder="🔍 Buscar por Cliente, ID ou Valor..." 
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="search-input-tech"
+              style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: 'rgba(15,23,42,0.6)', color: 'white'}}
+            />
+          </div>
+
+          {/* TABELA DE FATURAS */}
+          <div className="tech-card-table-wrapper">
+            {loading ? (
+              <p style={{padding:'20px', color:'white'}}>Carregando...</p>
+            ) : faturasFiltradas.length === 0 ? (
+              <div className="empty-state-tech">
+                <div className="empty-icon">📂</div>
+                <h3>Lista Vazia</h3>
+                <p>Nenhuma pendência encontrada. Gere novos dados no Banco ou DevTools.</p>
+              </div>
+            ) : (
               <table className="tech-table">
                 <thead>
                   <tr>
-                    <th>Cliente / Descrição</th>
-                    <th>Vencimento</th>
+                    <th>ID Documento</th>
+                    <th>Cliente / Sacado</th>
                     <th>Valor (R$)</th>
+                    <th>Vencimento (Futuro)</th>
                     <th>Status</th>
                     <th>Ação</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {faturas.map((fatura) => (
-                    <tr key={fatura.firebaseKey} className={fatura.status === 'Conciliado' ? 'row-conciliado' : ''}>
-                      <td className="col-cliente">
-                        <strong>{fatura.cliente}</strong>
-                        {fatura.status === 'Pendente' && <div className="loading-line"></div>}
+                  {faturasFiltradas.map((fatura, idx) => (
+                    <tr key={idx} className={fatura.status === 'Conciliado' ? 'row-conciliado' : ''}>
+                      <td className="mono" style={{fontSize: '0.8rem', color:'#94a3b8'}}>{fatura.id}</td>
+                      <td className="col-cliente"><strong>{fatura.cliente}</strong></td>
+                      <td className="col-valor">
+                        {Number(fatura.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </td>
-                      <td>{fatura.vencimento}</td>
-                      <td className="col-valor">R$ {parseFloat(fatura.valor).toFixed(2)}</td>
+                      <td>{new Date(fatura.vencimento).toLocaleDateString('pt-BR')}</td>
                       <td>
                         <span className={`status-badge ${fatura.status.toLowerCase()}`}>
                           {fatura.status}
@@ -139,7 +169,7 @@ export default function Conciliacao() {
                       </td>
                       <td>
                         {fatura.status === 'Pendente' && (
-                          <button className="btn-action-tech" onClick={() => abrirModalConciliacao(fatura)}>
+                          <button className="btn-action-tech" onClick={() => solicitarBaixa(fatura)}>
                             Conciliar
                           </button>
                         )}
@@ -148,52 +178,52 @@ export default function Conciliacao() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
 
-      {modalAberto && (
+      {/* MODAL DE BAIXA */}
+      {showModal && faturaSelecionada && (
         <div className="modal-overlay-tech">
           <div className="modal-glass">
             <div className="modal-header">
-              <h3>Baixa Manual de Título</h3>
-              <button className="close-btn" onClick={() => setModalAberto(false)}>×</button>
+              <h3>Realizar Baixa</h3>
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             </div>
             
             <div className="info-resumo-tech">
               <div className="info-row">
-                <span>Sacado:</span>
-                <strong>{faturaSelecionada?.cliente}</strong>
+                <span>Cliente:</span>
+                <strong>{faturaSelecionada.cliente}</strong>
               </div>
               <div className="info-row highlight-val">
-                <span>Valor Original:</span>
-                <strong>R$ {faturaSelecionada?.valor?.toFixed(2)}</strong>
+                <span>Valor:</span>
+                <strong>R$ {faturaSelecionada.valor.toFixed(2)}</strong>
               </div>
             </div>
 
             <form onSubmit={confirmarBaixa} className="form-tech">
               <div className="form-group-tech">
-                <label>Data Efetiva (Verifique o Excel)*</label>
-                <input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
+                <label>Data do Pagamento (Ver no Extrato)*</label>
+                <input 
+                  type="date" 
+                  value={dataPagamento} 
+                  onChange={(e) => setDataPagamento(e.target.value)} 
+                  required 
+                />
               </div>
               <div className="form-group-tech">
-                <label>Conta Destino*</label>
+                <label>Conta de Entrada*</label>
                 <select value={bancoDestino} onChange={(e) => setBancoDestino(e.target.value)} required>
-                  <option value="">-- Selecione --</option>
-                  <option value="itaú">Horizon Bank (Principal)</option>
+                  <option value="">Selecione...</option>
+                  <option value="horizon">Horizon Bank</option>
                   <option value="caixa">Caixa Econômica</option>
                 </select>
               </div>
-              <div className="form-group-tech">
-                <label>Observação (Opcional)</label>
-                <textarea rows="2" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
-              </div>
               <div className="modal-actions-tech">
-                <button type="button" onClick={() => setModalAberto(false)} className="btn-cancel-tech">Cancelar</button>
-                <button type="submit" className="btn-save-tech" disabled={loadingSave}>
-                  {loadingSave ? 'Validando...' : 'Confirmar'}
-                </button>
+                <button type="button" onClick={() => setShowModal(false)} className="btn-cancel-tech">Cancelar</button>
+                <button type="submit" className="btn-save-tech">Confirmar Baixa</button>
               </div>
             </form>
           </div>

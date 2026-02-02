@@ -4,11 +4,8 @@
 .tech-layout-dev {
   display: flex;
   flex-direction: column;
-  
-  /* CORREÇÃO DE SCROLL AQUI: */
-  height: 100vh;       /* Altura fixa da viewport */
-  overflow-y: auto;    /* Habilita o scroll vertical interno */
-  
+  height: 100vh;
+  overflow-y: auto; /* Habilita o scroll */
   background-color: #0f172a; 
   font-family: 'Inter', sans-serif;
   color: #e2e8f0;
@@ -16,7 +13,23 @@
   overflow-x: hidden;
 }
 
-/* LUZ AMBIENTE ROXA */
+/* --- HEADER FIXO/STICKY --- */
+.tech-header-glass {
+  position: sticky;
+  top: 0;
+  z-index: 100; /* Garante que fique acima de tudo */
+  background: rgba(15, 23, 42, 0.95); /* Menos transparência para leitura */
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 70px;
+  flex-shrink: 0; /* Não deixa encolher */
+}
+
+/* LUZ AMBIENTE */
 .ambient-light.light-dev {
   position: absolute;
   top: -20%;
@@ -32,15 +45,15 @@
 .dev-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
   width: 100%;
   position: relative;
   z-index: 1;
-  /* Garante espaço no final para não cortar conteúdo */
-  padding-bottom: 80px; 
+  
+  /* CORREÇÃO DO ESPAÇAMENTO: */
+  padding: 40px 20px 100px 20px; /* Topo, Dir, Baixo, Esq */
 }
 
-/* --- HEADER DO BLOCO --- */
+/* --- HEADER DO BLOCO (TÍTULOS) --- */
 .dev-header-block {
   margin-bottom: 40px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -73,7 +86,49 @@
   font-size: 0.9rem;
 }
 
-/* --- GRID DE CARDS --- */
+/* --- SELETOR DE PERFIL NO HEADER (CSS NOVO) --- */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dev-role-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-left: 20px;
+}
+
+.btn-role {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.btn-role:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-role.active {
+  background: #a855f7; /* Roxo Neon */
+  color: white;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+/* --- GRID E CARDS --- */
 .dev-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -81,157 +136,91 @@
   margin-bottom: 40px;
 }
 
-/* --- ESTILO DOS CARDS --- */
 .dev-card {
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: 3px solid #64748b;
   border-radius: 12px;
   padding: 20px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s;
   display: flex;
   flex-direction: column;
 }
 
 .dev-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
   background: rgba(30, 41, 59, 0.8);
 }
 
-/* DESTAQUES DE COR POR TIPO */
+/* Cores dos Cards */
 .dev-card.destaque-rh { border-top-color: #f43f5e; } 
 .dev-card:nth-child(2) { border-top-color: #eab308; } 
 .dev-card:nth-child(3) { border-top-color: #3b82f6; } 
 .dev-card:nth-child(4) { border-top-color: #22c55e; } 
 
 .card-icon {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: 15px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; margin-bottom: 15px;
 }
 
-.dev-card h3 {
-  margin: 0 0 5px 0;
-  font-size: 1.1rem;
-  color: #f1f5f9;
-}
+.dev-card h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #f1f5f9; }
+.dev-card p { color: #64748b; font-size: 0.85rem; margin: 0 0 20px 0; flex-grow: 1; }
 
-.dev-card p {
-  color: #64748b;
-  font-size: 0.85rem;
-  margin: 0 0 20px 0;
-  flex-grow: 1;
-}
-
-/* --- BOTÕES DE AÇÃO --- */
-.dev-actions {
-  display: flex;
-  gap: 10px;
-}
+.dev-actions { display: flex; gap: 10px; }
 
 .btn-gen {
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #e2e8f0;
-  padding: 8px 12px;
+  padding: 8px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8rem;
-  transition: all 0.2s;
 }
-
-.btn-gen:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #a855f7;
-  color: white;
-}
+.btn-gen:hover { border-color: #a855f7; color: white; background: rgba(255,255,255,0.1); }
 
 .btn-del {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #ef4444;
-  padding: 8px 12px;
+  padding: 8px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
 }
+.btn-del:hover { background: #ef4444; color: white; }
 
-.btn-del:hover {
-  background: #ef4444;
-  color: white;
-}
-
-/* --- CONSOLE / TERMINAL DE LOGS --- */
+/* --- CONSOLE --- */
 .dev-console-wrapper {
   background: #020617;
   border: 1px solid #334155;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
-
 .console-header {
-  background: #1e293b;
-  padding: 10px 15px;
-  border-bottom: 1px solid #334155;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: #1e293b; padding: 10px 15px; border-bottom: 1px solid #334155;
+  display: flex; justify-content: space-between; align-items: center;
 }
-
-.console-header span {
-  font-family: 'Courier New', monospace;
-  font-weight: bold;
-  color: #94a3b8;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-}
+.console-header span { font-family: 'Courier New'; color: #94a3b8; font-size: 0.8rem; }
 
 .btn-small-del {
-  background: #dc2626;
-  color: white;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  cursor: pointer;
+  background: #dc2626; color: white; border: none; padding: 4px 10px;
+  border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer;
 }
 
 .dev-console-output {
-  height: 250px;
-  overflow-y: auto;
-  padding: 15px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
-  color: #38bdf8;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  height: 200px; overflow-y: auto; padding: 15px;
+  font-family: 'Courier New', monospace; font-size: 0.85rem; color: #38bdf8;
+  display: flex; flex-direction: column; gap: 5px;
 }
+.log-line { border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
 
-.log-line {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 2px;
+.tech-back-btn {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
+  color: #d8b4fe; padding: 6px 16px; border-radius: 6px; cursor: pointer;
 }
-
-/* Scrollbar personalizada */
-.custom-scroll::-webkit-scrollbar { width: 8px; }
-.custom-scroll::-webkit-scrollbar-track { background: #020617; }
-.custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-.custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-/* Correção para o Firefox não ficar sem scroll */
-.tech-layout-dev {
-  scrollbar-width: thin;
-  scrollbar-color: #334155 #0f172a;
-}
+.tech-back-btn:hover { background: #a855f7; color: white; border-color: #a855f7; }

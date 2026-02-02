@@ -144,3 +144,356 @@ td { padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
 .fade-in-up { animation: fadeInUp 0.5s ease-out; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+
+/* src/pages/Banco/Banco.css */
+
+/* ... Mantenha todo o CSS anterior e adicione isto ao final: ... */
+
+/* --- WIDGET DEVTOOLS FLUTUANTE --- */
+.bank-dev-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(15, 23, 42, 0.9); /* Fundo escuro quase opaco */
+  border: 1px solid #a855f7; /* Borda Roxa Neon */
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  min-width: 200px;
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.dev-widget-header {
+  color: #d8b4fe;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+  padding-bottom: 5px;
+}
+
+.dev-widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-widget-body button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.dev-widget-body button::before {
+  content: '○';
+  margin-right: 8px;
+  font-size: 10px;
+}
+
+.dev-widget-body button:hover {
+  background: rgba(168, 85, 247, 0.1);
+  color: white;
+}
+
+.dev-widget-body button.active {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+  color: #d8b4fe;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.dev-widget-body button.active::before {
+  content: '●'; /* Bolinha preenchida */
+  color: #a855f7;
+}
+
+/* src/pages/Banco/Banco.css */
+
+/* ... CSS existente ... */
+
+/* Badge de Tipo de Conta */
+.account-type-badge {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 5px;
+  margin: 0 20px 20px 20px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos de Cartão */
+.salary-card {
+  background: linear-gradient(135deg, #059669, #10b981); /* Verde */
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+.black-card {
+  background: linear-gradient(135deg, #0f172a, #334155); /* Preto/Cinza */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid #475569;
+}
+
+.card-holder {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 15px;
+}
+
+.recent-card-trans {
+  background: rgba(255,255,255,0.05);
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.recent-card-trans h3 {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.recent-card-trans ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recent-card-trans li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: #94a3b8;
+  font-size: 0.9rem;
+} 
+/* src/pages/Banco/Banco.css */
+
+/* ... (Mantenha o CSS anterior do layout geral, sidebar, etc.) ... */
+
+/* =========================================
+   NOVO CSS PARA A TELA DE CARTÕES
+   ========================================= */
+
+.cartoes-container {
+  display: grid;
+  grid-template-columns: 320px 1fr; /* Coluna Fixa pro Cartão + Resto fluido */
+  gap: 30px;
+  height: 100%;
+  align-items: start;
+}
+
+.card-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.invoice-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+/* --- CARTÃO DE CRÉDITO REALISTA --- */
+.realistic-card {
+  width: 100%;
+  height: 200px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  transition: transform 0.3s;
+  font-family: 'Courier New', monospace; /* Fonte clássica de cartão */
+}
+
+.realistic-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Estilos de Cor */
+.realistic-card.black {
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+  border: 1px solid #333;
+}
+.realistic-card.black::after { /* Efeito de brilho fosco */
+  content: ''; position: absolute; top: 0; left: 0; right:0; bottom:0;
+  background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+
+.realistic-card.standard {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border: 1px solid #34d399;
+}
+
+/* Bloqueio */
+.realistic-card.is-blocked {
+  filter: grayscale(0.8) brightness(0.7);
+}
+.card-overlay-blocked {
+  position: absolute; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5); z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-weight: bold; backdrop-filter: blur(2px);
+}
+.lock-icon { font-size: 2rem; margin-bottom: 5px; }
+
+/* Conteúdo do Cartão */
+.card-front-content {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  color: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* CHIP EMV REALISTA (CSS PURO) */
+.chip-row {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.emv-chip {
+  width: 45px;
+  height: 35px;
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+  border: 1px solid #a16207;
+}
+
+/* Linhas do Chip */
+.chip-line { position: absolute; background: rgba(0,0,0,0.2); }
+.chip-line.horiz { width: 100%; height: 1px; top: 50%; transform: translateY(-50%); }
+.chip-line.vert { width: 1px; height: 100%; left: 33%; }
+.chip-line.vert.right { left: 66%; }
+.chip-line.horiz.bottom { top: 75%; width: 50%; left: 25%; height: 20px; background: transparent; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; }
+
+.nfc-tag { font-family: 'Outfit', sans-serif; font-size: 0.7rem; opacity: 0.7; border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 4px; }
+
+.card-number-row {
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  margin-top: 10px;
+}
+
+.card-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.card-holder-info label, .card-expiry-info label {
+  display: block;
+  font-size: 0.5rem;
+  opacity: 0.7;
+  margin-bottom: 2px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.card-holder-info span, .card-expiry-info span {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+
+.mastercard-circles {
+  display: flex;
+  position: relative;
+}
+.circle { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; }
+.circle.c1 { background: #eb001b; }
+.circle.c2 { background: #f79e1b; margin-left: -12px; }
+
+/* --- PAINÉIS DE CONTROLE --- */
+.control-panel h4 { margin: 0 0 15px 0; color: #94a3b8; font-weight: 400; }
+.control-actions { display: flex; gap: 10px; }
+.btn-control { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-lock { background: #ef4444; color: white; }
+.btn-unlock { background: #10b981; color: white; }
+.btn-password { background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
+.btn-dev-simulate { width: 100%; margin-top: 10px; background: transparent; border: 1px dashed #f59e0b; color: #f59e0b; padding: 8px; border-radius: 6px; cursor: pointer; opacity: 0.7; }
+.btn-dev-simulate:hover { opacity: 1; background: rgba(245, 158, 11, 0.1); }
+
+/* --- FATURA --- */
+.invoice-card { padding: 25px; display: flex; flex-direction: column; justify-content: space-between; }
+.invoice-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.invoice-info h3 { margin: 0; color: #94a3b8; font-weight: 400; font-size: 0.9rem; }
+.val-open { color: #fff; margin: 5px 0; font-size: 2.2rem; }
+.val-paid { color: #34d399; margin: 5px 0; font-size: 2.2rem; }
+.invoice-info p { margin: 0; font-size: 0.8rem; color: #cbd5e1; }
+
+.limit-info { text-align: right; }
+.limit-label { display: block; font-size: 0.8rem; color: #f59e0b; margin-bottom: 2px; }
+.limit-value { font-size: 1.1rem; font-weight: bold; }
+
+.limit-progress-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin: 20px 0; overflow: hidden; }
+.limit-progress-fill { height: 100%; transition: width 0.5s ease; }
+
+.btn-pay-action { width: 100%; background: #f59e0b; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+.btn-pay-action:hover { background: #d97706; }
+.btn-pay-action:disabled { background: #334155; color: #64748b; cursor: default; }
+.permission-alert { background: rgba(255,255,255,0.05); color: #94a3b8; padding: 10px; text-align: center; border-radius: 8px; font-size: 0.85rem; }
+
+/* --- HISTÓRICO --- */
+.history-card { flex: 1; display: flex; flex-direction: column; }
+.history-card h4 { margin: 0 0 15px 0; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+.history-list-scroll { flex: 1; overflow-y: auto; max-height: 200px; }
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.history-table tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.history-table td { padding: 10px 5px; }
+.col-date { color: #64748b; font-size: 0.8rem; }
+.col-store { color: #e2e8f0; font-weight: 500; }
+.col-val { text-align: right; font-weight: bold; color: #fff; }
+.empty-history { text-align: center; padding: 20px; color: #64748b; }
+
+/* Scrollbar fina para listas */
+.history-list-scroll::-webkit-scrollbar { width: 5px; }
+.history-list-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.history-list-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }

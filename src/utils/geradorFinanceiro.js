@@ -1,91 +1,88 @@
 // src/utils/geradorFinanceiro.js
 
 export const gerarCenarioFinanceiro = () => {
-  const hoje = new Date();
-  
-  // Formata data YYYY-MM-DD
   const formatarData = (d) => d.toISOString().split('T')[0];
   
-  // Datas base
-  const dataHoje = formatarData(hoje);
-  const ontem = new Date(hoje);
-  ontem.setDate(ontem.getDate() - 1);
-  const dataOntem = formatarData(ontem);
+  // Função para adicionar dias a uma data (Futuro)
+  const adicionarDias = (dias) => {
+    const d = new Date();
+    d.setDate(d.getDate() + dias);
+    return formatarData(d);
+  };
 
-  let extrato = []; // O que vai para o Excel
-  let faturas = []; // O que vai para a Tela (Firebase)
+  // Lista de empresas (Clientes que nos pagam)
+  const clientes = [
+    "TechSolutions Ltda", "Padaria do João", "Mercado Preço Bom", 
+    "Posto Ipiranga Centro", "Farmácia Saúde Total", "Restaurante Sabor Mineiro",
+    "Papelaria Escolar", "Oficina Mecânica Veloz", "Consultoria Alpha",
+    "Condomínio Jardins", "Academia FitLife", "Uber do Brasil",
+    "Netflix Servicos", "Amazon BR", "Spotify Premium",
+    "Vivo Telecom", "Claro Net", "Enel Energia", "Sabesp Agua",
+    "Lanchonete da Esquina", "Gráfica Rápida", "Petshop Amigo",
+    "Drogaria São Paulo", "Leroy Merlin", "Kalunga Papelaria",
+    "Smart Fit", "Burger King", "McDonalds", "Outback Steakhouse"
+  ];
 
-  // --- CASO 1: CONFLITO DE NOME (O Clássico) ---
-  // Banco: "DOC 4432..." | Sistema: "Padaria do João"
-  extrato.push({
-    data: dataOntem,
-    historico: "DOC 4432 - TRANSF J. SILVA",
-    documento: "443200",
-    valor: -1250.00,
-    tipo: "D"
-  });
-  faturas.push({
-    id: 1,
-    cliente: "Padaria do João (Filial Norte)",
-    vencimento: dataOntem,
-    valor: 1250.00,
-    status: "Pendente",
-    matchKey: "doc_4432" 
-  });
+  let extrato = []; // O que vai para o Excel (Banco)
+  let faturas = []; // O que vai para a Tela (Sistema Interno)
 
-  // --- CASO 2: O RUÍDO (Taxa que só existe no Excel) ---
-  extrato.push({
-    data: dataHoje,
-    historico: "TAR MANUT CTA - PACOTE PREMIUM",
-    documento: "000000",
-    valor: -15.90,
-    tipo: "D"
-  });
-  // Não criamos fatura para isso, o usuário tem que ignorar manualmente.
+  // --- GERAR 100 LANÇAMENTOS DE RECEBIMENTO ---
+  for (let i = 1; i <= 100; i++) {
+    const cliente = clientes[Math.floor(Math.random() * clientes.length)];
+    const valorBase = (Math.random() * 2000) + 50; 
+    const valorFinal = parseFloat(valorBase.toFixed(2));
+    
+    const idUnico = `DOC-${10000 + i}-${Math.floor(Math.random() * 999)}`;
 
-  // --- CASO 3: O PESADELO AGRUPADO (1 Entrada paga 2 Faturas) ---
-  // Banco: R$ 500,00 (Entrada única)
-  extrato.push({
-    data: dataHoje,
-    historico: "PIX RECEBIDO - CLIENTE FINAL 99",
-    documento: "PIX992",
-    valor: 500.00,
-    tipo: "C"
-  });
-  // Sistema: Duas faturas de 250 (Usuário precisa somar)
-  faturas.push({
-    id: 2,
-    cliente: "Tech Solutions - Serv. Manutenção",
-    vencimento: dataHoje,
-    valor: 250.00,
-    status: "Pendente",
-    matchKey: "pix_agrupado"
-  });
-  faturas.push({
-    id: 3,
-    cliente: "Tech Solutions - Hospedagem",
-    vencimento: dataHoje,
-    valor: 250.00,
-    status: "Pendente",
-    matchKey: "pix_agrupado"
-  });
+    // DATAS:
+    // Sistema: Fatura vence no futuro (D+1 a D+30)
+    const dataVencimento = adicionarDias(Math.floor(Math.random() * 30) + 1);
+    
+    // Banco: Cliente pagou Hoje ou Ontem (Entrada de Dinheiro)
+    const dataCreditoBanco = adicionarDias(Math.random() > 0.5 ? 0 : -1);
 
-  // --- CASO 4: O CONTROLE (Fácil) ---
-  extrato.push({
-    data: dataOntem,
-    historico: "PGTO BOLETO - FORNECEDOR PAPEL",
-    documento: "889211",
-    valor: -890.00,
-    tipo: "D"
-  });
-  faturas.push({
-    id: 4,
-    cliente: "Papelaria Corporativa Ltda",
-    vencimento: dataOntem,
-    valor: 890.00,
-    status: "Pendente",
-    matchKey: "boleto_papel"
-  });
+    // 80% Match Perfeito / 20% Caos
+    const ehCaos = Math.random() > 0.8;
+
+    // --- 1. CRIA A "CONTA A RECEBER" (SISTEMA) ---
+    faturas.push({
+      id: idUnico,
+      cliente: cliente,
+      vencimento: dataVencimento,
+      valor: valorFinal,
+      status: "Pendente",
+      origem: "Sistema Interno"
+    });
+
+    // --- 2. CRIA O LANÇAMENTO NO EXTRATO (BANCO) ---
+    if (!ehCaos) {
+      // Caso Perfeito: Crédito com mesmo valor e ID
+      extrato.push({
+        data: dataCreditoBanco,
+        historico: `LIQ. COBRANÇA - ${cliente.toUpperCase()}`, // Texto de recebimento
+        documento: idUnico,
+        valor: valorFinal, // POSITIVO (Entrada)
+        tipo: "C"          // Crédito
+      });
+    } else {
+      // Caso Caos: Valor diferente (Juros/Multa) ou Nome genérico
+      // Cliente pagou com juros, então entrou MAIS dinheiro
+      const valorComJuros = parseFloat((valorFinal + (Math.random() * 10)).toFixed(2));
+      
+      extrato.push({
+        data: dataCreditoBanco,
+        historico: `CREDITO PIX - CLIENTE FINAL`, // Nome genérico para dificultar
+        documento: `PIX-${Math.floor(Math.random()*9999)}`, // ID diferente
+        valor: valorComJuros, // Valor diferente
+        tipo: "C"
+      });
+    }
+  }
+
+  // Adiciona taxas (Essas sim são negativas/débitos) para confundir
+  const hoje = new Date();
+  extrato.push({ data: formatarData(hoje), historico: "TAR MANUTENCAO CONTA", documento: "TAR", valor: -45.00, tipo: "D" });
+  extrato.push({ data: formatarData(hoje), historico: "IOF DIARIO", documento: "IOF", valor: -1.25, tipo: "D" });
 
   return { extrato, faturas };
 };
