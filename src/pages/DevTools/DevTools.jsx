@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
-import { ref, push, set, remove, get, update } from 'firebase/database';
+import { ref, push, set, get, update, remove } from 'firebase/database';
 import Logo from '../../components/Logo';
 import './DevTools.css';
 
@@ -62,7 +62,7 @@ export default function DevTools() {
     setLog(prev => [`[${time}] ${msg}`, ...prev]);
   };
 
-  // --- GERADORES ---
+  // --- GERADOR DE VIAGENS ---
   const gerarViagens = () => {
     if (!userProfile) return addLog("❌ Erro: Usuário não carregado.");
     const viagensRef = ref(db, `viagens/${userProfile.uid}`);
@@ -99,6 +99,7 @@ export default function DevTools() {
   };
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
 
+  // --- GERADOR HELPDESK ---
   const gerarHelpdesk = () => {
     const tickets = [{ titulo: "Mouse quebrado", categoria: "hardware", prioridade: "baixa", status: "pendente", descricao: "Não clica" }];
     const hdRef = ref(db, 'solicitacoes/helpdesk');
@@ -106,6 +107,7 @@ export default function DevTools() {
     addLog("🎧 Chamados criados.");
   };
 
+  // --- GERADOR REEMBOLSOS ---
   const gerarReembolsos = () => {
     const items = [{ motivo: "Uber", valor: "45,90", data: "2025-10-10", status: "em_analise" }];
     const reembolsosRef = ref(db, 'reembolsos');
@@ -113,17 +115,42 @@ export default function DevTools() {
     addLog("💸 Reembolsos criados.");
   };
 
+  // --- GERADOR FÉRIAS ---
   const gerarFerias = () => {
     push(ref(db, 'solicitacoes/ferias'), { userId: userProfile.uid, solicitanteNome: userProfile.nome, inicio: "2026-02-10", dias: "20", status: "pendente", createdAt: new Date().toISOString() });
     addLog("🌴 Férias solicitadas.");
   };
 
-  const gerarConciliacao = () => {
-    const dados = [{ cliente: "TechSolutions", valor: "1500.00", vencimento: "2025-10-10", status: "Aberto", id: "FAT-001" }];
-    dados.forEach(d => push(ref(db, 'financeiro/contasReceber'), d));
-    addLog("🏦 Faturas geradas.");
+  // --- GERADOR DE CONCILIAÇÃO (MODO CAOS) ---
+  const gerarConciliacaoCaos = async () => {
+    if (!userProfile) return addLog("❌ Erro: Usuário não identificado.");
+    
+    // Dados para popular a tela do usuário com conflitos propositais
+    const faturas = [
+      { id: 1, cliente: "Padaria do João (Filial Norte)", valor: 1250.00, vencimento: "2025-10-10", status: "Pendente" },
+      { id: 2, cliente: "Tech Solutions - Serv. Manutenção", valor: 250.00, vencimento: "2025-10-10", status: "Pendente" },
+      { id: 3, cliente: "Tech Solutions - Hospedagem", valor: 250.00, vencimento: "2025-10-10", status: "Pendente" },
+      { id: 4, cliente: "Papelaria Corporativa Ltda", valor: 890.00, vencimento: "2025-10-10", status: "Pendente" }
+    ];
+
+    try {
+      // Salva no caminho específico do usuário logado
+      await set(ref(db, `users/${userProfile.uid}/financeiro/faturas`), faturas);
+      addLog("🏦 Faturas de teste geradas (Modo Caos).");
+    } catch (e) {
+      addLog(`❌ Erro ao gerar conciliação: ${e.message}`);
+    }
   };
-  const limparConciliacao = () => { set(ref(db, 'financeiro/contasReceber'), null); addLog("🗑️ Financeiro limpo."); };
+
+  const limparConciliacao = async () => {
+    if (!userProfile) return;
+    try {
+      await set(ref(db, `users/${userProfile.uid}/financeiro/faturas`), null);
+      addLog("🗑️ Módulo de Conciliação limpo.");
+    } catch (e) {
+      addLog(`❌ Erro ao limpar conciliação: ${e.message}`);
+    }
+  };
 
   // --- GERADOR DE CASOS RH ---
   const gerarCasosRH = async () => {
@@ -140,14 +167,14 @@ export default function DevTools() {
     addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
   };
 
-  // --- AQUI ESTAVA FALTANDO A FUNÇÃO ---
   const limparCasosRH = () => {
     set(ref(db, 'rh/erros_ponto'), null);
     addLog("🗑️ Casos RH limpos.");
   };
 
+  // --- LIMPAR TUDO (RESET) ---
   const limparTudo = async () => {
-    if(!window.confirm("⚠️ TEM CERTEZA?")) return;
+    if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
     const updates = {};
     updates[`viagens/${userProfile.uid}`] = null;
     updates[`ponto/${userProfile.uid}`] = null;
@@ -155,9 +182,11 @@ export default function DevTools() {
     updates[`reembolsos`] = null;
     updates[`solicitacoes/ferias`] = null;
     updates[`rh/erros_ponto`] = null;
-    updates[`financeiro/contasReceber`] = null;
+    updates[`users/${userProfile.uid}/financeiro/faturas`] = null; // Inclui Conciliação
+    updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
+    
     await update(ref(db), updates);
-    addLog("☠️ WIPEOUT: Tudo limpo.");
+    addLog("☠️ WIPEOUT: Todos os dados de teste removidos.");
   };
 
   return (
@@ -193,12 +222,68 @@ export default function DevTools() {
             </div>
           </div>
 
-          <div className="dev-card"><div className="card-icon">⏰</div><h3>Ponto Pessoal</h3><p>Preenche mês todo.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarPonto}>+ Gerar</button><button className="btn-del" onClick={limparPonto}>🗑️</button></div></div>
-          <div className="dev-card"><div className="card-icon">✈️</div><h3>Viagens</h3><p>Solicitações.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarViagens}>+ Gerar</button><button className="btn-del" onClick={limparViagens}>🗑️</button></div></div>
-          <div className="dev-card"><div className="card-icon">🎧</div><h3>Helpdesk</h3><p>Chamados.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarHelpdesk}>+ Gerar</button></div></div>
-          <div className="dev-card"><div className="card-icon">💸</div><h3>Reembolsos</h3><p>Despesas.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarReembolsos}>+ Gerar</button></div></div>
-          <div className="dev-card"><div className="card-icon">🌴</div><h3>Férias</h3><p>Solicitações.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarFerias}>+ Gerar</button></div></div>
-          <div className="dev-card"><div className="card-icon">🏦</div><h3>Conciliação</h3><p>Faturas.</p><div className="dev-actions"><button className="btn-gen" onClick={gerarConciliacao}>+ Gerar</button><button className="btn-del" onClick={limparConciliacao}>🗑️</button></div></div>
+          {/* CARD PONTO */}
+          <div className="dev-card">
+            <div className="card-icon">⏰</div>
+            <h3>Ponto Pessoal</h3>
+            <p>Preenche mês todo.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarPonto}>+ Gerar</button>
+              <button className="btn-del" onClick={limparPonto}>🗑️</button>
+            </div>
+          </div>
+
+          {/* CARD VIAGENS */}
+          <div className="dev-card">
+            <div className="card-icon">✈️</div>
+            <h3>Viagens</h3>
+            <p>Solicitações.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarViagens}>+ Gerar</button>
+              <button className="btn-del" onClick={limparViagens}>🗑️</button>
+            </div>
+          </div>
+
+          {/* CARD HELPDESK */}
+          <div className="dev-card">
+            <div className="card-icon">🎧</div>
+            <h3>Helpdesk</h3>
+            <p>Chamados.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarHelpdesk}>+ Gerar</button>
+            </div>
+          </div>
+
+          {/* CARD REEMBOLSOS */}
+          <div className="dev-card">
+            <div className="card-icon">💸</div>
+            <h3>Reembolsos</h3>
+            <p>Despesas.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarReembolsos}>+ Gerar</button>
+            </div>
+          </div>
+
+          {/* CARD FÉRIAS */}
+          <div className="dev-card">
+            <div className="card-icon">🌴</div>
+            <h3>Férias</h3>
+            <p>Solicitações.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarFerias}>+ Gerar</button>
+            </div>
+          </div>
+
+          {/* CARD CONCILIAÇÃO (ATUALIZADO E COMPLETO) */}
+          <div className="dev-card" style={{borderTopColor: '#3b82f6'}}>
+            <div className="card-icon" style={{background: '#3b82f6'}}>🏦</div>
+            <h3>Conciliação (Caos)</h3>
+            <p>Gera faturas conflitantes para teste.</p>
+            <div className="dev-actions">
+              <button className="btn-gen" onClick={gerarConciliacaoCaos}>+ Gerar Caos</button>
+              <button className="btn-del" onClick={limparConciliacao}>🗑️ Limpar</button>
+            </div>
+          </div>
         </div>
 
         <div className="dev-console-wrapper">
