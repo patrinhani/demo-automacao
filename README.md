@@ -11,9 +11,10 @@
   <p align="center">
     <a href="#-sobre">Sobre</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     <a href="#-tecnologias">Tecnologias</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-    <a href="#-funcionalidades">Módulos & Desafios</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="#-funcionalidades">Módulos</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     <a href="#-devtools">DevTools</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-    <a href="#-como-rodar">Como Rodar</a>
+    <a href="#-como-rodar">Como Rodar</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="#-contexto--desenvolvimento">Quem Somos</a>
   </p>
 </div>
 
@@ -36,10 +37,15 @@ Diferente de sites de treino estáticos, esta aplicação possui **persistência
 O projeto utiliza uma stack moderna para criar desafios de automação reais (Shadow DOM, Canvas/SVG, iFrames simulados, Download de arquivos):
 
 <div align="center">
-  <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=react,vite,firebase,css,html,js,git&theme=dark" />
-  </a>
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Firebase-039BE5?style=for-the-badge&logo=Firebase&logoColor=white" />
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
+  <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
 </div>
+
+<br>
 
 **Bibliotecas Chave para Automação:**
 - **Firebase Realtime Database**: Persistência de dados instantânea (Desafio: Sincronização de testes).
@@ -73,7 +79,7 @@ Simula o ciclo de vida do colaborador.
 
 ### 💬 Comunicação & Chat
 Sistema de mensageria em tempo real.
-- **Funcionalidades**: Chat setorizado e direto.
+- **Funcionalidades**: Chat setorizado e direto com robôs de resposta automática.
 - **Desafio RPA**: Monitorar o DOM (MutationObserver) para detectar novas mensagens sem recarregar a página e interagir com *popups* de notificação.
 
 ### 🆘 Central de Serviços (Helpdesk)
@@ -119,4 +125,17 @@ Bash
 npm run dev
 Acesse: http://localhost:5173
 
-<div align="center"> <sub>Projeto Open Source para a comunidade de QA e RPA.</sub> </div>
+## 🎓 Contexto & Desenvolvimento
+
+
+Este projeto foi idealizado e desenvolvido como entrega final para o curso no SENAC (Serviço Nacional de Aprendizagem Comercial).
+
+O desenvolvimento foi realizado de forma colaborativa utilizando o Live Share (extensão do VS Code), permitindo que a equipe codificasse simultaneamente no mesmo ambiente, garantindo agilidade na integração entre o Front-end e o Firebase.
+
+### 👨‍💻 Autores
+
+Guilherme Patrinhani - Desenvolvedor Fullstack
+
+Yan Rodrigues - Desenvolvedor Fullstack
+
+<div align="center"> <sub>Desenvolvido com 💜 para a comunidade de Automação.</sub> </div>
