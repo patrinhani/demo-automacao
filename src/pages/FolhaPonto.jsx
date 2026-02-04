@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
 import { db, auth } from '../firebase';
 import { ref, onValue, update, get } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,21 +9,21 @@ import './FolhaPonto.css';
 export default function FolhaPonto() {
   const navigate = useNavigate();
   
-  // --- 1. DECLARAÇÃO DE ESTADOS (HOOKS) NO INÍCIO ---
+  // --- 1. ESTADOS ---
   const [user, setUser] = useState(null);
   const [registros, setRegistros] = useState({}); 
   const [horaAtual, setHoraAtual] = useState(new Date());
-  const [dataHoje, setDataHoje] = useState(new Date()); // Variável para o HTML
-
+  const [dataHoje, setDataHoje] = useState(new Date());
+  
   const [modoGestao, setModoGestao] = useState(false);
-  const [isRH, setIsRH] = useState(false); // isRH declarado aqui!
+  const [isRH, setIsRH] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
-  // --- 2. EFEITOS (USEEFFECT) DEPOIS DOS ESTADOS ---
+  // --- 2. EFEITOS ---
   
-  // Autenticação e Relógio
+  // Auth e Relógio
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -48,36 +47,35 @@ export default function FolhaPonto() {
       const pontoRef = ref(db, `ponto/${currentUser.uid}/${dateKey}`);
       onValue(pontoRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          setRegistros({
+        setRegistros(data ? {
             entrada: data.entrada || null,
             almoco_ida: data.almoco_ida || null,
             almoco_volta: data.almoco_volta || null,
             saida: data.saida || null
-          });
-        } else {
-            setRegistros({});
-        }
+        } : {});
       });
     });
     return () => { clearInterval(timer); unsubscribeAuth(); };
   }, [navigate]);
 
-  // Carregar Lista RH do Firebase
+  // Carrega Lista RH (Lógica Nova: Filtra 'Concluido')
   useEffect(() => {
-      // Agora podemos usar isRH porque ele foi declarado lá em cima
       if (!isRH) return;
 
       const rhRef = ref(db, 'rh/erros_ponto');
       const unsubscribe = onValue(rhRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-              const lista = Object.entries(data)
-                  .map(([key, valor]) => ({ id: key, ...valor }))
-                  .filter(item => {
-                      if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
-                      return item.status !== 'Resolvido (Chat)';
-                  });
+              // Transforma em array e aplica filtros
+              const lista = Object.values(data).filter(item => {
+                  // ESCONDE se status for 'Concluido' (Já baixado)
+                  if (item.status === 'Concluido') return false;
+                  
+                  // ESCONDE se tiver timer de bloqueio ativo (para itens temporariamente removidos)
+                  if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
+                  
+                  return true;
+              });
               setListaPendencias(lista);
           } else {
               setListaPendencias([]);
@@ -86,15 +84,19 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  // --- FUNÇÕES AUXILIARES ---
+  // --- FUNÇÕES ---
   const registrarPonto = async (tipo) => {
     if (!user) return;
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
-    const diaRef = ref(db, `ponto/${user.uid}/${dateKey}`);
     try {
-      await update(diaRef, { [tipo]: horarioFormatado, userId: user.uid, data: dateKey, timestamp: Date.now() });
-      alert(`Ponto de ${tipo.replace('_', ' ').toUpperCase()} registrado: ${horarioFormatado}`);
+      await update(ref(db, `ponto/${user.uid}/${dateKey}`), { 
+          [tipo]: horarioFormatado, 
+          userId: user.uid, 
+          data: dateKey, 
+          timestamp: Date.now() 
+      });
+      alert(`Ponto registrado: ${horarioFormatado}`);
     } catch (error) { alert("Erro ao registrar ponto."); }
   };
 
@@ -109,19 +111,35 @@ export default function FolhaPonto() {
           });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
-      // Atualiza status e navega
+      
       update(ref(db, `rh/erros_ponto/${usuarioFicticio.id}`), { status: 'Notificado' });
       navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
   };
 
+  // Botão Baixar: Marca como Concluido e some da lista
   const handleResolver = (id) => {
-      if(window.confirm("Abonar falha e ajustar ponto manualmente?")) {
-        update(ref(db, `rh/erros_ponto/${id}`), { status: 'Resolvido (Manual)' });
-      }
+      update(ref(db, `rh/erros_ponto/${id}`), { status: 'Concluido' });
   };
 
   const formatarDataExtenso = (date) => {
     return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  // Helper para renderizar a ação correta na tabela
+  const renderAcao = (item) => {
+      if (item.status === 'Respondido') {
+          return (
+              <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
+                  <span style={{color: '#4ade80', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>✨ Ajustado</span>
+                  <button className="btn-resolve-rh" onClick={() => handleResolver(item.id)}>✅ Baixar</button>
+              </div>
+          );
+      }
+      if (item.status === 'Notificado') {
+          return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
+      }
+      // Padrão (Pendente)
+      return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
 
   return (
@@ -156,6 +174,8 @@ export default function FolhaPonto() {
       </header>
 
       <div className="ponto-container">
+        
+        {/* VISTA 1: MEU PONTO */}
         {!modoGestao && (
             <>
                 <div className="clock-card glass-effect">
@@ -163,6 +183,7 @@ export default function FolhaPonto() {
                   <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
                   <div className="status-badge-ponto">Online • Sincronizado</div>
                 </div>
+
                 <div className="registers-grid">
                   {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => (
                     <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''}`}>
@@ -177,12 +198,14 @@ export default function FolhaPonto() {
             </>
         )}
 
+        {/* VISTA 2: GESTÃO RH */}
         {modoGestao && isRH && (
             <div className="gestao-rh-container">
                 <div className="rh-header-section">
                     <h3>🔍 Auditoria de Inconsistências</h3>
                     <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
                 </div>
+
                 <div className="tabela-rh-wrapper">
                     <table className="tech-table">
                         <thead>
@@ -214,11 +237,7 @@ export default function FolhaPonto() {
                                     </td>
                                     <td>
                                         <div className="actions-cell">
-                                            {item.status === 'Pendente' ? (
-                                                <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>
-                                            ) : (
-                                                <button className="btn-resolve-rh" onClick={() => handleResolver(item.id)}>✅ Baixar</button>
-                                            )}
+                                            {renderAcao(item)}
                                         </div>
                                     </td>
                                 </tr>
@@ -228,6 +247,7 @@ export default function FolhaPonto() {
                 </div>
             </div>
         )}
+
       </div>
     </div>
   );

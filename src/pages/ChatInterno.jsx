@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db, auth } from '../firebase'; 
-import { ref, onValue, push, set, get, update } from "firebase/database"; // Import 'update' adicionado
+import { ref, onValue, push, set, get, update } from "firebase/database"; 
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
 
-// --- CONSTANTES EMBUTIDAS (Para evitar erro de import) ---
+// --- CONSTANTES ---
 
 const RESPOSTAS_AUTOMATICAS = [
   "Oi! Nossa, esqueci totalmente de bater o ponto ontem. Vou ajustar aqui, desculpa!",
@@ -94,7 +94,7 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // 2. CARREGAR USUÁRIOS (REAIS + MOCKS)
+  // 2. CARREGAR USUÁRIOS (COM CORREÇÃO DE DUPLICIDADE POR NOME)
   useEffect(() => {
     if (!user) return;
     const usersRef = ref(db, 'users');
@@ -107,24 +107,39 @@ export default function ChatInterno() {
           .map(id => ({ id, ...data[id] }))
           .filter(u => u.id !== user.uid);
         
-        // B. Mocks do LocalStorage (Persistência)
+        // B. Mocks do LocalStorage
         const mocksSalvos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
         
-        // Combina
-        let listaFinal = [...mocksSalvos, ...listaReais];
+        // C. Target vindo da navegação
+        const target = location.state?.chatTarget;
 
-        // C. Se veio do botão "Chamar"
-        if (location.state && location.state.chatTarget) {
-            const target = location.state.chatTarget;
-            const jaExiste = listaFinal.find(u => u.id === target.id);
-            if (!jaExiste) listaFinal.unshift(target);
-            
-            // Auto-seleciona
-            if (canalAtivo.id !== target.id) {
+        // LISTA UNIFICADA: Mocks -> Reais -> Target
+        // A ordem importa: os últimos sobrescrevem os primeiros no Map
+        let todosCandidatos = [...mocksSalvos, ...listaReais];
+        if (target) {
+            todosCandidatos.push(target);
+        }
+
+        // DEDUPLICAÇÃO POR NOME
+        // Usamos um Map onde a CHAVE é o NOME. Isso impede nomes repetidos.
+        const mapaPorNome = new Map();
+        
+        todosCandidatos.forEach(u => {
+            if (u && u.nome) {
+                // Ao usar .set(), se o nome já existe, ele atualiza com o user mais recente (o target, por exemplo)
+                mapaPorNome.set(u.nome.trim(), u);
+            }
+        });
+
+        // Se o target existe, seleciona ele automaticamente no chat
+        if (target) {
+            if (canalAtivo.id !== target.id && canalAtivo.id === 'geral') {
                 setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo });
             }
         }
-        setUsuarios(listaFinal);
+
+        // Converte Map de volta para Array para exibir na lista
+        setUsuarios(Array.from(mapaPorNome.values()));
       }
     });
   }, [user, location.state]); 
@@ -142,8 +157,8 @@ export default function ChatInterno() {
       // Se a última mensagem foi MINHA (RH) para o MOCK
       if (ultimaMsg.uid === user.uid && isMock) {
           
-          // Tempo aleatório: 5 a 40 segundos
-          const tempoEspera = Math.floor(Math.random() * (40000 - 5000 + 1) + 5000);
+          // Tempo aleatório: 5 a 15 segundos
+          const tempoEspera = Math.floor(Math.random() * (15000 - 5000 + 1) + 5000);
           console.log(`🤖 Auto-reply agendado em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
@@ -160,17 +175,15 @@ export default function ChatInterno() {
                   avatar: '👤'
               });
 
-              // 2. ATUALIZA O STATUS NA FOLHA DE PONTO (Some da lista)
-              const hideUntil = Date.now() + (3 * 60 * 60 * 1000); // 3 horas
-              
+              // 2. ATUALIZA O STATUS NA FOLHA DE PONTO (IMPORTANTE: 'Respondido')
               const mockRef = ref(db, `rh/erros_ponto/${canalAtivo.id}`);
               get(mockRef).then((snap) => {
                   if (snap.exists()) {
                       update(mockRef, { 
-                          status: 'Resolvido (Chat)',
-                          hiddenUntil: hideUntil 
+                          status: 'Respondido', // Gatilho para o botão verde aparecer
+                          hiddenUntil: null 
                       });
-                      console.log(`✅ Pendência de ${canalAtivo.nome} resolvida.`);
+                      console.log(`✅ Pendência de ${canalAtivo.nome} respondida.`);
                   }
               });
 

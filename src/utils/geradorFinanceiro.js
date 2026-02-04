@@ -33,9 +33,8 @@ export const gerarCenarioFinanceiro = () => {
   let extrato = []; 
   let faturas = []; 
 
-  for (let i = 1; i <= 50; i++) { // Reduzi para 50 para facilitar testes
+  for (let i = 1; i <= 50; i++) { 
     const clienteNome = clientes[Math.floor(Math.random() * clientes.length)];
-    // GERA O CNPJ AQUI PARA USAR NOS DOIS LADOS
     const clienteCnpj = gerarCNPJ(); 
     
     const valorBase = (Math.random() * 2000) + 50; 
@@ -48,10 +47,11 @@ export const gerarCenarioFinanceiro = () => {
     const ehCaos = Math.random() > 0.8;
 
     // --- 1. DADOS PARA O SISTEMA (Conciliação) ---
+    // Nota: Não inserimos firebaseKey aqui, ele é gerado pelo banco ou na leitura
     faturas.push({
       id: idTransacao,
       nfe: `NF-${202500 + i}`,
-      cnpj: clienteCnpj, // CNPJ correto
+      cnpj: clienteCnpj,
       cliente: clienteNome,
       vencimento: dataVencimento,
       valor: valorFinal,
@@ -64,13 +64,12 @@ export const gerarCenarioFinanceiro = () => {
     if (!ehCaos) {
       extrato.push({
         data: dataCreditoBanco,
-        hora: formatarHora(), // Adicionando hora
+        hora: formatarHora(),
         historico: `LIQ. COBRANÇA - ${clienteNome.toUpperCase()}`,
         documento: idTransacao,
         valor: valorFinal, 
         tipo: "C",
         hash: hashSeguranca,
-        // NOVOS CAMPOS PARA O PDF FICAR RICO:
         pagador_nome: clienteNome.toUpperCase(),
         pagador_cnpj: clienteCnpj,
         pagador_banco: "BANCO EXTERNO S.A."
@@ -93,9 +92,16 @@ export const gerarCenarioFinanceiro = () => {
     }
   }
 
-  // Taxas do banco (sem pagador externo)
+  // Taxas do banco
   const hoje = new Date();
-  extrato.push({ data: formatarData(hoje), hora: "02:15:00", historico: "TAR MANUTENCAO CONTA", documento: "TAR", valor: -45.00, tipo: "D" });
+  extrato.push({ 
+    data: formatarData(hoje), 
+    hora: "02:15:00", 
+    historico: "TAR MANUTENCAO CONTA", 
+    documento: "TAR", 
+    valor: -45.00, 
+    tipo: "D" 
+  });
 
   return { extrato, faturas };
 };

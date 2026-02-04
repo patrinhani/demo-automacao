@@ -20,6 +20,7 @@ export default function Conciliacao() {
   const [showModal, setShowModal] = useState(false);
   
   // --- CAMPOS DO FORMULÁRIO ---
+  // RESTAURADO: Estado para o código manual
   const [inputCodigo, setInputCodigo] = useState('');
   const [arquivoUpload, setArquivoUpload] = useState(null);
   const [erroValidacao, setErroValidacao] = useState('');
@@ -28,7 +29,7 @@ export default function Conciliacao() {
   const [dataPagamento, setDataPagamento] = useState('');
   const [bancoDestino, setBancoDestino] = useState('');
 
-  // 1. CARREGAR DADOS DO FIREBASE (CORRIGIDO)
+  // 1. CARREGAR DADOS DO FIREBASE (Mantendo a correção de ID)
   useEffect(() => {
     if (!user) return;
 
@@ -39,23 +40,18 @@ export default function Conciliacao() {
       if (data) {
         let lista = [];
 
-        // CORREÇÃO CRÍTICA AQUI:
-        // Se for Array, mapeamos o índice (0, 1, 2...) para 'firebaseKey' ANTES de ordenar.
-        // Isso garante que sabemos exatamente qual linha atualizar no banco depois.
         if (Array.isArray(data)) {
           lista = data.map((item, index) => ({
             ...item,
-            firebaseKey: index // Salva o índice real do banco (ex: 0, 5, 12)
+            firebaseKey: index 
           }));
         } else {
-          // Se for Objeto (chaves aleatórias do Firebase), pegamos as chaves
           lista = Object.keys(data).map(key => ({
-            firebaseKey: key,
-            ...data[key]
+            ...data[key],
+            firebaseKey: key
           }));
         }
         
-        // Ordena: Pendentes primeiro (Agora é seguro ordenar, pois firebaseKey está salvo)
         lista.sort((a, b) => (a.status === 'Pendente' ? -1 : 1));
         setFaturas(lista);
       } else {
@@ -72,7 +68,7 @@ export default function Conciliacao() {
     const termo = busca.toLowerCase();
     const valorString = fatura.valor ? fatura.valor.toString() : '';
     return (
-      fatura.cliente.toLowerCase().includes(termo) ||
+      (fatura.cliente && fatura.cliente.toLowerCase().includes(termo)) ||
       (fatura.id && fatura.id.toLowerCase().includes(termo)) ||
       (fatura.nfe && fatura.nfe.toLowerCase().includes(termo)) ||
       valorString.includes(termo)
@@ -81,12 +77,17 @@ export default function Conciliacao() {
 
   // 3. ABRIR MODAL
   const solicitarBaixa = (fatura) => {
+    if (fatura.firebaseKey === undefined || fatura.firebaseKey === null) {
+      alert("Erro ao selecionar fatura: Chave de referência inválida.");
+      return;
+    }
+
     setFaturaSelecionada(fatura);
     
     // Limpar campos
     setDataPagamento('');
     setBancoDestino('');
-    setInputCodigo('');
+    setInputCodigo(''); // Limpa o código anterior
     setArquivoUpload(null);
     setErroValidacao('');
     
@@ -101,32 +102,32 @@ export default function Conciliacao() {
     }
   };
 
-  // 5. CONFIRMAR E VALIDAR
+  // 5. CONFIRMAR E VALIDAR (COM VERIFICAÇÃO DE CÓDIGO)
   const confirmarBaixa = async (e) => {
     e.preventDefault();
     if (!faturaSelecionada) return;
     
     setErroValidacao('');
 
-    // Validação de Hash (Código do Comprovante)
+    // --- VALIDAÇÃO CRÍTICA DO CÓDIGO (HASH) ---
+    // O usuário deve digitar o código exato que está no "documento" (simulado no banco)
     const hashCorreto = faturaSelecionada.codigoHash;
-    if (hashCorreto && inputCodigo.trim().toUpperCase() !== hashCorreto) {
-      setErroValidacao('❌ Código de Autenticação inválido! Verifique o comprovante no menu Banco.');
+    
+    if (!inputCodigo || inputCodigo.trim().toUpperCase() !== hashCorreto) {
+      setErroValidacao(`❌ Erro de validação: O código informado não confere com o documento original (Esperado: ${hashCorreto}).`);
       return;
     }
 
     // Validação de Upload
     if (!arquivoUpload) {
-      setErroValidacao('❌ É obrigatório anexar o comprovante bancário.');
+      setErroValidacao('❌ É obrigatório anexar o PDF/Comprovante.');
       return;
     }
 
-    // Identifica a chave correta no Firebase
-    // Agora usamos com segurança o 'firebaseKey' que garantimos no useEffect
     const key = faturaSelecionada.firebaseKey;
 
     if (key === undefined || key === null) {
-      alert("Erro Crítico: Não foi possível localizar o registro original no banco de dados.");
+      alert("Erro Crítico: Não foi possível localizar o registro original.");
       return;
     }
 
@@ -139,8 +140,8 @@ export default function Conciliacao() {
     updates[`${basePath}/bancoDestino`] = bancoDestino;
     updates[`${basePath}/auditoria`] = {
       validadoPor: 'Usuario Financeiro',
-      metodo: 'Conferencia Manual (Swivel Chair)',
-      hashValidado: inputCodigo,
+      metodo: 'Conferencia Dupla (Hash + Arquivo)', 
+      hashValidado: inputCodigo, // Salva o código validado
       arquivoComprovante: arquivoUpload.name,
       dataAuditoria: new Date().toISOString()
     };
@@ -149,10 +150,9 @@ export default function Conciliacao() {
       await update(ref(db), updates);
       setShowModal(false);
       setFaturaSelecionada(null);
-      // O onValue no useEffect vai atualizar a lista automaticamente
     } catch (error) {
-      console.error("Erro:", error);
-      alert("Erro ao salvar conciliação.");
+      console.error("Erro no Firebase:", error);
+      alert("Erro ao salvar conciliação: " + error.message);
     }
   };
 
@@ -181,10 +181,10 @@ export default function Conciliacao() {
           <div className="conciliacao-alert">
             <span className="alert-icon">🔄</span>
             <div>
-              <strong>Processo de Auditoria:</strong> Para conciliar, busque o comprovante no 
+              <strong>Processo de Auditoria:</strong> Consulte o código de autenticação no 
               <span className="highlight" style={{cursor:'pointer', marginLeft:'5px'}} onClick={() => navigate('/banco')}>
-                 Menu Banco &gt; Extrato
-              </span>.
+                 Menu Banco
+              </span> antes de iniciar.
             </div>
           </div>
 
@@ -250,7 +250,7 @@ export default function Conciliacao() {
         </div>
       </main>
 
-      {/* MODAL DE AUDITORIA */}
+      {/* MODAL DE AUDITORIA COMPLETO */}
       {showModal && faturaSelecionada && (
         <div className="modal-overlay-tech">
           <div className="modal-glass" style={{maxWidth: '600px'}}>
@@ -270,17 +270,17 @@ export default function Conciliacao() {
               }}>
                  <div style={{fontSize:'2rem', marginTop:'-5px'}}>🏦</div>
                  <div>
-                   <strong style={{color:'#fbbf24', fontSize:'0.9rem', textTransform:'uppercase'}}>1. Ação Externa Necessária</strong>
+                   <strong style={{color:'#fbbf24', fontSize:'0.9rem', textTransform:'uppercase'}}>1. Validação Externa</strong>
                    <p style={{fontSize:'0.85rem', margin:'5px 0 0 0', color:'#e2e8f0', lineHeight:'1.4'}}>
-                     Acesse o sistema bancário, localize o crédito de 
-                     <strong style={{color:'#fff'}}> R$ {faturaSelecionada.valor.toFixed(2)}</strong> e baixe o 
-                     Comprovante.
+                     Localize o crédito de 
+                     <strong style={{color:'#fff'}}> R$ {faturaSelecionada.valor.toFixed(2)}</strong> no banco e copie o código de autenticação.
                    </p>
                  </div>
               </div>
 
               <form onSubmit={confirmarBaixa} className="form-tech">
                 
+                {/* ETAPA 2: RESTAURADA */}
                 <div className="step-box" style={{border:'1px dashed #64748b', padding:'15px', borderRadius:'8px'}}>
                     <strong style={{display:'block', marginBottom:'15px', color:'#e2e8f0'}}>2. Transcrever Dados</strong>
                     <div className="form-group-tech">
@@ -294,6 +294,9 @@ export default function Conciliacao() {
                             className="input-highlight"
                             style={{textAlign:'center', letterSpacing:'4px', fontWeight:'bold', textTransform:'uppercase', fontSize: '1.2rem'}}
                         />
+                        <small style={{display:'block', textAlign:'center', marginTop:'5px', color:'#94a3b8', fontSize:'0.75rem'}}>
+                            (Deve ser idêntico ao documento)
+                        </small>
                     </div>
                 </div>
 
@@ -301,9 +304,9 @@ export default function Conciliacao() {
                    <strong style={{display:'block', marginBottom:'15px', color:'#e2e8f0'}}>3. Anexos e Classificação</strong>
                    <div className="form-group-tech">
                       <label>Upload do Comprovante*</label>
-                      <input type="file" onChange={handleFileUpload} className="file-input-tech" accept=".pdf,.jpg,.png" />
+                      <input type="file" onChange={handleFileUpload} className="file-input-tech" accept=".pdf,.jpg,.png" required />
                    </div>
-                   <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px'}}>
+                   <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginTop: '15px'}}>
                       <div className="form-group-tech">
                         <label>Data Efetiva</label>
                         <input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
@@ -327,7 +330,7 @@ export default function Conciliacao() {
 
                 <div className="modal-actions-tech" style={{marginTop:'25px'}}>
                   <button type="button" onClick={() => setShowModal(false)} className="btn-cancel-tech">Cancelar</button>
-                  <button type="submit" className="btn-save-tech">✅ Validar e Baixar</button>
+                  <button type="submit" className="btn-save-tech">✅ Enviar</button>
                 </div>
               </form>
             </div>
