@@ -168,6 +168,20 @@ export default function DevTools() {
     addLog("🗑️ Casos RH limpos.");
   };
 
+  // --- NOVA FUNÇÃO: LIMPAR CHATS ---
+  const limparChats = async () => {
+    if(!window.confirm("⚠️ TEM CERTEZA? Isso excluirá o histórico de TODOS os chats!")) return;
+    try {
+      const updates = {};
+      updates['chats/direto'] = null; // Limpa chats privados
+      updates['chats/geral'] = null;  // Limpa chat geral
+      await update(ref(db), updates);
+      addLog("💬 TODOS os Chats foram excluídos.");
+    } catch (e) {
+      addLog(`❌ Erro ao limpar chats: ${e.message}`);
+    }
+  };
+
   const limparTudo = async () => {
     if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
     const updates = {};
@@ -179,6 +193,8 @@ export default function DevTools() {
     updates[`rh/erros_ponto`] = null;
     updates[`users/${userProfile.uid}/financeiro/faturas`] = null;
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
+    updates['chats/direto'] = null; // Adicionado ao Limpar Tudo também
+    updates['chats/geral'] = null;  // Adicionado ao Limpar Tudo também
     await update(ref(db), updates);
     addLog("☠️ WIPEOUT: Todos os dados de teste removidos.");
   };
@@ -277,7 +293,9 @@ export default function DevTools() {
             <p>Gera os 28 funcionários fictícios.</p>
             <div className="dev-actions">
               <button className="btn-gen" onClick={gerarCasosRH}>+ Gerar 28 Casos</button>
-              <button className="btn-del" onClick={limparCasosRH}>🗑️ Limpar</button>
+              <button className="btn-del" onClick={limparCasosRH}>🗑️ Limpar Casos</button>
+              {/* NOVO BOTÃO: EXCLUIR CHATS */}
+              <button className="btn-del" style={{background: '#ef4444', borderColor: '#ef4444', color: 'white', marginTop: '5px', width: '100%'}} onClick={limparChats}>💬 Excluir Chats</button>
             </div>
           </div>
 

@@ -103,6 +103,7 @@ export default function Sidebar() {
           
           {/* Viagens geralmente Gestores pedem/aprovam, ou todos. Vou deixar livre por enquanto */}
           <button className={`nav-item ${isActive('/viagens')}`} onClick={() => navigate('/viagens')}><span className="icon">✈️</span> Viagens</button>
+          <button className={`nav-item ${isActive('/chat')}`} onClick={() => navigate('/chat')}><span className="icon">💬</span> Chat</button>
         </div>
 
         {/* === EXTERNOS === */}

@@ -3,13 +3,11 @@ import { db } from '../../firebase';
 import { ref, set, update } from 'firebase/database';
 import { gerarCenarioFinanceiro } from '../../utils/geradorFinanceiro';
 import { useUser } from '../../contexts/UserContext';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import './Banco.css'; 
 
-const LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAbFBMVEVHcEzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFwF820JAAAAI3RSTlMAAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCX7hWEAAAGvSURBVFjD7dbZcoMwEAZgQQKyC7bsW4hL//9D6xAwCKR2pDPPL803E2aWJcrF5fJ/B6B23wGA2g8A7L4BANsfACD7AwC0+wIA2H0BAOwvAMA9AABwDwAA3AMAAPcAAIB7AABwDwAA3AMAAPcAAIB7AABwDwAA3AMAgHsAAOAeAADcAwAA9wAAgHsAAOAeAADcAwAA9wAAgHsAAOAeAADcAwAA9wAA4B4AALgHAADuAQAA9wAAgHsAAOAeAADcAwCA7G8A4PY3AHD7GwC4/Q0A3P4GAG5/AwC3vwGA298AwO1vAOD2NwBw+w0A3H4DALffAMDtNwBw+w0A3H4DALffAMDtNwBw+w0A3H4DALe/AYDb3wDA7W8A4PY3AHD7GwC4/Q0A3P4GAG5/AwC3vwGA298AwO03AHD7DQDb/wEA2X8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDt/wDAF1YjK/u6B678AAAAAElFTkSuQmCC";
+const LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAbFBMVEVHcEzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFzmXFwF820JAAAAI3RSTlMAAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCX7hWEAAAGvSURBVFjD7dbZcoMwEAZgQQKyC7bsW4hL//9D6xAwCKR2pDPPL803E2aWJcrF5fJ/B6B23wGA2g8A7L4BANsfACD7AwC0+wIA2H0BAOwvAMA9AABwDwAA3AMAAPcAAIB7AABwDwAA3AMAAPcAAIB7AABwDwAA3AMAgHsAAOAeAADcAwAA9wAAgHsAAOAeAADcAwAA9wAAgHsAAOAeAADcAwAA9wAA4B4AALgHAADuAQAA9wAAgHsAAOAeAADcAwCA7G8A4PY3AHD7GwC4/Q0A3P4GAG5/AwC3vwGA298AwO1vAOD2NwBw+w0A3H4DALffAMDtNwBw+w0A3H4DALffAMDtNwBw+w0A3H4DALe/AYDb3wDA7W8A4PY3AHD7GwC4/Q0A3P4GAG5/AwC3vwGA298AwO03AHD7DQDb/wEA2X8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDtvwCA2n8BALX/AgBq/wUA1P4LAKj9FwBQ+y8AoPZfAEDt/wDAF1YjK/u6B678AAAAAElFTkSuQmCC";
 
 // Componente visual para simular código de barras no PDF
 const FakeBarcode = () => (
@@ -29,30 +27,27 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
     try {
       const { extrato: dadosBanco, faturas: dadosSistema } = gerarCenarioFinanceiro();
 
-      // Salva no Sistema e no Banco
+      // Salva no Sistema (este é específico do usuário, então pode usar set)
       await set(ref(db, `users/${user.uid}/financeiro/faturas`), dadosSistema);
-      const transacoesObj = {};
-      dadosBanco.forEach((item, index) => { transacoesObj[`tx_${Date.now()}_${index}`] = item; });
-      await update(ref(db), {
-        'banco_mock/transacoes': transacoesObj,
-        'banco_mock/saldo': 850000.00 + (Math.random() * 50000)
+      
+      // Prepara os updates para o Banco (append, sem substituir os existentes)
+      const updates = {};
+      
+      dadosBanco.forEach((item, index) => { 
+        item.uid = user.uid; 
+        // Cria uma chave única para cada transação
+        const newKey = `tx_${Date.now()}_${index}`;
+        // Aponta para o caminho ESPECÍFICO desta transação, evitando sobrescrever a pasta 'transacoes' inteira
+        updates[`banco_mock/transacoes/${newKey}`] = item;
       });
 
-      // Gera Excel
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Extrato Horizon');
-      worksheet.mergeCells('A1:E1');
-      worksheet.getCell('A1').value = 'EXTRATO DE MOVIMENTAÇÃO - HORIZON BANK';
-      worksheet.getCell('A1').font = { size: 16, bold: true };
-      worksheet.addRow(['Data', 'Histórico', 'Documento', 'CNPJ Pagador', 'Valor', 'Hash']);
-      worksheet.getRow(2).font = { bold: true };
-      dadosBanco.forEach(i => {
-        worksheet.addRow([i.data, i.historico, i.documento, i.pagador_cnpj || '-', i.valor, i.hash || '-']);
-      });
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), 'Extrato_Horizon.xlsx');
+      // Atualiza o saldo global também
+      updates['banco_mock/saldo'] = 850000.00 + (Math.random() * 50000);
 
-      alert("✅ Lote Processado! Dados atualizados e Excel baixado.");
+      // Envia todos os updates de uma vez (transações novas + saldo)
+      await update(ref(db), updates);
+
+      alert("✅ Lote Processado! Dados adicionados ao seu extrato.");
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
@@ -70,29 +65,30 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
   };
 
   const filtrados = extrato ? extrato.filter(item => 
-    (item.historico && item.historico.toLowerCase().includes(busca.toLowerCase())) ||
-    (item.documento && item.documento.toLowerCase().includes(busca.toLowerCase()))
+    (user && item.uid === user.uid) && // Garante que só mostre itens do usuário atual
+    ((item.historico && item.historico.toLowerCase().includes(busca.toLowerCase())) ||
+    (item.documento && item.documento.toLowerCase().includes(busca.toLowerCase())))
   ) : [];
 
   return (
     <div>
-      {/* Barra de filtros e botão Gerar (Mantidos iguais) */}
+      {/* Barra de filtros e botão Gerar */}
       <div className="filters-bar">
         <input type="text" placeholder="🔍 Buscar lançamento..." className="search-input-bank" value={busca} onChange={(e) => setBusca(e.target.value)}/>
         {isCorporate && (
           <button className="btn-generate-infinite" style={{width:'auto', background: loading ? '#64748b' : '#2563eb'}} onClick={handleGerarDownload} disabled={loading}>
-              {loading ? '⏳ Processando...' : '📥 Gerar Lote + Excel'}
+              {loading ? '⏳ Processando...' : '📥 Gerar Lote'}
           </button>
         )}
       </div>
 
-      {/* Tabela (Mantida igual) */}
+      {/* Tabela */}
       <div className="glass-card full-width" style={{padding:0, overflow:'hidden'}}>
         <div className="table-container">
             <table>
             <thead><tr><th>Data</th><th>Histórico</th><th>Doc.</th><th className="text-right">Valor</th><th className="text-center">Ação</th></tr></thead>
             <tbody>
-                {filtrados.length === 0 ? (<tr><td colSpan="5" className="empty-msg">Nenhum lançamento.</td></tr>) : (
+                {filtrados.length === 0 ? (<tr><td colSpan="5" className="empty-msg">Nenhum lançamento encontrado para este usuário.</td></tr>) : (
                     filtrados.map((item, i) => (
                     <tr key={i}>
                         <td>{new Date(item.data).toLocaleDateString()}</td>
@@ -112,7 +108,7 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
         </div>
       </div>
 
-      {/* === NOVO TEMPLATE REALISTA DO COMPROVANTE BANCÁRIO === */}
+      {/* === TEMPLATE DO COMPROVANTE BANCÁRIO === */}
       <div style={{ position: 'fixed', top: 0, left: '-9999px' }}>
         {comprovanteData && (
             <div ref={invoiceRef} className="bank-receipt-container">
@@ -152,7 +148,7 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
                     </div>
                 </div>
 
-                {/* Área de Pagador e Beneficiário (ONDE O CNPJ APARECE) */}
+                {/* Área de Pagador e Beneficiário */}
                 <div className="receipt-details-grid">
                     
                     {/* DADOS DE QUEM PAGOU */}
@@ -165,7 +161,6 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
                             </div>
                             <div className="data-row highlight-cnpj">
                                 <span className="data-label">CPF/CNPJ:</span>
-                                {/* AQUI ESTÁ O CNPJ QUE FALTAVA */}
                                 <span className="data-value mono">{comprovanteData.pagador_cnpj || '---'}</span>
                             </div>
                             <div className="data-row">
@@ -175,7 +170,7 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
                         </div>
                     </div>
 
-                    {/* DADOS DE QUEM RECEBEU (NÓS) */}
+                    {/* DADOS DE QUEM RECEBEU */}
                     <div className="detail-box destination">
                         <h4 className="box-title">DESTINO (BENEFICIÁRIO)</h4>
                         <div className="box-content">
@@ -204,7 +199,6 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
 
                     <div className="auth-block">
                         <span className="auth-label">AUTENTICAÇÃO ELETRÔNICA (HASH)</span>
-                        {/* O HASH IMPORTANTE */}
                         <div className="auth-hash">{comprovanteData.hash || 'GERADO-AUTOMATICAMENTE'}</div>
                         <small>Utilize este código para validação nos sistemas de conciliação.</small>
                     </div>

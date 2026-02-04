@@ -38,32 +38,18 @@ const RESPOSTAS_AJUSTE = [
     "Ajustado! Foi falha minha mesmo, desculpe."
 ];
 
-const RESPOSTAS_PRONTAS = {
-  ponto: [
-    { titulo: "🕒 Marcação Ímpar", texto: "Olá,\nIdentificamos uma marcação ímpar no seu espelho de ponto referente ao dia XX/XX. Por favor, verifique se houve esquecimento de batida e realize o ajuste ou justificativa no sistema para evitar descontos.\n\nAtenciosamente,\nRH." },
-    { titulo: "🕒 Falta Injustificada", texto: "Olá,\nNão identificamos registros de ponto no dia XX/XX. Caso tenha sido uma falta justificada ou trabalho externo, por favor anexe o comprovante ou realize o ajuste manual no sistema.\n\nAtenciosamente,\nRH." },
-    { titulo: "🕒 Atraso Excessivo", texto: "Olá,\nIdentificamos um atraso superior à tolerância no dia XX/XX. Por favor, lembre-se de justificar no sistema caso tenha ocorrido algum imprevisto.\n\nObrigado,\nRH." },
-    { titulo: "🕒 Batida Duplicada", texto: "Olá,\nConstam batidas duplicadas no seu ponto. Favor solicitar a desconsideração do registro incorreto via sistema.\n\nAtt,\nRH." }
-  ],
-  atestado: [
-    { titulo: "✅ Atestado Aprovado", texto: "Gestor,\nInformamos que o(a) colaborador(a) apresentou atestado médico referente ao período informado. O registro já foi cadastrado no sistema.\n\nObrigada,\nGestão de Atestados." },
-    { titulo: "❌ Reprovado: Ilegível", texto: "Olá,\nO documento não será aceito pois está ilegível. Caso possua o documento correto, peça ao seu gestor que abra um chamado de retificação.\n\nObrigado,\nGestão de Atestados." }
-  ]
-};
-
 export default function ChatInterno() {
   const navigate = useNavigate();
   const location = useLocation();
   
   const [user, setUser] = useState(null);
-  const [isRH, setIsRH] = useState(false);
-  const [modalModelosAberto, setModalModelosAberto] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [canalAtivo, setCanalAtivo] = useState({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' });
   const [mensagens, setMensagens] = useState([]);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [menuAberto, setMenuAberto] = useState(false);
   const [naoLidas, setNaoLidas] = useState({});
+  const [ultimasInteracoes, setUltimasInteracoes] = useState({}); // NOVO: Armazena timestamp da última msg por usuário
   const scrollRef = useRef(null);
 
   // 1. AUTH & PERMISSÃO
@@ -71,17 +57,6 @@ export default function ChatInterno() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
           setUser(currentUser);
-          const userRef = ref(db, `users/${currentUser.uid}`);
-          get(userRef).then((snap) => {
-              const dados = snap.val();
-              if (dados) {
-                  const setor = (dados.setor || '').toLowerCase();
-                  const cargo = (dados.cargo || '').toLowerCase();
-                  if (setor.includes('rh') || setor.includes('recursos') || cargo.includes('c.e.o')) {
-                      setIsRH(true);
-                  }
-              }
-          });
       } else navigate('/');
     });
     return () => unsubscribe();
@@ -102,7 +77,6 @@ export default function ChatInterno() {
         let todosCandidatos = [...mocksSalvos, ...listaReais];
         if (target) todosCandidatos.push(target);
 
-        // DEDUPLICAÇÃO POR NOME
         const mapaPorNome = new Map();
         todosCandidatos.forEach(u => {
             if (u && u.nome) {
@@ -110,7 +84,6 @@ export default function ChatInterno() {
             }
         });
 
-        // Auto-seleção do chat
         if (target) {
             if (canalAtivo.id === 'geral') {
                 setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo });
@@ -135,14 +108,13 @@ export default function ChatInterno() {
           const mockNome = canalAtivo.nome;
           const meuId = user.uid;
 
-          // Recuperação de ID segura
           if (!mockId || mockId === 'undefined') {
               const mockEncontrado = mocksAtivos.find(m => m.nome === mockNome.replace('👤 ', ''));
               if(mockEncontrado) mockId = mockEncontrado.id;
               else return;
           }
 
-          const tempoEspera = Math.floor(Math.random() * (6000 - 3000 + 1) + 3000);
+          const tempoEspera = Math.floor(Math.random() * (90000 - 15000 + 1) + 15000);
           console.log(`🤖 Resposta agendada para ${mockNome} (${mockId}) em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
@@ -173,46 +145,55 @@ export default function ChatInterno() {
       }
   }, [mensagens]); 
 
-  // 3. MONITORAMENTO
+  // 3. MONITORAMENTO (LÊ TODAS AS MENSAGENS E CALCULA ORDENAÇÃO)
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
     const unsubscribe = onValue(chatsRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
+      
       const novasNaoLidas = { ...naoLidas };
+      const novasInteracoes = {}; // Objeto para guardar o timestamp da última msg
+
       Object.keys(data).forEach((chatId) => {
         if (chatId.includes(user.uid)) {
           const msgs = Object.values(data[chatId]);
           const ultimaMsg = msgs[msgs.length - 1];
           const outroId = chatId.replace(user.uid, '').replace('_', '');
+          
+          // 1. Guarda o timestamp da última interação para ordenação
+          novasInteracoes[outroId] = ultimaMsg.timestamp;
+
+          // 2. Lógica de Notificações
+          const lastReadTime = Number(localStorage.getItem(`last_read_${outroId}`) || 0);
           if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
-             if (!novasNaoLidas[outroId]) novasNaoLidas[outroId] = 1;
+             if (ultimaMsg.timestamp > lastReadTime) {
+                 if (!novasNaoLidas[outroId]) novasNaoLidas[outroId] = 1;
+             }
           }
         }
       });
+      
       setNaoLidas(novasNaoLidas);
+      setUltimasInteracoes(novasInteracoes); // Atualiza o estado de ordenação
     });
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // 4. CARREGAR MENSAGENS (COM CORREÇÃO DE ID)
+  // 4. CARREGAR MENSAGENS ATIVAS
   useEffect(() => {
     if (!user) return;
     if (naoLidas[canalAtivo.id]) {
       setNaoLidas(prev => { const n = {...prev}; delete n[canalAtivo.id]; return n; });
     }
     
-    // LÓGICA DE RECUPERAÇÃO DE ID (IGUAL AO ROBÔ)
     let targetId = canalAtivo.id;
-    
-    // Se o ID for undefined, tenta achar na lista de usuários pelo nome
     if (canalAtivo.id !== 'geral' && (!targetId || targetId === 'undefined')) {
         const found = usuarios.find(u => u.nome === canalAtivo.nome.replace('👤 ', ''));
         if (found) targetId = found.id;
     }
 
-    // Se ainda for inválido e não for geral, não faz nada
     if (canalAtivo.id !== 'geral' && !targetId) return;
 
     let path = canalAtivo.id === 'geral' 
@@ -221,10 +202,16 @@ export default function ChatInterno() {
 
     const unsubscribe = onValue(ref(db, path), (snapshot) => {
       const data = snapshot.val();
-      setMensagens(data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : []);
+      const msgsCarregadas = data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : [];
+      setMensagens(msgsCarregadas);
+
+      if (canalAtivo.id !== 'geral' && msgsCarregadas.length > 0) {
+          const ultima = msgsCarregadas[msgsCarregadas.length - 1];
+          localStorage.setItem(`last_read_${canalAtivo.id}`, ultima.timestamp + 1);
+      }
     });
     return () => unsubscribe();
-  }, [canalAtivo, user, usuarios]); // Adicionado 'usuarios' para re-executar quando a lista carregar
+  }, [canalAtivo, user, usuarios]); 
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
 
@@ -256,7 +243,6 @@ export default function ChatInterno() {
     setNovaMensagem('');
   };
 
-  const usarModelo = (texto) => { setNovaMensagem(texto); setModalModelosAberto(false); };
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
   const formatarNomeLista = (nome) => nome ? nome.replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Usuário';
 
@@ -286,13 +272,20 @@ export default function ChatInterno() {
             </button>
             <div style={{margin: '15px 10px 5px', fontSize: '0.7rem', color: '#94a3b8', textTransform:'uppercase', borderTop: '1px solid #ffffff1a', paddingTop: '10px'}}>Diretas</div>
             
-            {usuarios.map((u, index) => (
-              <button key={`${u.id}-${index}`} className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`} onClick={() => setCanalAtivo({ id: u.id, nome: u.nome || formatarNomeLista(u.email.split('@')[0]), desc: u.cargo })}>
-                <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
-                  <div><span className="channel-name">👤 {formatarNomeLista(u.nome || u.email.split('@')[0])}</span><span className="channel-desc">{u.cargo}</span></div>
-                  {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
-                </div>
-              </button>
+            {/* LOGICA DE ORDENAÇÃO APLICADA AQUI */}
+            {usuarios
+              .sort((a, b) => {
+                  const timeA = ultimasInteracoes[a.id] || 0;
+                  const timeB = ultimasInteracoes[b.id] || 0;
+                  return timeB - timeA; // Ordena decrescente (mais recente primeiro)
+              })
+              .map((u, index) => (
+                <button key={`${u.id}-${index}`} className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`} onClick={() => setCanalAtivo({ id: u.id, nome: u.nome || formatarNomeLista(u.email.split('@')[0]), desc: u.cargo })}>
+                  <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
+                    <div><span className="channel-name">👤 {formatarNomeLista(u.nome || u.email.split('@')[0])}</span><span className="channel-desc">{u.cargo}</span></div>
+                    {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
+                  </div>
+                </button>
             ))}
           </div>
         </aside>
@@ -311,29 +304,14 @@ export default function ChatInterno() {
               </div>
             ))}
           </div>
+          
           <form className="chat-input-area" onSubmit={enviarMensagem}>
-            {isRH && <button type="button" className="btn-modelos" onClick={() => setModalModelosAberto(true)} title="Modelos">📋</button>}
             <input value={novaMensagem} onChange={e => setNovaMensagem(e.target.value)} className="chat-input" placeholder="Mensagem..." />
-            <button type="submit">➤</button>
+            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
           </form>
+
         </main>
       </div>
-
-      {modalModelosAberto && (
-          <div className="modal-overlay" onClick={() => setModalModelosAberto(false)}>
-              <div className="modal-content" onClick={e => e.stopPropagation()}>
-                  <h3>Modelos</h3>
-                  <div className="modelos-list">
-                      {Object.values(RESPOSTAS_PRONTAS).flat().map((modelo, i) => (
-                          <div key={i} className="modelo-item" onClick={() => usarModelo(modelo.texto)}>
-                              <strong>{modelo.titulo}</strong>
-                          </div>
-                      ))}
-                  </div>
-                  <button className="close-modal" onClick={() => setModalModelosAberto(false)}>Fechar</button>
-              </div>
-          </div>
-      )}
     </div>
   );
 }
