@@ -13,6 +13,9 @@ export default function Conciliacao() {
   // --- ESTADOS DE DADOS ---
   const [faturas, setFaturas] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // --- O SEGREDO: ESTADO QUE ESCUTA O COMANDO DO TERMINAL ---
+  const [modoApresentacaoAtivo, setModoApresentacaoAtivo] = useState(false);
   
   // --- ESTADOS DE INTERAÇÃO ---
   const [busca, setBusca] = useState('');
@@ -20,7 +23,6 @@ export default function Conciliacao() {
   const [showModal, setShowModal] = useState(false);
   
   // --- CAMPOS DO FORMULÁRIO ---
-  // RESTAURADO: Estado para o código manual
   const [inputCodigo, setInputCodigo] = useState('');
   const [arquivoUpload, setArquivoUpload] = useState(null);
   const [erroValidacao, setErroValidacao] = useState('');
@@ -29,29 +31,22 @@ export default function Conciliacao() {
   const [dataPagamento, setDataPagamento] = useState('');
   const [bancoDestino, setBancoDestino] = useState('');
 
-  // 1. CARREGAR DADOS DO FIREBASE (Mantendo a correção de ID)
+  // 1. CARREGAR DADOS + OUVIR O MODO APRESENTAÇÃO
   useEffect(() => {
     if (!user) return;
 
+    // A. Escuta as faturas do usuário
     const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
-    
-    const unsubscribe = onValue(faturasRef, (snapshot) => {
+    const unsubscribeFaturas = onValue(faturasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         let lista = [];
-
+        // Tratamento seguro de IDs (Array ou Objeto)
         if (Array.isArray(data)) {
-          lista = data.map((item, index) => ({
-            ...item,
-            firebaseKey: index 
-          }));
+          lista = data.map((item, index) => ({ ...item, firebaseKey: index }));
         } else {
-          lista = Object.keys(data).map(key => ({
-            ...data[key],
-            firebaseKey: key
-          }));
+          lista = Object.keys(data).map(key => ({ ...data[key], firebaseKey: key }));
         }
-        
         lista.sort((a, b) => (a.status === 'Pendente' ? -1 : 1));
         setFaturas(lista);
       } else {
@@ -60,7 +55,17 @@ export default function Conciliacao() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // B. AQUI ESTÁ A MÁGICA: Escuta o comando global do seu terminal
+    const demoRef = ref(db, 'configuracoes_globais/modo_apresentacao');
+    const unsubscribeDemo = onValue(demoRef, (snapshot) => {
+      const isAtivo = snapshot.val();
+      setModoApresentacaoAtivo(!!isAtivo); // Atualiza a tela em tempo real
+    });
+
+    return () => {
+      unsubscribeFaturas();
+      unsubscribeDemo();
+    };
   }, [user]);
 
   // 2. FILTRO DE BUSCA
@@ -78,60 +83,46 @@ export default function Conciliacao() {
   // 3. ABRIR MODAL
   const solicitarBaixa = (fatura) => {
     if (fatura.firebaseKey === undefined || fatura.firebaseKey === null) {
-      alert("Erro ao selecionar fatura: Chave de referência inválida.");
+      alert("Erro de referência no banco de dados.");
       return;
     }
-
     setFaturaSelecionada(fatura);
-    
-    // Limpar campos
     setDataPagamento('');
     setBancoDestino('');
-    setInputCodigo(''); // Limpa o código anterior
+    setInputCodigo('');
     setArquivoUpload(null);
     setErroValidacao('');
-    
     setShowModal(true);
   };
 
   // 4. UPLOAD
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setArquivoUpload(file);
-    }
+    if (file) setArquivoUpload(file);
   };
 
-  // 5. CONFIRMAR E VALIDAR (COM VERIFICAÇÃO DE CÓDIGO)
+  // 5. CONFIRMAR E VALIDAR (COM VERIFICAÇÃO DE HASH)
   const confirmarBaixa = async (e) => {
     e.preventDefault();
     if (!faturaSelecionada) return;
-    
     setErroValidacao('');
 
-    // --- VALIDAÇÃO CRÍTICA DO CÓDIGO (HASH) ---
-    // O usuário deve digitar o código exato que está no "documento" (simulado no banco)
+    // Validação Rigorosa do Código
     const hashCorreto = faturaSelecionada.codigoHash;
-    
     if (!inputCodigo || inputCodigo.trim().toUpperCase() !== hashCorreto) {
-      setErroValidacao(`❌ Erro de validação: O código informado não confere com o documento original (Esperado: ${hashCorreto}).`);
+      setErroValidacao(`❌ Código incorreto! O documento exige: ${hashCorreto}`);
       return;
     }
 
-    // Validação de Upload
     if (!arquivoUpload) {
-      setErroValidacao('❌ É obrigatório anexar o PDF/Comprovante.');
+      setErroValidacao('❌ Anexe o comprovante PDF.');
       return;
     }
 
     const key = faturaSelecionada.firebaseKey;
+    if (key === undefined || key === null) return;
 
-    if (key === undefined || key === null) {
-      alert("Erro Crítico: Não foi possível localizar o registro original.");
-      return;
-    }
-
-    // Prepara atualização
+    // Atualização no Firebase
     const updates = {};
     const basePath = `users/${user.uid}/financeiro/faturas/${key}`;
     
@@ -140,8 +131,8 @@ export default function Conciliacao() {
     updates[`${basePath}/bancoDestino`] = bancoDestino;
     updates[`${basePath}/auditoria`] = {
       validadoPor: 'Usuario Financeiro',
-      metodo: 'Conferencia Dupla (Hash + Arquivo)', 
-      hashValidado: inputCodigo, // Salva o código validado
+      metodo: 'Automação Supervisionada',
+      hashValidado: inputCodigo,
       arquivoComprovante: arquivoUpload.name,
       dataAuditoria: new Date().toISOString()
     };
@@ -151,8 +142,7 @@ export default function Conciliacao() {
       setShowModal(false);
       setFaturaSelecionada(null);
     } catch (error) {
-      console.error("Erro no Firebase:", error);
-      alert("Erro ao salvar conciliação: " + error.message);
+      alert("Erro ao salvar: " + error.message);
     }
   };
 
@@ -168,25 +158,31 @@ export default function Conciliacao() {
             <p>Auditoria Cruzada e Baixa de Títulos</p>
           </div>
           <div className="tech-profile">
-             <div className="profile-info">
-               <span className="name">Financeiro</span>
-               <span className="role">Auditoria</span>
-             </div>
+             <div className="profile-info"><span className="name">Financeiro</span></div>
              <div className="profile-avatar">FN</div>
           </div>
         </header>
 
         <div className="tech-scroll-content">
           
-          <div className="conciliacao-alert">
-            <span className="alert-icon">🔄</span>
-            <div>
-              <strong>Processo de Auditoria:</strong> Consulte o código de autenticação no 
-              <span className="highlight" style={{cursor:'pointer', marginLeft:'5px'}} onClick={() => navigate('/banco')}>
-                 Menu Banco
-              </span> antes de iniciar.
-            </div>
-          </div>
+          {/* BANNER QUE APARECE QUANDO VOCÊ DÁ O COMANDO */}
+          {modoApresentacaoAtivo && (
+             <div style={{
+               background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+               padding: '15px',
+               borderRadius: '8px',
+               marginBottom: '20px',
+               color: 'white',
+               fontWeight: 'bold',
+               boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+               textAlign: 'center',
+               textTransform: 'uppercase',
+               letterSpacing: '1px',
+               animation: 'pulse 2s infinite'
+             }}>
+               🚀 MODO DEMONSTRAÇÃO ATIVO: Automação liberada via Terminal
+             </div>
+          )}
 
           <div className="search-bar-container" style={{marginBottom: '20px'}}>
             <input 
@@ -201,30 +197,27 @@ export default function Conciliacao() {
 
           <div className="tech-card-table-wrapper">
             {loading ? (
-              <p style={{padding:'20px', color:'white'}}>Carregando sistema...</p>
+              <p style={{padding:'20px', color:'white'}}>Conectando ao banco de dados...</p>
             ) : faturasFiltradas.length === 0 ? (
               <div className="empty-state-tech">
                 <div className="empty-icon">📂</div>
                 <h3>Tudo em dia!</h3>
-                <p>Não há pendências de conciliação no momento.</p>
               </div>
             ) : (
               <table className="tech-table">
                 <thead>
                   <tr>
                     <th>Doc. Interno</th>
-                    <th>Nota Fiscal</th>
                     <th>Cliente</th>
                     <th>Valor</th>
                     <th>Status</th>
-                    <th>Ação</th>
+                    <th>Ação (Automação)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {faturasFiltradas.map((fatura, idx) => (
                     <tr key={idx} className={fatura.status === 'Conciliado' ? 'row-conciliado' : ''}>
-                      <td className="mono" style={{fontSize: '0.8rem', color:'#94a3b8'}}>{fatura.id}</td>
-                      <td className="mono" style={{color:'#f59e0b'}}>{fatura.nfe || '-'}</td>
+                      <td style={{color:'#94a3b8'}}>{fatura.id}</td>
                       <td><strong>{fatura.cliente}</strong></td>
                       <td className="col-valor">
                         {Number(fatura.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -236,10 +229,24 @@ export default function Conciliacao() {
                       </td>
                       <td>
                         {fatura.status === 'Pendente' && (
-                          <button className="btn-action-tech" onClick={() => solicitarBaixa(fatura)}>
-                            Auditar
-                          </button>
+                          // LÓGICA DO BOTÃO: Só aparece se o modo estiver ATIVO
+                          modoApresentacaoAtivo ? (
+                            <button className="btn-action-tech" onClick={() => solicitarBaixa(fatura)}>
+                              Auditar Agora
+                            </button>
+                          ) : (
+                            <span style={{
+                              fontSize:'0.75rem', 
+                              color:'#64748b', 
+                              border:'1px dashed #475569', 
+                              padding:'4px 8px', 
+                              borderRadius:'4px'
+                            }}>
+                              Aguardando Liberação...
+                            </span>
+                          )
                         )}
+                        {fatura.status === 'Conciliado' && <span style={{color:'#10b981'}}>✔</span>}
                       </td>
                     </tr>
                   ))}
@@ -250,7 +257,7 @@ export default function Conciliacao() {
         </div>
       </main>
 
-      {/* MODAL DE AUDITORIA COMPLETO */}
+      {/* MODAL DE AUDITORIA */}
       {showModal && faturaSelecionada && (
         <div className="modal-overlay-tech">
           <div className="modal-glass" style={{maxWidth: '600px'}}>
@@ -260,77 +267,56 @@ export default function Conciliacao() {
             </div>
             
             <div style={{display:'flex', flexDirection:'column', gap:'20px'}}>
-              
-              <div className="step-box completed" style={{
-                  background:'rgba(245, 158, 11, 0.1)', 
-                  border:'1px solid #f59e0b', 
-                  display:'flex', 
-                  gap:'15px',
-                  alignItems:'flex-start'
-              }}>
-                 <div style={{fontSize:'2rem', marginTop:'-5px'}}>🏦</div>
-                 <div>
-                   <strong style={{color:'#fbbf24', fontSize:'0.9rem', textTransform:'uppercase'}}>1. Validação Externa</strong>
-                   <p style={{fontSize:'0.85rem', margin:'5px 0 0 0', color:'#e2e8f0', lineHeight:'1.4'}}>
-                     Localize o crédito de 
-                     <strong style={{color:'#fff'}}> R$ {faturaSelecionada.valor.toFixed(2)}</strong> no banco e copie o código de autenticação.
-                   </p>
-                 </div>
+              <div className="step-box completed" style={{background:'rgba(245, 158, 11, 0.1)', border:'1px solid #f59e0b', padding:'15px'}}>
+                 <strong style={{color:'#fbbf24', fontSize:'0.9rem'}}>INSTRUÇÃO:</strong>
+                 <p style={{fontSize:'0.85rem', margin:'5px 0 0 0', color:'#e2e8f0'}}>
+                   Para validar esta transação de <strong>R$ {faturaSelecionada.valor.toFixed(2)}</strong>, insira o código de segurança do extrato.
+                 </p>
               </div>
 
               <form onSubmit={confirmarBaixa} className="form-tech">
+                <div className="form-group-tech">
+                    <label style={{color:'#f59e0b'}}>Código Hash (Exigido: {faturaSelecionada.codigoHash})</label>
+                    <input 
+                        type="text" 
+                        value={inputCodigo} 
+                        onChange={(e) => setInputCodigo(e.target.value)} 
+                        placeholder="Digite o código..." 
+                        className="input-highlight"
+                        style={{textAlign:'center', letterSpacing:'3px', fontWeight:'bold', textTransform:'uppercase'}}
+                    />
+                </div>
+
+                <div className="form-group-tech" style={{marginTop:'15px'}}>
+                   <label>Upload do Comprovante</label>
+                   <input type="file" onChange={handleFileUpload} className="file-input-tech" accept=".pdf,.jpg,.png" />
+                </div>
                 
-                {/* ETAPA 2: RESTAURADA */}
-                <div className="step-box" style={{border:'1px dashed #64748b', padding:'15px', borderRadius:'8px'}}>
-                    <strong style={{display:'block', marginBottom:'15px', color:'#e2e8f0'}}>2. Transcrever Dados</strong>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginTop: '15px'}}>
                     <div className="form-group-tech">
-                        <label style={{color:'#f59e0b'}}>Código de Autenticação (Hash)*</label>
-                        <input 
-                            type="text" 
-                            value={inputCodigo} 
-                            onChange={(e) => setInputCodigo(e.target.value)} 
-                            placeholder="Ex: 8X2A9B" 
-                            required 
-                            className="input-highlight"
-                            style={{textAlign:'center', letterSpacing:'4px', fontWeight:'bold', textTransform:'uppercase', fontSize: '1.2rem'}}
-                        />
-                        <small style={{display:'block', textAlign:'center', marginTop:'5px', color:'#94a3b8', fontSize:'0.75rem'}}>
-                            (Deve ser idêntico ao documento)
-                        </small>
+                        <label>Data Efetiva</label>
+                        <input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
+                    </div>
+                    <div className="form-group-tech">
+                        <label>Conta Destino</label>
+                        <select value={bancoDestino} onChange={(e) => setBancoDestino(e.target.value)} required>
+                            <option value="">Selecione...</option>
+                            <option value="horizon">Horizon Bank</option>
+                            <option value="caixa">Caixa Econômica</option>
+                        </select>
                     </div>
                 </div>
 
-                <div className="step-box" style={{marginTop:'15px'}}>
-                   <strong style={{display:'block', marginBottom:'15px', color:'#e2e8f0'}}>3. Anexos e Classificação</strong>
-                   <div className="form-group-tech">
-                      <label>Upload do Comprovante*</label>
-                      <input type="file" onChange={handleFileUpload} className="file-input-tech" accept=".pdf,.jpg,.png" required />
-                   </div>
-                   <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginTop: '15px'}}>
-                      <div className="form-group-tech">
-                        <label>Data Efetiva</label>
-                        <input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
-                      </div>
-                      <div className="form-group-tech">
-                        <label>Conta Destino</label>
-                        <select value={bancoDestino} onChange={(e) => setBancoDestino(e.target.value)} required>
-                          <option value="">Selecione...</option>
-                          <option value="horizon">Horizon Bank</option>
-                          <option value="caixa">Caixa Econômica</option>
-                        </select>
-                      </div>
-                   </div>
-                </div>
-
                 {erroValidacao && (
-                    <div style={{background:'rgba(239, 68, 68, 0.2)', color:'#fca5a5', padding:'12px', borderRadius:'6px', marginTop:'15px', border:'1px solid #ef4444', textAlign: 'center', fontWeight: 'bold'}}>
+                    <div style={{background:'rgba(239, 68, 68, 0.2)', color:'#fca5a5', padding:'10px', borderRadius:'6px', marginTop:'15px', textAlign: 'center', fontWeight: 'bold'}}>
                         {erroValidacao}
                     </div>
                 )}
 
                 <div className="modal-actions-tech" style={{marginTop:'25px'}}>
-                  <button type="button" onClick={() => setShowModal(false)} className="btn-cancel-tech">Cancelar</button>
-                  <button type="submit" className="btn-save-tech">✅ Enviar</button>
+                  <button type="submit" className="btn-save-tech" style={{width:'100%'}}>
+                    ✅ Confirmar Automação
+                  </button>
                 </div>
               </form>
             </div>

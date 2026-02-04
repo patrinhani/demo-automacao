@@ -7,7 +7,6 @@ import Logo from '../components/Logo';
 import './ChatInterno.css';
 
 // --- CONSTANTES ---
-
 const RESPOSTAS_AUTOMATICAS = [
   "Oi! Nossa, esqueci totalmente de bater o ponto ontem. Vou ajustar aqui, desculpa!",
   "Bom dia! Eu estava em reunião externa e acabei esquecendo. Pode ajustar pra mim?",
@@ -48,13 +47,7 @@ const RESPOSTAS_PRONTAS = {
   ],
   atestado: [
     { titulo: "✅ Atestado Aprovado", texto: "Gestor,\nInformamos que o(a) colaborador(a) apresentou atestado médico referente ao período informado. O registro já foi cadastrado no sistema.\n\nObrigada,\nGestão de Atestados." },
-    { titulo: "❌ Reprovado: Ilegível", texto: "Olá,\nO documento não será aceito pois está ilegível. Caso possua o documento correto, peça ao seu gestor que abra um chamado de retificação.\n\nObrigado,\nGestão de Atestados." },
-    { titulo: "❌ Reprovado: Sem Assinatura", texto: "Olá,\nO documento não apresenta a identificação do médico/CRM necessária. Favor reenviar documento válido.\n\nObrigado." },
-    { titulo: "🏥 Encaminhamento INSS", texto: "Prezado(a),\nIdentificamos que a soma de atestados ultrapassou 15 dias. O colaborador deve realizar o agendamento da perícia médica no INSS em até 48 horas.\n\nAtt,\nGestão de Atestados." }
-  ],
-  geral: [
-    { titulo: "🩸 Doação de Sangue", texto: "Olá,\nO documento de Doação de Sangue deve ser imputado como 'Justificativa de Ausência' (Abono) direto no ponto, e não como atestado médico.\n\nObrigado." },
-    { titulo: "👶 Licença Maternidade", texto: "Olá,\nA Licença Maternidade deve ser solicitada exclusivamente pelo gestor via sistema específico de Licenças.\n\nAtt,\nRH." }
+    { titulo: "❌ Reprovado: Ilegível", texto: "Olá,\nO documento não será aceito pois está ilegível. Caso possua o documento correto, peça ao seu gestor que abra um chamado de retificação.\n\nObrigado,\nGestão de Atestados." }
   ]
 };
 
@@ -94,7 +87,7 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // 2. CARREGAR USUÁRIOS (COM CORREÇÃO DE DUPLICIDADE POR NOME)
+  // 2. CARREGAR USUÁRIOS
   useEffect(() => {
     if (!user) return;
     const usersRef = ref(db, 'users');
@@ -102,96 +95,93 @@ export default function ChatInterno() {
     onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // A. Usuários Reais
-        let listaReais = Object.keys(data)
-          .map(id => ({ id, ...data[id] }))
-          .filter(u => u.id !== user.uid);
-        
-        // B. Mocks do LocalStorage
+        let listaReais = Object.keys(data).map(id => ({ id, ...data[id] })).filter(u => u.id !== user.uid);
         const mocksSalvos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
-        
-        // C. Target vindo da navegação
         const target = location.state?.chatTarget;
 
-        // LISTA UNIFICADA: Mocks -> Reais -> Target
-        // A ordem importa: os últimos sobrescrevem os primeiros no Map
         let todosCandidatos = [...mocksSalvos, ...listaReais];
-        if (target) {
-            todosCandidatos.push(target);
-        }
+        if (target) todosCandidatos.push(target);
 
-        // DEDUPLICAÇÃO POR NOME
-        // Usamos um Map onde a CHAVE é o NOME. Isso impede nomes repetidos.
+        // Deduplicação por NOME
         const mapaPorNome = new Map();
-        
         todosCandidatos.forEach(u => {
-            if (u && u.nome) {
-                // Ao usar .set(), se o nome já existe, ele atualiza com o user mais recente (o target, por exemplo)
-                mapaPorNome.set(u.nome.trim(), u);
-            }
+            if (u && u.nome) mapaPorNome.set(u.nome.trim(), u);
         });
 
-        // Se o target existe, seleciona ele automaticamente no chat
+        // Auto-seleção do chat
         if (target) {
             if (canalAtivo.id !== target.id && canalAtivo.id === 'geral') {
                 setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo });
             }
         }
-
-        // Converte Map de volta para Array para exibir na lista
         setUsuarios(Array.from(mapaPorNome.values()));
       }
     });
   }, [user, location.state]); 
 
-  // --- ROBÔ AUTO-REPLY E RESOLUÇÃO DE PONTO ---
+  // --- ROBÔ AUTO-REPLY (LÓGICA BLINDADA) ---
   useEffect(() => {
+      // Condições iniciais
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
 
-      // Verifica se é um Mock do RH
+      // Verifica se é Mock do RH
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
       const isMock = mocksAtivos.find(m => m.id === canalAtivo.id);
 
-      // Se a última mensagem foi MINHA (RH) para o MOCK
+      // Se a última mensagem foi MINHA (RH) e para um MOCK
       if (ultimaMsg.uid === user.uid && isMock) {
           
-          // Tempo aleatório: 5 a 15 segundos
-          const tempoEspera = Math.floor(Math.random() * (15000 - 5000 + 1) + 5000);
-          console.log(`🤖 Auto-reply agendado em ${tempoEspera/1000}s`);
+          // Captura os dados no momento exato (snapshot do estado)
+          const mockId = canalAtivo.id; 
+          const mockNome = canalAtivo.nome;
+          const meuId = user.uid;
+
+          // Validação crítica
+          if (!mockId || mockId === 'undefined') {
+              console.error("ERRO: ID inválido para resposta automática.");
+              return;
+          }
+
+          // Tempo de resposta (3 a 8 segundos para ser rápido no teste)
+          const tempoEspera = Math.floor(Math.random() * (8000 - 3000 + 1) + 3000);
+          console.log(`🤖 Resposta agendada para ${mockNome} (${mockId}) em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
-              // 1. Responde
+              // 1. Enviar mensagem no chat
               const msgTexto = RESPOSTAS_AJUSTE[Math.floor(Math.random() * RESPOSTAS_AJUSTE.length)];
-              const ids = [user.uid, canalAtivo.id].sort();
-              const path = `chats/direto/${ids[0]}_${ids[1]}`;
+              const ids = [meuId, mockId].sort();
+              const pathChat = `chats/direto/${ids[0]}_${ids[1]}`;
               
-              await set(push(ref(db, path)), {
-                  usuario: canalAtivo.nome.replace('👤 ', ''),
-                  uid: canalAtivo.id,
-                  texto: msgTexto,
-                  timestamp: Date.now(),
-                  avatar: '👤'
-              });
+              try {
+                  await set(push(ref(db, pathChat)), {
+                      usuario: mockNome.replace('👤 ', ''),
+                      uid: mockId, // Garante que usa o ID capturado
+                      texto: msgTexto,
+                      timestamp: Date.now(),
+                      avatar: '👤'
+                  });
 
-              // 2. ATUALIZA O STATUS NA FOLHA DE PONTO (IMPORTANTE: 'Respondido')
-              const mockRef = ref(db, `rh/erros_ponto/${canalAtivo.id}`);
-              get(mockRef).then((snap) => {
+                  // 2. Atualizar status na folha de ponto
+                  const mockRef = ref(db, `rh/erros_ponto/${mockId}`);
+                  const snap = await get(mockRef);
                   if (snap.exists()) {
-                      update(mockRef, { 
-                          status: 'Respondido', // Gatilho para o botão verde aparecer
-                          hiddenUntil: null 
+                      await update(mockRef, { 
+                          status: 'Respondido', 
+                          hiddenUntil: null // Garante visibilidade
                       });
-                      console.log(`✅ Pendência de ${canalAtivo.nome} respondida.`);
+                      console.log(`✅ Status de ${mockNome} atualizado para 'Respondido'.`);
                   }
-              });
+              } catch (err) {
+                  console.error("Erro no Auto-Reply:", err);
+              }
 
           }, tempoEspera);
 
           return () => clearTimeout(timerId);
       }
-  }, [mensagens, canalAtivo, user]);
+  }, [mensagens]); // Removi 'canalAtivo' e 'user' das dependências para evitar re-execução em loop se o componente renderizar
 
   // 3. MONITORAMENTO DE MENSAGENS
   useEffect(() => {
@@ -257,8 +247,6 @@ export default function ChatInterno() {
   return (
     <div className="tech-layout-chat">
       <div className="ambient-light light-1"></div>
-      <div className="ambient-light light-2"></div>
-
       <header className="tech-header-chat glass-effect">
         <div className="header-left">
            <button className="mobile-menu-btn" onClick={() => setMenuAberto(!menuAberto)}>☰</button>
@@ -307,9 +295,9 @@ export default function ChatInterno() {
             ))}
           </div>
           <form className="chat-input-area" onSubmit={enviarMensagem}>
-            {isRH && <button type="button" className="btn-modelos" onClick={() => setModalModelosAberto(true)} title="Modelos de Resposta">📋</button>}
-            <input type="text" placeholder={`Mensagem para ${canalAtivo.nome}...`} value={novaMensagem} onChange={(e) => setNovaMensagem(e.target.value)} className="chat-input"/>
-            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
+            {isRH && <button type="button" className="btn-modelos" onClick={() => setModalModelosAberto(true)} title="Modelos">📋</button>}
+            <input value={novaMensagem} onChange={e => setNovaMensagem(e.target.value)} className="chat-input" placeholder="Mensagem..." />
+            <button type="submit">➤</button>
           </form>
         </main>
       </div>
@@ -317,11 +305,11 @@ export default function ChatInterno() {
       {modalModelosAberto && (
           <div className="modal-overlay" onClick={() => setModalModelosAberto(false)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
-                  <h3>📋 Modelos de Resposta</h3>
+                  <h3>Modelos</h3>
                   <div className="modelos-list">
                       {Object.values(RESPOSTAS_PRONTAS).flat().map((modelo, i) => (
                           <div key={i} className="modelo-item" onClick={() => usarModelo(modelo.texto)}>
-                              <strong>{modelo.titulo}</strong><p>{modelo.texto.substring(0, 60)}...</p>
+                              <strong>{modelo.titulo}</strong>
                           </div>
                       ))}
                   </div>

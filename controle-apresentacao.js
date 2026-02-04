@@ -1,30 +1,28 @@
-// controle-apresentacao.js
-import 'dotenv/config'; // <--- Isso carrega seu arquivo .env
+import 'dotenv/config'; 
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set } from "firebase/database";
 
-// Verifica se as chaves foram carregadas (Debug de segurança)
-if (!process.env.VITE_API_KEY) {
-  console.error("❌ ERRO: Não foi possível ler o arquivo .env");
-  console.error("Dica: Verifique se o arquivo .env está na raiz do projeto.");
+// Verifica se leu o arquivo .env (Debug)
+if (!process.env.VITE_FIREBASE_API_KEY) {
+  console.error("❌ ERRO: O arquivo .env não foi lido ou a chave VITE_FIREBASE_API_KEY não foi encontrada.");
   process.exit(1);
 }
 
-// Configuração puxando direto do .env
+// Configuração corrigida com OS SEUS NOMES de variáveis
 const firebaseConfig = {
-  apiKey: process.env.VITE_API_KEY,
-  authDomain: process.env.VITE_AUTH_DOMAIN,
-  projectId: process.env.VITE_PROJECT_ID,
-  storageBucket: process.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_APP_ID
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.VITE_FIREBASE_DATABASE_URL, // Importante para o Realtime Database
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID
 };
 
-// Inicializa o Firebase
+// Inicializa conexão
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Lê o comando do terminal (on ou off)
 const comando = process.argv[2]; 
 
 async function alterarEstado() {
@@ -33,9 +31,8 @@ async function alterarEstado() {
   if (comando === 'on') {
     console.log("---------------------------------------------------");
     console.log("🟢 ATIVANDO MODO APRESENTAÇÃO...");
-    console.log("   -> Enviando sinal para todos os computadores conectados...");
     await set(ref(db, caminhoDemo), true);
-    console.log("   -> SUCESSO! Botões de automação liberados.");
+    console.log("   -> SUCESSO! Botões liberados para todos.");
     console.log("---------------------------------------------------");
   } else if (comando === 'off') {
     console.log("---------------------------------------------------");
@@ -44,12 +41,9 @@ async function alterarEstado() {
     console.log("   -> SUCESSO! Botões ocultados.");
     console.log("---------------------------------------------------");
   } else {
-    console.log("⚠️  Comando inválido.");
-    console.log("   Use: node controle-apresentacao.js on");
-    console.log("   Ou:  node controle-apresentacao.js off");
+    console.log("⚠️  Comando inválido. Use 'on' ou 'off'.");
   }
   
-  // Encerra o script
   process.exit();
 }
 

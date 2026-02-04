@@ -9,21 +9,16 @@ import './FolhaPonto.css';
 export default function FolhaPonto() {
   const navigate = useNavigate();
   
-  // --- 1. ESTADOS ---
   const [user, setUser] = useState(null);
   const [registros, setRegistros] = useState({}); 
   const [horaAtual, setHoraAtual] = useState(new Date());
   const [dataHoje, setDataHoje] = useState(new Date());
-  
   const [modoGestao, setModoGestao] = useState(false);
   const [isRH, setIsRH] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
-  // --- 2. EFEITOS ---
-  
-  // Auth e Relógio
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -58,22 +53,15 @@ export default function FolhaPonto() {
     return () => { clearInterval(timer); unsubscribeAuth(); };
   }, [navigate]);
 
-  // Carrega Lista RH (Lógica Nova: Filtra 'Concluido')
   useEffect(() => {
       if (!isRH) return;
-
       const rhRef = ref(db, 'rh/erros_ponto');
       const unsubscribe = onValue(rhRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-              // Transforma em array e aplica filtros
               const lista = Object.values(data).filter(item => {
-                  // ESCONDE se status for 'Concluido' (Já baixado)
                   if (item.status === 'Concluido') return false;
-                  
-                  // ESCONDE se tiver timer de bloqueio ativo (para itens temporariamente removidos)
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
-                  
                   return true;
               });
               setListaPendencias(lista);
@@ -84,7 +72,6 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  // --- FUNÇÕES ---
   const registrarPonto = async (tipo) => {
     if (!user) return;
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -116,7 +103,6 @@ export default function FolhaPonto() {
       navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
   };
 
-  // Botão Baixar: Marca como Concluido e some da lista
   const handleResolver = (id) => {
       update(ref(db, `rh/erros_ponto/${id}`), { status: 'Concluido' });
   };
@@ -125,7 +111,6 @@ export default function FolhaPonto() {
     return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
   };
 
-  // Helper para renderizar a ação correta na tabela
   const renderAcao = (item) => {
       if (item.status === 'Respondido') {
           return (
@@ -138,7 +123,6 @@ export default function FolhaPonto() {
       if (item.status === 'Notificado') {
           return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
       }
-      // Padrão (Pendente)
       return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
 
@@ -175,7 +159,6 @@ export default function FolhaPonto() {
 
       <div className="ponto-container">
         
-        {/* VISTA 1: MEU PONTO */}
         {!modoGestao && (
             <>
                 <div className="clock-card glass-effect">
@@ -198,7 +181,6 @@ export default function FolhaPonto() {
             </>
         )}
 
-        {/* VISTA 2: GESTÃO RH */}
         {modoGestao && isRH && (
             <div className="gestao-rh-container">
                 <div className="rh-header-section">
@@ -216,7 +198,8 @@ export default function FolhaPonto() {
                                 <tr key={item.id}>
                                     <td>
                                         <div className="user-cell">
-                                            <div className="avatar-mini">{item.nome[0]}</div>
+                                            {/* VERIFICA SE O NOME EXISTE ANTES DE ACESSAR O ÍNDICE [0] */}
+                                            <div className="avatar-mini">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
                                             <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
                                         </div>
                                     </td>
