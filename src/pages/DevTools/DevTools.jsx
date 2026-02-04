@@ -50,10 +50,6 @@ export default function DevTools() {
   const [log, setLog] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
 
-  // Helper para controlar o valor do Select de forma segura
-  // Se o setor atual não for nem Fin nem RH, define o valor como "" para mostrar "Selecione..."
-  const setorValue = ['Financeiro', 'Recursos Humanos'].includes(simulatedSetor) ? simulatedSetor : '';
-
   useEffect(() => {
     const fetchUser = async () => {
       const user = auth.currentUser;
@@ -74,7 +70,7 @@ export default function DevTools() {
     setLog(prev => [`[${time}] ${msg}`, ...prev]);
   };
 
-  // --- GERADORES (Mantenha igual) ---
+  // --- GERADORES ---
   const gerarViagens = () => {
     if (!userProfile) return addLog("❌ Erro: Usuário não carregado.");
     const viagensRef = ref(db, `viagens/${userProfile.uid}`);
@@ -206,8 +202,9 @@ export default function DevTools() {
           <div className="user-info-dev">
             Usuário Alvo: <strong>{userProfile?.email || 'Carregando...'}</strong>
             <br />
-            <span style={{fontSize: '0.8rem', opacity: 0.7}}>
-              Setor Real: {realSetor} | Simulado: {simulatedSetor || 'Nenhum'}
+            {/* DEBUG VISUAL: Para ter certeza que o estado está mudando */}
+            <span style={{fontSize: '0.8rem', opacity: 0.7, color: '#a855f7'}}>
+              Status Atual: {simulatedSetor || 'Nenhum'} ({simulatedRole})
             </span>
           </div>
         </div>
@@ -224,7 +221,7 @@ export default function DevTools() {
               
               {/* Seletor de Cargo */}
               <div style={{ width: '100%' }}>
-                <label style={{ fontSize: '0.8rem', color: '#888' }}>Cargo ({simulatedRole})</label>
+                <label style={{ fontSize: '0.8rem', color: '#888' }}>Cargo</label>
                 <select 
                   className="tech-input" 
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', background: '#1e1e2e', color: '#fff', border: '1px solid #333' }}
@@ -238,19 +235,28 @@ export default function DevTools() {
                 </select>
               </div>
 
-              {/* Seletor de Setor (CORRIGIDO) */}
+              {/* Seletor de Setor (CORRIGIDO: Sem lógica bloqueante) */}
               <div style={{ width: '100%' }}>
                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Setor</label>
                 <select 
                   className="tech-input"
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', background: '#1e1e2e', color: '#fff', border: '1px solid #333' }}
-                  value={setorValue} 
+                  value={simulatedSetor || ''} 
                   onChange={(e) => switchSetor(e.target.value)}
                 >
-                  {/* Se o setor atual não for Fin/RH, esta opção fica selecionada */}
-                  <option value="">Selecione para mudar...</option>
+                  {/* Opção padrão */}
+                  <option value="">Selecione...</option>
+                  
+                  {/* Opções Requisitadas */}
                   <option value="Financeiro">Financeiro</option>
                   <option value="Recursos Humanos">RH (Recursos Humanos)</option>
+
+                  {/* FALLBACK: Se o setor atual não for Financeiro nem RH, mostra ele aqui para não travar o campo */}
+                  {simulatedSetor && simulatedSetor !== 'Financeiro' && simulatedSetor !== 'Recursos Humanos' && (
+                    <option value={simulatedSetor} disabled>
+                      {simulatedSetor} (Atual - Não listado)
+                    </option>
+                  )}
                 </select>
               </div>
 
