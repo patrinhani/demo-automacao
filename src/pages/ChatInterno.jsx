@@ -102,15 +102,17 @@ export default function ChatInterno() {
         let todosCandidatos = [...mocksSalvos, ...listaReais];
         if (target) todosCandidatos.push(target);
 
-        // Deduplicação por NOME
+        // DEDUPLICAÇÃO POR NOME
         const mapaPorNome = new Map();
         todosCandidatos.forEach(u => {
-            if (u && u.nome) mapaPorNome.set(u.nome.trim(), u);
+            if (u && u.nome) {
+                mapaPorNome.set(u.nome.trim(), u);
+            }
         });
 
         // Auto-seleção do chat
         if (target) {
-            if (canalAtivo.id !== target.id && canalAtivo.id === 'geral') {
+            if (canalAtivo.id === 'geral') {
                 setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo });
             }
         }
@@ -119,37 +121,31 @@ export default function ChatInterno() {
     });
   }, [user, location.state]); 
 
-  // --- ROBÔ AUTO-REPLY (LÓGICA BLINDADA) ---
+  // --- ROBÔ AUTO-REPLY ---
   useEffect(() => {
-      // Condições iniciais
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
-
-      // Verifica se é Mock do RH
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
-      const isMock = mocksAtivos.find(m => m.id === canalAtivo.id);
+      const isMock = mocksAtivos.some(m => m.id === canalAtivo.id || m.nome === canalAtivo.nome.replace('👤 ', ''));
 
-      // Se a última mensagem foi MINHA (RH) e para um MOCK
       if (ultimaMsg.uid === user.uid && isMock) {
           
-          // Captura os dados no momento exato (snapshot do estado)
-          const mockId = canalAtivo.id; 
+          let mockId = canalAtivo.id; 
           const mockNome = canalAtivo.nome;
           const meuId = user.uid;
 
-          // Validação crítica
+          // Recuperação de ID segura
           if (!mockId || mockId === 'undefined') {
-              console.error("ERRO: ID inválido para resposta automática.");
-              return;
+              const mockEncontrado = mocksAtivos.find(m => m.nome === mockNome.replace('👤 ', ''));
+              if(mockEncontrado) mockId = mockEncontrado.id;
+              else return;
           }
 
-          // Tempo de resposta (3 a 8 segundos para ser rápido no teste)
-          const tempoEspera = Math.floor(Math.random() * (8000 - 3000 + 1) + 3000);
+          const tempoEspera = Math.floor(Math.random() * (6000 - 3000 + 1) + 3000);
           console.log(`🤖 Resposta agendada para ${mockNome} (${mockId}) em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
-              // 1. Enviar mensagem no chat
               const msgTexto = RESPOSTAS_AJUSTE[Math.floor(Math.random() * RESPOSTAS_AJUSTE.length)];
               const ids = [meuId, mockId].sort();
               const pathChat = `chats/direto/${ids[0]}_${ids[1]}`;
@@ -157,33 +153,27 @@ export default function ChatInterno() {
               try {
                   await set(push(ref(db, pathChat)), {
                       usuario: mockNome.replace('👤 ', ''),
-                      uid: mockId, // Garante que usa o ID capturado
+                      uid: mockId,
                       texto: msgTexto,
                       timestamp: Date.now(),
                       avatar: '👤'
                   });
 
-                  // 2. Atualizar status na folha de ponto
                   const mockRef = ref(db, `rh/erros_ponto/${mockId}`);
                   const snap = await get(mockRef);
                   if (snap.exists()) {
-                      await update(mockRef, { 
-                          status: 'Respondido', 
-                          hiddenUntil: null // Garante visibilidade
-                      });
-                      console.log(`✅ Status de ${mockNome} atualizado para 'Respondido'.`);
+                      await update(mockRef, { status: 'Respondido', hiddenUntil: null });
                   }
               } catch (err) {
                   console.error("Erro no Auto-Reply:", err);
               }
-
           }, tempoEspera);
 
           return () => clearTimeout(timerId);
       }
-  }, [mensagens]); // Removi 'canalAtivo' e 'user' das dependências para evitar re-execução em loop se o componente renderizar
+  }, [mensagens]); 
 
-  // 3. MONITORAMENTO DE MENSAGENS
+  // 3. MONITORAMENTO
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
@@ -206,26 +196,56 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // 4. CARREGAR MSG DO CANAL
+  // 4. CARREGAR MENSAGENS (COM CORREÇÃO DE ID)
   useEffect(() => {
     if (!user) return;
     if (naoLidas[canalAtivo.id]) {
       setNaoLidas(prev => { const n = {...prev}; delete n[canalAtivo.id]; return n; });
     }
-    let path = canalAtivo.id === 'geral' ? 'chats/geral' : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
+    
+    // LÓGICA DE RECUPERAÇÃO DE ID (IGUAL AO ROBÔ)
+    let targetId = canalAtivo.id;
+    
+    // Se o ID for undefined, tenta achar na lista de usuários pelo nome
+    if (canalAtivo.id !== 'geral' && (!targetId || targetId === 'undefined')) {
+        const found = usuarios.find(u => u.nome === canalAtivo.nome.replace('👤 ', ''));
+        if (found) targetId = found.id;
+    }
+
+    // Se ainda for inválido e não for geral, não faz nada
+    if (canalAtivo.id !== 'geral' && !targetId) return;
+
+    let path = canalAtivo.id === 'geral' 
+        ? 'chats/geral' 
+        : `chats/direto/${[user.uid, targetId].sort().join('_')}`;
+
     const unsubscribe = onValue(ref(db, path), (snapshot) => {
       const data = snapshot.val();
       setMensagens(data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : []);
     });
     return () => unsubscribe();
-  }, [canalAtivo, user]); 
+  }, [canalAtivo, user, usuarios]); // Adicionado 'usuarios' para re-executar quando a lista carregar
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
 
   const enviarMensagem = async (e) => {
     e.preventDefault();
     if (!novaMensagem.trim() || !user) return;
-    let path = canalAtivo.id === 'geral' ? 'chats/geral' : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
+    
+    let targetId = canalAtivo.id;
+    if (canalAtivo.id !== 'geral' && (!targetId || targetId === 'undefined')) {
+        const found = usuarios.find(u => u.nome === canalAtivo.nome.replace('👤 ', ''));
+        if (found) targetId = found.id;
+        else {
+            alert("Erro: Não foi possível identificar o usuário.");
+            return;
+        }
+    }
+
+    let path = canalAtivo.id === 'geral' 
+        ? 'chats/geral' 
+        : `chats/direto/${[user.uid, targetId].sort().join('_')}`;
+
     await set(push(ref(db, path)), {
       usuario: user.displayName || user.email.split('@')[0],
       uid: user.uid,
@@ -236,11 +256,7 @@ export default function ChatInterno() {
     setNovaMensagem('');
   };
 
-  const usarModelo = (texto) => {
-      setNovaMensagem(texto); 
-      setModalModelosAberto(false);
-  };
-
+  const usarModelo = (texto) => { setNovaMensagem(texto); setModalModelosAberto(false); };
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
   const formatarNomeLista = (nome) => nome ? nome.replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Usuário';
 
@@ -269,8 +285,9 @@ export default function ChatInterno() {
               <span className="channel-name">📢 Geral</span><span className="channel-desc">Para todos</span>
             </button>
             <div style={{margin: '15px 10px 5px', fontSize: '0.7rem', color: '#94a3b8', textTransform:'uppercase', borderTop: '1px solid #ffffff1a', paddingTop: '10px'}}>Diretas</div>
-            {usuarios.map(u => (
-              <button key={u.id} className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`} onClick={() => setCanalAtivo({ id: u.id, nome: u.nome || formatarNomeLista(u.email.split('@')[0]), desc: u.cargo })}>
+            
+            {usuarios.map((u, index) => (
+              <button key={`${u.id}-${index}`} className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`} onClick={() => setCanalAtivo({ id: u.id, nome: u.nome || formatarNomeLista(u.email.split('@')[0]), desc: u.cargo })}>
                 <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
                   <div><span className="channel-name">👤 {formatarNomeLista(u.nome || u.email.split('@')[0])}</span><span className="channel-desc">{u.cargo}</span></div>
                   {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}

@@ -14,7 +14,7 @@ export default function Conciliacao() {
   const [faturas, setFaturas] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- O SEGREDO: ESTADO QUE ESCUTA O COMANDO DO TERMINAL ---
+  // --- ESTADO DO MODO APRESENTAÇÃO ---
   const [modoApresentacaoAtivo, setModoApresentacaoAtivo] = useState(false);
   
   // --- ESTADOS DE INTERAÇÃO ---
@@ -22,26 +22,23 @@ export default function Conciliacao() {
   const [faturaSelecionada, setFaturaSelecionada] = useState(null);
   const [showModal, setShowModal] = useState(false);
   
-  // --- CAMPOS DO FORMULÁRIO ---
+  // --- CAMPOS DO FORMULÁRIO MANUAL ---
   const [inputCodigo, setInputCodigo] = useState('');
   const [arquivoUpload, setArquivoUpload] = useState(null);
   const [erroValidacao, setErroValidacao] = useState('');
-
-  // --- CAMPOS DE BAIXA ---
   const [dataPagamento, setDataPagamento] = useState('');
   const [bancoDestino, setBancoDestino] = useState('');
 
-  // 1. CARREGAR DADOS + OUVIR O MODO APRESENTAÇÃO
+  // 1. CARREGAR DADOS + OUVIR MODO APRESENTAÇÃO
   useEffect(() => {
     if (!user) return;
 
-    // A. Escuta as faturas do usuário
+    // A. Escuta faturas
     const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
     const unsubscribeFaturas = onValue(faturasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         let lista = [];
-        // Tratamento seguro de IDs (Array ou Objeto)
         if (Array.isArray(data)) {
           lista = data.map((item, index) => ({ ...item, firebaseKey: index }));
         } else {
@@ -55,11 +52,10 @@ export default function Conciliacao() {
       setLoading(false);
     });
 
-    // B. AQUI ESTÁ A MÁGICA: Escuta o comando global do seu terminal
+    // B. Escuta o "Controle Remoto"
     const demoRef = ref(db, 'configuracoes_globais/modo_apresentacao');
     const unsubscribeDemo = onValue(demoRef, (snapshot) => {
-      const isAtivo = snapshot.val();
-      setModoApresentacaoAtivo(!!isAtivo); // Atualiza a tela em tempo real
+      setModoApresentacaoAtivo(!!snapshot.val());
     });
 
     return () => {
@@ -68,7 +64,44 @@ export default function Conciliacao() {
     };
   }, [user]);
 
-  // 2. FILTRO DE BUSCA
+  // 2. LÓGICA DO ROBÔ (EXECUÇÃO EM MASSA)
+  const executarAutomacaoEmMassa = async () => {
+    // Pega todas as pendentes atuais
+    const pendentes = faturas.filter(f => f.status === 'Pendente');
+    
+    if (pendentes.length === 0) {
+      alert("Nenhuma fatura pendente para processar!");
+      return;
+    }
+
+    const updates = {};
+    const timestamp = new Date().toISOString();
+
+    // Monta o pacote de atualizações para TUDO de uma vez
+    pendentes.forEach(fatura => {
+        const path = `users/${user.uid}/financeiro/faturas/${fatura.firebaseKey}`;
+        
+        updates[`${path}/status`] = 'Conciliado';
+        updates[`${path}/dataBaixa`] = timestamp;
+        updates[`${path}/bancoDestino`] = 'Horizon Bank (Automático)';
+        updates[`${path}/auditoria`] = {
+            validadoPor: '🤖 Robô de Automação (RPA)',
+            metodo: 'Conciliação em Lote (Batch)',
+            hashValidado: fatura.codigoHash, // O Robô "lê" o hash correto automaticamente
+            arquivoComprovante: 'comprovante_automatico_lote.pdf',
+            dataAuditoria: timestamp
+        };
+    });
+
+    try {
+        await update(ref(db), updates);
+        // Não precisa de alert, a atualização visual será instantânea via socket
+    } catch (error) {
+        alert("Erro na automação: " + error.message);
+    }
+  };
+
+  // 3. FILTROS E MODAL MANUAL (O PROCESSO "CHATO")
   const faturasFiltradas = faturas.filter(fatura => {
     const termo = busca.toLowerCase();
     const valorString = fatura.valor ? fatura.valor.toString() : '';
@@ -80,13 +113,10 @@ export default function Conciliacao() {
     );
   });
 
-  // 3. ABRIR MODAL
-  const solicitarBaixa = (fatura) => {
-    if (fatura.firebaseKey === undefined || fatura.firebaseKey === null) {
-      alert("Erro de referência no banco de dados.");
-      return;
-    }
+  const solicitarBaixaManual = (fatura) => {
+    if (fatura.firebaseKey === undefined) return;
     setFaturaSelecionada(fatura);
+    // Limpa campos para obrigar o usuário a digitar (demonstrar trabalho manual)
     setDataPagamento('');
     setBancoDestino('');
     setInputCodigo('');
@@ -95,22 +125,20 @@ export default function Conciliacao() {
     setShowModal(true);
   };
 
-  // 4. UPLOAD
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) setArquivoUpload(file);
   };
 
-  // 5. CONFIRMAR E VALIDAR (COM VERIFICAÇÃO DE HASH)
-  const confirmarBaixa = async (e) => {
+  const confirmarBaixaManual = async (e) => {
     e.preventDefault();
     if (!faturaSelecionada) return;
     setErroValidacao('');
 
-    // Validação Rigorosa do Código
+    // Validação Manual Rigorosa
     const hashCorreto = faturaSelecionada.codigoHash;
     if (!inputCodigo || inputCodigo.trim().toUpperCase() !== hashCorreto) {
-      setErroValidacao(`❌ Código incorreto! O documento exige: ${hashCorreto}`);
+      setErroValidacao(`❌ Código incorreto! (Dica: é ${hashCorreto})`);
       return;
     }
 
@@ -120,9 +148,6 @@ export default function Conciliacao() {
     }
 
     const key = faturaSelecionada.firebaseKey;
-    if (key === undefined || key === null) return;
-
-    // Atualização no Firebase
     const updates = {};
     const basePath = `users/${user.uid}/financeiro/faturas/${key}`;
     
@@ -131,19 +156,15 @@ export default function Conciliacao() {
     updates[`${basePath}/bancoDestino`] = bancoDestino;
     updates[`${basePath}/auditoria`] = {
       validadoPor: 'Usuario Financeiro',
-      metodo: 'Automação Supervisionada',
+      metodo: 'Manual (Humano)',
       hashValidado: inputCodigo,
       arquivoComprovante: arquivoUpload.name,
       dataAuditoria: new Date().toISOString()
     };
     
-    try {
-      await update(ref(db), updates);
-      setShowModal(false);
-      setFaturaSelecionada(null);
-    } catch (error) {
-      alert("Erro ao salvar: " + error.message);
-    }
+    await update(ref(db), updates);
+    setShowModal(false);
+    setFaturaSelecionada(null);
   };
 
   return (
@@ -165,29 +186,54 @@ export default function Conciliacao() {
 
         <div className="tech-scroll-content">
           
-          {/* BANNER QUE APARECE QUANDO VOCÊ DÁ O COMANDO */}
+          {/* ÁREA MÁGICA: SÓ APARECE SE O MODO ESTIVER ATIVO */}
           {modoApresentacaoAtivo && (
              <div style={{
-               background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
-               padding: '15px',
-               borderRadius: '8px',
-               marginBottom: '20px',
+               background: 'linear-gradient(90deg, #059669 0%, #047857 100%)',
+               padding: '20px',
+               borderRadius: '12px',
+               marginBottom: '25px',
                color: 'white',
-               fontWeight: 'bold',
-               boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-               textAlign: 'center',
-               textTransform: 'uppercase',
-               letterSpacing: '1px',
-               animation: 'pulse 2s infinite'
+               boxShadow: '0 10px 25px rgba(5, 150, 105, 0.4)',
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
+               border: '1px solid #34d399'
              }}>
-               🚀 MODO DEMONSTRAÇÃO ATIVO: Automação liberada via Terminal
+               <div>
+                 <h2 style={{margin:0, fontSize:'1.4rem'}}>🚀 Automação Disponível</h2>
+                 <p style={{margin:'5px 0 0 0', opacity:0.9, fontSize:'0.9rem'}}>
+                   O robô identificou {faturas.filter(f => f.status === 'Pendente').length} pendências prontas para processamento.
+                 </p>
+               </div>
+               <button 
+                 onClick={executarAutomacaoEmMassa}
+                 className="btn-magic-tech"
+                 style={{
+                   background: 'white',
+                   color: '#059669',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: '8px',
+                   fontWeight: 'bold',
+                   fontSize: '1rem',
+                   cursor: 'pointer',
+                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                   transition: 'transform 0.2s',
+                   textTransform: 'uppercase'
+                 }}
+                 onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                 onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+               >
+                 ⚡ Processar Tudo Agora
+               </button>
              </div>
           )}
 
           <div className="search-bar-container" style={{marginBottom: '20px'}}>
             <input 
               type="text" 
-              placeholder="🔍 Buscar por Cliente, NF ou Valor..." 
+              placeholder="🔍 Buscar..." 
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="search-input-tech"
@@ -197,11 +243,12 @@ export default function Conciliacao() {
 
           <div className="tech-card-table-wrapper">
             {loading ? (
-              <p style={{padding:'20px', color:'white'}}>Conectando ao banco de dados...</p>
+              <p style={{padding:'20px', color:'white'}}>Conectando...</p>
             ) : faturasFiltradas.length === 0 ? (
               <div className="empty-state-tech">
-                <div className="empty-icon">📂</div>
-                <h3>Tudo em dia!</h3>
+                <div className="empty-icon">✅</div>
+                <h3>Tudo Conciliado!</h3>
+                <p>Nenhuma pendência financeira encontrada.</p>
               </div>
             ) : (
               <table className="tech-table">
@@ -211,7 +258,7 @@ export default function Conciliacao() {
                     <th>Cliente</th>
                     <th>Valor</th>
                     <th>Status</th>
-                    <th>Ação (Automação)</th>
+                    <th>Processo Manual</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,24 +276,12 @@ export default function Conciliacao() {
                       </td>
                       <td>
                         {fatura.status === 'Pendente' && (
-                          // LÓGICA DO BOTÃO: Só aparece se o modo estiver ATIVO
-                          modoApresentacaoAtivo ? (
-                            <button className="btn-action-tech" onClick={() => solicitarBaixa(fatura)}>
-                              Auditar Agora
-                            </button>
-                          ) : (
-                            <span style={{
-                              fontSize:'0.75rem', 
-                              color:'#64748b', 
-                              border:'1px dashed #475569', 
-                              padding:'4px 8px', 
-                              borderRadius:'4px'
-                            }}>
-                              Aguardando Liberação...
-                            </span>
-                          )
+                           // Botão Manual SEMPRE disponível (para mostrar o jeito "velho")
+                           <button className="btn-action-tech" onClick={() => solicitarBaixaManual(fatura)}>
+                             Auditar
+                           </button>
                         )}
-                        {fatura.status === 'Conciliado' && <span style={{color:'#10b981'}}>✔</span>}
+                        {fatura.status === 'Conciliado' && <span style={{color:'#10b981'}}>✔ Concluído</span>}
                       </td>
                     </tr>
                   ))}
@@ -257,65 +292,62 @@ export default function Conciliacao() {
         </div>
       </main>
 
-      {/* MODAL DE AUDITORIA */}
+      {/* MODAL MANUAL (Mantido para a demo do "antes") */}
       {showModal && faturaSelecionada && (
         <div className="modal-overlay-tech">
           <div className="modal-glass" style={{maxWidth: '600px'}}>
             <div className="modal-header">
-              <h3>🛡️ Auditoria de Recebimento</h3>
+              <h3>✍️ Auditoria Manual</h3>
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             </div>
             
             <div style={{display:'flex', flexDirection:'column', gap:'20px'}}>
               <div className="step-box completed" style={{background:'rgba(245, 158, 11, 0.1)', border:'1px solid #f59e0b', padding:'15px'}}>
-                 <strong style={{color:'#fbbf24', fontSize:'0.9rem'}}>INSTRUÇÃO:</strong>
+                 <strong style={{color:'#fbbf24'}}>PROCESSO HUMANO:</strong>
                  <p style={{fontSize:'0.85rem', margin:'5px 0 0 0', color:'#e2e8f0'}}>
-                   Para validar esta transação de <strong>R$ {faturaSelecionada.valor.toFixed(2)}</strong>, insira o código de segurança do extrato.
+                   Localize a transação no banco, verifique o código Hash e faça o upload.
                  </p>
               </div>
 
-              <form onSubmit={confirmarBaixa} className="form-tech">
+              <form onSubmit={confirmarBaixaManual} className="form-tech">
                 <div className="form-group-tech">
-                    <label style={{color:'#f59e0b'}}>Código Hash (Exigido: {faturaSelecionada.codigoHash})</label>
+                    <label style={{color:'#f59e0b'}}>Digite o Hash (Doc: {faturaSelecionada.codigoHash})</label>
                     <input 
                         type="text" 
                         value={inputCodigo} 
                         onChange={(e) => setInputCodigo(e.target.value)} 
-                        placeholder="Digite o código..." 
                         className="input-highlight"
-                        style={{textAlign:'center', letterSpacing:'3px', fontWeight:'bold', textTransform:'uppercase'}}
+                        style={{textAlign:'center', textTransform:'uppercase'}}
                     />
                 </div>
 
                 <div className="form-group-tech" style={{marginTop:'15px'}}>
-                   <label>Upload do Comprovante</label>
+                   <label>Upload Manual do PDF</label>
                    <input type="file" onChange={handleFileUpload} className="file-input-tech" accept=".pdf,.jpg,.png" />
                 </div>
                 
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginTop: '15px'}}>
                     <div className="form-group-tech">
-                        <label>Data Efetiva</label>
+                        <label>Data</label>
                         <input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
                     </div>
                     <div className="form-group-tech">
-                        <label>Conta Destino</label>
+                        <label>Banco</label>
                         <select value={bancoDestino} onChange={(e) => setBancoDestino(e.target.value)} required>
                             <option value="">Selecione...</option>
                             <option value="horizon">Horizon Bank</option>
-                            <option value="caixa">Caixa Econômica</option>
+                            <option value="caixa">Caixa</option>
                         </select>
                     </div>
                 </div>
 
                 {erroValidacao && (
-                    <div style={{background:'rgba(239, 68, 68, 0.2)', color:'#fca5a5', padding:'10px', borderRadius:'6px', marginTop:'15px', textAlign: 'center', fontWeight: 'bold'}}>
-                        {erroValidacao}
-                    </div>
+                    <p style={{color:'#fca5a5', textAlign: 'center', fontWeight: 'bold', marginTop:'10px'}}>{erroValidacao}</p>
                 )}
 
                 <div className="modal-actions-tech" style={{marginTop:'25px'}}>
                   <button type="submit" className="btn-save-tech" style={{width:'100%'}}>
-                    ✅ Confirmar Automação
+                    Salvar Manualmente
                   </button>
                 </div>
               </form>

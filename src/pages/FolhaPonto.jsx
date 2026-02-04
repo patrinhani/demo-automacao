@@ -59,7 +59,11 @@ export default function FolhaPonto() {
       const unsubscribe = onValue(rhRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-              const lista = Object.values(data).filter(item => {
+              // CORREÇÃO CRÍTICA: USAR OBJECT.ENTRIES PARA PEGAR O ID CORRETO
+              const lista = Object.entries(data).map(([key, val]) => ({
+                  id: key, 
+                  ...val
+              })).filter(item => {
                   if (item.status === 'Concluido') return false;
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
                   return true;
@@ -148,7 +152,7 @@ export default function FolhaPonto() {
                 <button 
                     className={`toggle-btn ${modoGestao ? 'active' : ''}`} 
                     onClick={() => setModoGestao(true)}>
-                    👮 Gestão RH
+                    👮 Gestão RH 
                     {listaPendencias.length > 0 && <span className="badge-alert">{listaPendencias.length}</span>}
                 </button>
             </div>
@@ -190,38 +194,30 @@ export default function FolhaPonto() {
 
                 <div className="tabela-rh-wrapper">
                     <table className="tech-table">
-                        <thead>
-                            <tr><th>Colaborador</th><th>Ocorrência</th><th>Espelho do Dia</th><th>Ação</th></tr>
-                        </thead>
+                        <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
                         <tbody>
                             {listaPendencias.map(item => (
                                 <tr key={item.id}>
                                     <td>
                                         <div className="user-cell">
-                                            {/* VERIFICA SE O NOME EXISTE ANTES DE ACESSAR O ÍNDICE [0] */}
                                             <div className="avatar-mini">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
                                             <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
                                         </div>
                                     </td>
-                                    <td>
-                                        <div className="erro-badge">{item.erro}</div>
-                                        <small style={{color:'#94a3b8'}}>{item.data}</small>
-                                    </td>
+                                    <td><div className="erro-badge">{item.erro}</div></td>
                                     <td>
                                         <div className="timeline-ponto">
-                                            <div className={`time-pill ${item.pontos.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span> {item.pontos.e}</div>
-                                            <div className="arrow">➝</div>
-                                            <div className={`time-pill ${item.pontos.si === '---' ? 'miss' : ''}`}><span className="lbl">S.I</span> {item.pontos.si}</div>
-                                            <div className="arrow">➝</div>
-                                            <div className={`time-pill ${item.pontos.vi === '---' ? 'miss' : ''}`}><span className="lbl">V.I</span> {item.pontos.vi}</div>
-                                            <div className="arrow">➝</div>
-                                            <div className={`time-pill ${item.pontos.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span> {item.pontos.s}</div>
+                                            <div className={`time-pill ${!item.pontos?.e ? 'miss' : ''}`}><span className="lbl">E</span>{item.pontos?.e || '---'}</div>
+                                            <div className="arrow">→</div>
+                                            <div className={`time-pill ${!item.pontos?.si ? 'miss' : ''}`}><span className="lbl">SI</span>{item.pontos?.si || '---'}</div>
+                                            <div className="arrow">→</div>
+                                            <div className={`time-pill ${!item.pontos?.vi ? 'miss' : ''}`}><span className="lbl">VI</span>{item.pontos?.vi || '---'}</div>
+                                            <div className="arrow">→</div>
+                                            <div className={`time-pill ${!item.pontos?.s ? 'miss' : ''}`}><span className="lbl">S</span>{item.pontos?.s || '---'}</div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div className="actions-cell">
-                                            {renderAcao(item)}
-                                        </div>
+                                        {renderAcao(item)}
                                     </td>
                                 </tr>
                             ))}
@@ -230,7 +226,6 @@ export default function FolhaPonto() {
                 </div>
             </div>
         )}
-
       </div>
     </div>
   );
