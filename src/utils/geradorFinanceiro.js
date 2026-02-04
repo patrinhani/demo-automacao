@@ -2,15 +2,22 @@
 
 export const gerarCenarioFinanceiro = () => {
   const formatarData = (d) => d.toISOString().split('T')[0];
+  const formatarHora = () => new Date().toLocaleTimeString('pt-BR');
   
-  // Função para adicionar dias a uma data (Futuro)
+  const gerarHash = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+  
+  // Função auxiliar para gerar CNPJ realista
+  const gerarCNPJ = () => {
+    const n = () => Math.floor(Math.random() * 9);
+    return `${n()}${n()}.${n()}${n()}${n()}.${n()}${n()}${n()}/0001-${n()}${n()}`;
+  };
+
   const adicionarDias = (dias) => {
     const d = new Date();
     d.setDate(d.getDate() + dias);
     return formatarData(d);
   };
 
-  // Lista de empresas (Clientes que nos pagam)
   const clientes = [
     "TechSolutions Ltda", "Padaria do João", "Mercado Preço Bom", 
     "Posto Ipiranga Centro", "Farmácia Saúde Total", "Restaurante Sabor Mineiro",
@@ -23,66 +30,72 @@ export const gerarCenarioFinanceiro = () => {
     "Smart Fit", "Burger King", "McDonalds", "Outback Steakhouse"
   ];
 
-  let extrato = []; // O que vai para o Excel (Banco)
-  let faturas = []; // O que vai para a Tela (Sistema Interno)
+  let extrato = []; 
+  let faturas = []; 
 
-  // --- GERAR 100 LANÇAMENTOS DE RECEBIMENTO ---
-  for (let i = 1; i <= 100; i++) {
-    const cliente = clientes[Math.floor(Math.random() * clientes.length)];
+  for (let i = 1; i <= 50; i++) { // Reduzi para 50 para facilitar testes
+    const clienteNome = clientes[Math.floor(Math.random() * clientes.length)];
+    // GERA O CNPJ AQUI PARA USAR NOS DOIS LADOS
+    const clienteCnpj = gerarCNPJ(); 
+    
     const valorBase = (Math.random() * 2000) + 50; 
     const valorFinal = parseFloat(valorBase.toFixed(2));
     
-    const idUnico = `DOC-${10000 + i}-${Math.floor(Math.random() * 999)}`;
-
-    // DATAS:
-    // Sistema: Fatura vence no futuro (D+1 a D+30)
+    const idTransacao = `TRX-${10000 + i}`;
+    const hashSeguranca = gerarHash();
     const dataVencimento = adicionarDias(Math.floor(Math.random() * 30) + 1);
-    
-    // Banco: Cliente pagou Hoje ou Ontem (Entrada de Dinheiro)
     const dataCreditoBanco = adicionarDias(Math.random() > 0.5 ? 0 : -1);
-
-    // 80% Match Perfeito / 20% Caos
     const ehCaos = Math.random() > 0.8;
 
-    // --- 1. CRIA A "CONTA A RECEBER" (SISTEMA) ---
+    // --- 1. DADOS PARA O SISTEMA (Conciliação) ---
     faturas.push({
-      id: idUnico,
-      cliente: cliente,
+      id: idTransacao,
+      nfe: `NF-${202500 + i}`,
+      cnpj: clienteCnpj, // CNPJ correto
+      cliente: clienteNome,
       vencimento: dataVencimento,
       valor: valorFinal,
+      codigoHash: hashSeguranca,
       status: "Pendente",
       origem: "Sistema Interno"
     });
 
-    // --- 2. CRIA O LANÇAMENTO NO EXTRATO (BANCO) ---
+    // --- 2. DADOS PARA O BANCO (Extrato e PDF) ---
     if (!ehCaos) {
-      // Caso Perfeito: Crédito com mesmo valor e ID
       extrato.push({
         data: dataCreditoBanco,
-        historico: `LIQ. COBRANÇA - ${cliente.toUpperCase()}`, // Texto de recebimento
-        documento: idUnico,
-        valor: valorFinal, // POSITIVO (Entrada)
-        tipo: "C"          // Crédito
+        hora: formatarHora(), // Adicionando hora
+        historico: `LIQ. COBRANÇA - ${clienteNome.toUpperCase()}`,
+        documento: idTransacao,
+        valor: valorFinal, 
+        tipo: "C",
+        hash: hashSeguranca,
+        // NOVOS CAMPOS PARA O PDF FICAR RICO:
+        pagador_nome: clienteNome.toUpperCase(),
+        pagador_cnpj: clienteCnpj,
+        pagador_banco: "BANCO EXTERNO S.A."
       });
     } else {
-      // Caso Caos: Valor diferente (Juros/Multa) ou Nome genérico
-      // Cliente pagou com juros, então entrou MAIS dinheiro
-      const valorComJuros = parseFloat((valorFinal + (Math.random() * 10)).toFixed(2));
-      
+      // Caso de caos (valor diferente)
+      const valorComJuros = parseFloat((valorFinal + 10.50).toFixed(2));
       extrato.push({
         data: dataCreditoBanco,
-        historico: `CREDITO PIX - CLIENTE FINAL`, // Nome genérico para dificultar
-        documento: `PIX-${Math.floor(Math.random()*9999)}`, // ID diferente
-        valor: valorComJuros, // Valor diferente
-        tipo: "C"
+        hora: formatarHora(),
+        historico: `CRÉDITO DIVERSO (DIVERGÊNCIA)`, 
+        documento: idTransacao, 
+        valor: valorComJuros, 
+        tipo: "C",
+        hash: hashSeguranca,
+        pagador_nome: clienteNome.toUpperCase(),
+        pagador_cnpj: clienteCnpj,
+        pagador_banco: "BANCO EXTERNO S.A."
       });
     }
   }
 
-  // Adiciona taxas (Essas sim são negativas/débitos) para confundir
+  // Taxas do banco (sem pagador externo)
   const hoje = new Date();
-  extrato.push({ data: formatarData(hoje), historico: "TAR MANUTENCAO CONTA", documento: "TAR", valor: -45.00, tipo: "D" });
-  extrato.push({ data: formatarData(hoje), historico: "IOF DIARIO", documento: "IOF", valor: -1.25, tipo: "D" });
+  extrato.push({ data: formatarData(hoje), hora: "02:15:00", historico: "TAR MANUTENCAO CONTA", documento: "TAR", valor: -45.00, tipo: "D" });
 
   return { extrato, faturas };
 };

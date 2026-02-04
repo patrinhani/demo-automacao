@@ -302,3 +302,110 @@
   opacity: 0.5;
   cursor: wait;
 }
+
+/* --- ESTILOS DO TEMPLATE DE PDF (Nota Fiscal) --- */
+
+.invoice-paper {
+  width: 210mm;      /* Tamanho A4 */
+  min-height: 297mm;
+  background: white; /* Importante para o PDF não ficar transparente */
+  padding: 15mm;
+  box-sizing: border-box;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  color: #000;       /* Texto preto no papel branco */
+  border: 1px solid #ccc;
+}
+
+.nfe-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }
+.nfe-title { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; }
+.nfe-subtitle { font-size: 0.8rem; color: #555; text-align: right; }
+
+.nfe-row { display: flex; gap: 20px; margin-bottom: 15px; }
+.nfe-col { flex: 1; display: flex; flex-direction: column; }
+.nfe-label { font-size: 0.65rem; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
+.nfe-value { font-size: 0.9rem; color: #000; font-weight: 500; }
+
+.nfe-section-title { background: #eee; padding: 5px 10px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin: 20px 0 10px 0; border-left: 4px solid #333; }
+.nfe-desc-box { border: 1px solid #ccc; padding: 15px; min-height: 100px; font-size: 0.9rem; background: #fdfdfd; line-height: 1.4; }
+
+.nfe-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+.nfe-table th { background: #333; color: white; padding: 8px; text-align: left; }
+.nfe-table td { border-bottom: 1px solid #ddd; padding: 10px 8px; }
+
+/* Ajuste no Modal para caber os passos */
+.modal-glass { max-height: 90vh; overflow-y: auto; }
+.step-box.completed { border-color: #10b981 !important; background: rgba(16, 185, 129, 0.1) !important; }
+
+/* src/pages/Conciliacao/Conciliacao.css */
+
+/* ... MANTENHA O CSS ANTERIOR ... */
+
+/* --- NOVO ESTILO: BANK VOUCHER (Comprovante) --- */
+.bank-voucher {
+  width: 210mm;
+  min-height: 297mm; /* A4 */
+  background: #fff;
+  padding: 40px;
+  box-sizing: border-box;
+  font-family: 'Arial', sans-serif;
+  color: #334155;
+  border-top: 10px solid #2563eb; /* Faixa azul do banco */
+}
+
+.voucher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 30px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 30px;
+}
+
+.bank-logo-area { display: flex; align-items: center; }
+
+.voucher-body { display: flex; flex-direction: column; gap: 10px; }
+
+.voucher-section-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+.voucher-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.divider-bottom { border-bottom: 1px dashed #cbd5e1; padding-bottom: 15px; margin-bottom: 5px; }
+
+.v-label { font-size: 13px; color: #64748b; }
+.v-value { font-size: 14px; font-weight: 600; color: #1e293b; text-align: right; }
+
+.highlight-row {
+  background: #f1f5f9;
+  padding: 15px;
+  border-radius: 6px;
+  align-items: center;
+}
+.highlight-row .v-value { font-size: 18px; color: #2563eb; }
+
+.voucher-auth-box {
+  margin-top: 40px;
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+  padding: 20px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.voucher-footer {
+  margin-top: 50px;
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.5;
+}
