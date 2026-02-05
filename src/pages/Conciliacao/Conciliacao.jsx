@@ -3,37 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useUser } from '../../contexts/UserContext';
 import { db } from '../../firebase';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, set } from 'firebase/database';
 import './Conciliacao.css';
 
 export default function Conciliacao() {
   const { user } = useUser();
   const navigate = useNavigate();
   
-  // --- ESTADOS DE DADOS ---
   const [faturas, setFaturas] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // --- ESTADO DO MODO APRESENTAÇÃO ---
   const [modoApresentacaoAtivo, setModoApresentacaoAtivo] = useState(false);
   
-  // --- ESTADOS DE INTERAÇÃO ---
   const [busca, setBusca] = useState('');
   const [faturaSelecionada, setFaturaSelecionada] = useState(null);
   const [showModal, setShowModal] = useState(false);
   
-  // --- CAMPOS DO FORMULÁRIO MANUAL ---
   const [inputCodigo, setInputCodigo] = useState('');
   const [arquivoUpload, setArquivoUpload] = useState(null);
   const [erroValidacao, setErroValidacao] = useState('');
   const [dataPagamento, setDataPagamento] = useState('');
   const [bancoDestino, setBancoDestino] = useState('');
 
-  // 1. CARREGAR DADOS + OUVIR MODO APRESENTAÇÃO
   useEffect(() => {
     if (!user) return;
 
-    // A. Escuta faturas
     const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
     const unsubscribeFaturas = onValue(faturasRef, (snapshot) => {
       const data = snapshot.val();
@@ -52,7 +45,6 @@ export default function Conciliacao() {
       setLoading(false);
     });
 
-    // B. Escuta o "Controle Remoto"
     const demoRef = ref(db, 'configuracoes_globais/modo_apresentacao');
     const unsubscribeDemo = onValue(demoRef, (snapshot) => {
       setModoApresentacaoAtivo(!!snapshot.val());
@@ -64,44 +56,33 @@ export default function Conciliacao() {
     };
   }, [user]);
 
-  // 2. LÓGICA DO ROBÔ (EXECUÇÃO EM MASSA)
+  // --- FUNÇÃO ATUALIZADA (SEM TRAVA) ---
   const executarAutomacaoEmMassa = async () => {
-    // Pega todas as pendentes atuais
     const pendentes = faturas.filter(f => f.status === 'Pendente');
     
-    if (pendentes.length === 0) {
-      alert("Nenhuma fatura pendente para processar!");
-      return;
-    }
+    // REMOVIDO O BLOQUEIO: if (pendentes.length === 0) { ... }
+    // Agora o robô roda mesmo se a lista estiver vazia, só para demonstrar o navegador abrindo.
 
-    const updates = {};
-    const timestamp = new Date().toISOString();
-
-    // Monta o pacote de atualizações para TUDO de uma vez
-    pendentes.forEach(fatura => {
-        const path = `users/${user.uid}/financeiro/faturas/${fatura.firebaseKey}`;
-        
-        updates[`${path}/status`] = 'Conciliado';
-        updates[`${path}/dataBaixa`] = timestamp;
-        updates[`${path}/bancoDestino`] = 'Horizon Bank (Automático)';
-        updates[`${path}/auditoria`] = {
-            validadoPor: '🤖 Robô de Automação (RPA)',
-            metodo: 'Conciliação em Lote (Batch)',
-            hashValidado: fatura.codigoHash, // O Robô "lê" o hash correto automaticamente
-            arquivoComprovante: 'comprovante_automatico_lote.pdf',
-            dataAuditoria: timestamp
-        };
-    });
-
+    console.log("🚀 Botão acionado! Enviando sinal para o Python...");
     try {
-        await update(ref(db), updates);
-        // Não precisa de alert, a atualização visual será instantânea via socket
+        await set(ref(db, `fila_automacao/${user.uid}`), {
+            nome: user.displayName || "Apresentador",
+            timestamp: Date.now(),
+            acao: "CONCILIAR_PENDENTES",
+            qtd_pendencias: pendentes.length // Manda 0 se não tiver nada, mas manda o sinal!
+        });
+        
+        if (pendentes.length === 0) {
+            alert("⚠️ Sem pendências, mas acionando Robô para DEMONSTRAÇÃO VISUAL.");
+        } else {
+            alert(`🤖 Robô acionado! Processando ${pendentes.length} itens.`);
+        }
     } catch (error) {
-        alert("Erro na automação: " + error.message);
+        console.error("Erro ao chamar automação:", error);
+        alert("Erro ao conectar com o robô.");
     }
   };
 
-  // 3. FILTROS E MODAL MANUAL (O PROCESSO "CHATO")
   const faturasFiltradas = faturas.filter(fatura => {
     const termo = busca.toLowerCase();
     const valorString = fatura.valor ? fatura.valor.toString() : '';
@@ -116,7 +97,6 @@ export default function Conciliacao() {
   const solicitarBaixaManual = (fatura) => {
     if (fatura.firebaseKey === undefined) return;
     setFaturaSelecionada(fatura);
-    // Limpa campos para obrigar o usuário a digitar (demonstrar trabalho manual)
     setDataPagamento('');
     setBancoDestino('');
     setInputCodigo('');
@@ -135,7 +115,6 @@ export default function Conciliacao() {
     if (!faturaSelecionada) return;
     setErroValidacao('');
 
-    // Validação Manual Rigorosa
     const hashCorreto = faturaSelecionada.codigoHash;
     if (!inputCodigo || inputCodigo.trim().toUpperCase() !== hashCorreto) {
       setErroValidacao(`❌ Código incorreto! (Dica: é ${hashCorreto})`);
@@ -186,7 +165,6 @@ export default function Conciliacao() {
 
         <div className="tech-scroll-content">
           
-          {/* ÁREA MÁGICA: SÓ APARECE SE O MODO ESTIVER ATIVO */}
           {modoApresentacaoAtivo && (
              <div style={{
                background: 'linear-gradient(90deg, #059669 0%, #047857 100%)',
@@ -206,6 +184,7 @@ export default function Conciliacao() {
                    O robô identificou {faturas.filter(f => f.status === 'Pendente').length} pendências prontas para processamento.
                  </p>
                </div>
+               
                <button 
                  onClick={executarAutomacaoEmMassa}
                  className="btn-magic-tech"
@@ -276,7 +255,6 @@ export default function Conciliacao() {
                       </td>
                       <td>
                         {fatura.status === 'Pendente' && (
-                           // Botão Manual SEMPRE disponível (para mostrar o jeito "velho")
                            <button className="btn-action-tech" onClick={() => solicitarBaixaManual(fatura)}>
                              Auditar
                            </button>
@@ -292,7 +270,6 @@ export default function Conciliacao() {
         </div>
       </main>
 
-      {/* MODAL MANUAL (Mantido para a demo do "antes") */}
       {showModal && faturaSelecionada && (
         <div className="modal-overlay-tech">
           <div className="modal-glass" style={{maxWidth: '600px'}}>
