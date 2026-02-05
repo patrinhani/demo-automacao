@@ -163,12 +163,18 @@ export default function DevTools() {
     addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
   };
 
-  const limparCasosRH = () => {
-    set(ref(db, 'rh/erros_ponto'), null);
-    addLog("🗑️ Casos RH limpos.");
+  // --- CORREÇÃO AQUI: Limpa DB e LocalStorage ---
+  const limparCasosRH = async () => {
+    try {
+        await set(ref(db, 'rh/erros_ponto'), null);
+        localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
+        addLog("🗑️ Casos RH e lista de chats limpos.");
+    } catch (e) {
+        addLog(`❌ Erro: ${e.message}`);
+    }
   };
 
-  // --- NOVA FUNÇÃO: LIMPAR CHATS ---
+  // --- CORREÇÃO AQUI: Limpa DB e LocalStorage ---
   const limparChats = async () => {
     if(!window.confirm("⚠️ TEM CERTEZA? Isso excluirá o histórico de TODOS os chats!")) return;
     try {
@@ -176,12 +182,16 @@ export default function DevTools() {
       updates['chats/direto'] = null; // Limpa chats privados
       updates['chats/geral'] = null;  // Limpa chat geral
       await update(ref(db), updates);
-      addLog("💬 TODOS os Chats foram excluídos.");
+      
+      localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
+      
+      addLog("💬 TODOS os Chats e contatos foram excluídos.");
     } catch (e) {
       addLog(`❌ Erro ao limpar chats: ${e.message}`);
     }
   };
 
+  // --- CORREÇÃO AQUI: Reset Total ---
   const limparTudo = async () => {
     if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
     const updates = {};
@@ -193,10 +203,13 @@ export default function DevTools() {
     updates[`rh/erros_ponto`] = null;
     updates[`users/${userProfile.uid}/financeiro/faturas`] = null;
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
-    updates['chats/direto'] = null; // Adicionado ao Limpar Tudo também
-    updates['chats/geral'] = null;  // Adicionado ao Limpar Tudo também
+    updates['chats/direto'] = null; 
+    updates['chats/geral'] = null;  
+    
     await update(ref(db), updates);
-    addLog("☠️ WIPEOUT: Todos os dados de teste removidos.");
+    localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
+    
+    addLog("☠️ WIPEOUT: Todos os dados e cache limpos.");
   };
 
   return (

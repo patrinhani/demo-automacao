@@ -445,3 +445,98 @@ html, body {
     transform: translateX(0);
   }
 }
+/* Barra de Pesquisa tipo Teams */
+.chat-search-wrapper {
+  padding: 15px 10px 5px;
+  position: relative;
+  z-index: 100;
+}
+
+.chat-search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 12px 8px 30px; /* Espaço para o ícone */
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  transition: 0.3s;
+}
+
+.chat-search-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #a855f7;
+}
+
+.search-icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-40%);
+  color: #94a3b8;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+/* Dropdown de Resultados */
+.search-results-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 10px;
+  right: 10px;
+  background: #1e1e2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 200;
+  margin-top: 5px;
+}
+
+.search-result-item {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: 0.2s;
+}
+
+.search-result-item:hover {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.result-avatar {
+  width: 30px;
+  height: 30px;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.result-cargo {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}

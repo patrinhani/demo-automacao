@@ -7,7 +7,8 @@ import { ref, onValue, update, set } from 'firebase/database';
 import './Conciliacao.css';
 
 export default function Conciliacao() {
-  const { user } = useUser();
+  // 1. MUDANÇA: Pegamos uidAtivo do contexto
+  const { user, uidAtivo } = useUser();
   const navigate = useNavigate();
   
   const [faturas, setFaturas] = useState([]);
@@ -25,9 +26,13 @@ export default function Conciliacao() {
   const [bancoDestino, setBancoDestino] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    // 2. MUDANÇA: Verificamos uidAtivo ao invés de user.uid
+    if (!uidAtivo) return;
 
-    const faturasRef = ref(db, `users/${user.uid}/financeiro/faturas`);
+    // 3. MUDANÇA: Usamos uidAtivo no caminho do banco
+    // Isso garante que o Robô leia os dados de quem solicitou (target_uid)
+    const faturasRef = ref(db, `users/${uidAtivo}/financeiro/faturas`);
+    
     const unsubscribeFaturas = onValue(faturasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -54,32 +59,29 @@ export default function Conciliacao() {
       unsubscribeFaturas();
       unsubscribeDemo();
     };
-  }, [user]);
+  }, [uidAtivo]); // 4. MUDANÇA: Dependência atualizada
 
-  // --- FUNÇÃO ATUALIZADA (SEM TRAVA) ---
+  // --- O RESTANTE DO CÓDIGO PERMANECE VISUALMENTE IDÊNTICO ---
+
   const executarAutomacaoEmMassa = async () => {
     const pendentes = faturas.filter(f => f.status === 'Pendente');
-    
-    // REMOVIDO O BLOQUEIO: if (pendentes.length === 0) { ... }
-    // Agora o robô roda mesmo se a lista estiver vazia, só para demonstrar o navegador abrindo.
-
-    console.log("🚀 Botão acionado! Enviando sinal para o Python...");
+    console.log("🚀 Botão acionado! Enviando sinal...");
     try {
-        await set(ref(db, `fila_automacao/${user.uid}`), {
+        // Usamos uidAtivo para garantir que a fila receba o ID correto
+        await set(ref(db, `fila_automacao/${uidAtivo}`), { 
             nome: user.displayName || "Apresentador",
             timestamp: Date.now(),
             acao: "CONCILIAR_PENDENTES",
-            qtd_pendencias: pendentes.length // Manda 0 se não tiver nada, mas manda o sinal!
+            qtd_pendencias: pendentes.length 
         });
         
         if (pendentes.length === 0) {
-            alert("⚠️ Sem pendências, mas acionando Robô para DEMONSTRAÇÃO VISUAL.");
+            alert("⚠️ Sem pendências, mas acionando Robô para DEMO.");
         } else {
-            alert(`🤖 Robô acionado! Processando ${pendentes.length} itens.`);
+            alert(`🤖 Robô acionado!`);
         }
     } catch (error) {
-        console.error("Erro ao chamar automação:", error);
-        alert("Erro ao conectar com o robô.");
+        console.error("Erro:", error);
     }
   };
 
@@ -128,7 +130,9 @@ export default function Conciliacao() {
 
     const key = faturaSelecionada.firebaseKey;
     const updates = {};
-    const basePath = `users/${user.uid}/financeiro/faturas/${key}`;
+    
+    // 5. MUDANÇA: Usamos uidAtivo para salvar a baixa no lugar certo
+    const basePath = `users/${uidAtivo}/financeiro/faturas/${key}`;
     
     updates[`${basePath}/status`] = 'Conciliado';
     updates[`${basePath}/dataBaixa`] = dataPagamento || new Date().toISOString();
@@ -158,7 +162,7 @@ export default function Conciliacao() {
             <p>Auditoria Cruzada e Baixa de Títulos</p>
           </div>
           <div className="tech-profile">
-             <div className="profile-info"><span className="name">Financeiro</span></div>
+             <div className="profile-info"><span className="name">{user?.displayName || 'Financeiro'}</span></div>
              <div className="profile-avatar">FN</div>
           </div>
         </header>

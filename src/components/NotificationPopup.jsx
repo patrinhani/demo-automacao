@@ -5,30 +5,34 @@ import { ref, onValue } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
 import './NotificationPopup.css';
 
-// Som "Plink" (Base64) - Curto e limpo
-const SOM_BASE64 = "data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7c1/0xLe3+x2QTXj8/0QGL181NSueutjn//uQRAAABXMwdT0EYAAW4MHT9BGAAJJGl08gAAAAkwaXTyAAAAAmJqj/COAJpmn/we5wP+Cn/wU//7cXS/3Xj/WCPA/AwPAWASLLZIlxaraCBIDrj0J+Ev+Ln/7cI/3Cn/FwAAAAASkU////+7aeDf//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAABvxPAgQAAAAASOAEAAIBCAQAAE7QAAADBwAAECgAAAAOAEAAIAXAAAAo4AAEAgAAAAAA//uQRAAAABiwNH1CMAAGLA0fUIwAAWJMHT9BGABYkwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg//uQRAAAABiZNB9CMAAGJk0H0IwAAXYMHT9BGABFwwdP0EYAAAB3gQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAgAAAAAAgQAAg";
+// CAMINHO DO ARQUIVO DE SOM NA PASTA PUBLIC
+// Certifique-se de que o arquivo "notificacao.mp3" existe dentro da pasta "public"
+const CAMINHO_SOM = "/notificacao.mp3";
 
 export default function NotificationPopup() {
   const [notification, setNotification] = useState(null); 
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   
-  const audioRef = useRef(new Audio(SOM_BASE64));
+  // Cria a referência de áudio apontando para o arquivo real
+  const audioRef = useRef(new Audio(CAMINHO_SOM));
   const timestampsRef = useRef({}); 
 
   // --- 1. CONFIGURAÇÃO E DESBLOQUEIO ---
   useEffect(() => {
+    // Tenta carregar o áudio para garantir que está pronto
+    audioRef.current.load();
     audioRef.current.volume = 1.0;
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
 
-    // Função que tenta destravar o áudio
+    // Função que tenta destravar o áudio (Autoplay Policy)
     const unlockAudio = () => {
       if(audioRef.current) {
+        // Tenta tocar e pausar imediatamente só para desbloquear
         audioRef.current.play().then(() => {
-          // Se tocou, pausa e reseta. Sucesso!
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
           
@@ -37,13 +41,13 @@ export default function NotificationPopup() {
           document.removeEventListener('keydown', unlockAudio);
           console.log("🔊 Áudio desbloqueado com sucesso!");
         }).catch((e) => {
-          // Se falhar, NÃO remove os listeners. Tenta no próximo clique.
-          console.log("Ainda bloqueado, aguardando interação...", e);
+          // Se falhar (ex: usuário ainda não interagiu o suficiente), mantém os listeners
+          // Não imprimimos erro aqui para não sujar o console, pois é esperado falhar no início
         });
       }
     };
 
-    // Adiciona os ouvintes globais
+    // Adiciona os ouvintes globais para destravar o som na primeira interação
     document.addEventListener('click', unlockAudio);
     document.addEventListener('keydown', unlockAudio);
 
@@ -67,12 +71,12 @@ export default function NotificationPopup() {
     // Tenta tocar o som
     if(audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.warn("Som bloqueado:", e));
+      audioRef.current.play().catch(e => console.warn("Som não pôde ser tocado:", e));
     }
 
     setNotification({ title: titulo, msg: texto });
     
-    // Limpa notificação anterior se houver timer rodando (opcional, mas bom)
+    // Limpa notificação anterior se houver timer rodando
     const timer = setTimeout(() => setNotification(null), 5000);
     return () => clearTimeout(timer);
   };
@@ -111,6 +115,7 @@ export default function NotificationPopup() {
           if (chatId.includes(user.uid)) {
             const msgs = Object.values(data.direto[chatId]);
             const ultima = msgs[msgs.length - 1];
+            // Remove meu ID para achar o ID do outro
             const outroId = chatId.replace(user.uid, '').replace('_', '');
             
             if (ultima && ultima.timestamp > (timestampsRef.current[outroId] || 0)) {
