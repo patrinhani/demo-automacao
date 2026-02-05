@@ -114,7 +114,7 @@ export default function ChatInterno() {
               else return;
           }
 
-          const tempoEspera = Math.floor(Math.random() * (90000 - 15000 + 1) + 15000);
+          const tempoEspera = Math.floor(Math.random() * (60000 - 15000 + 1) + 60000);
           console.log(`🤖 Resposta agendada para ${mockNome} (${mockId}) em ${tempoEspera/1000}s`);
 
           const timerId = setTimeout(async () => {
