@@ -14,7 +14,9 @@ export default function FolhaPonto() {
   const [horaAtual, setHoraAtual] = useState(new Date());
   const [dataHoje, setDataHoje] = useState(new Date());
   const [modoGestao, setModoGestao] = useState(false);
+  
   const [isRH, setIsRH] = useState(false);
+  const [isCEO, setIsCEO] = useState(false); // NOVO ESTADO: Identifica Chefia
   const [listaPendencias, setListaPendencias] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
@@ -32,8 +34,15 @@ export default function FolhaPonto() {
               const setor = (userData.setor || '').toLowerCase();
               const cargo = (userData.cargo || '').toLowerCase();
               const role = userData.role || '';
+              
+              // Verifica se é RH
               if(setor.includes('recursos humanos') || setor.includes('rh') || cargo.includes('c.e.o') || role === 'admin') {
                   setIsRH(true);
+              }
+
+              // LÓGICA DE EXCEÇÃO (YAN E GUI): Se for CEO/Diretoria/Admin, pode tudo.
+              if (cargo.includes('ceo') || cargo.includes('diretoria') || role === 'admin') {
+                  setIsCEO(true);
               }
           }
       });
@@ -75,14 +84,13 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  // --- LÓGICA DE REGISTRO MODIFICADA PARA INTEGRAR COM O RH ---
+  // REGISTRO DE PONTO (INTEGRADO AO RH)
   const registrarPonto = async (tipo) => {
     if (!user) return;
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
     
     try {
-      // 1. Registra o ponto normalmente no perfil do usuário
       const updates = { 
           [tipo]: horarioFormatado, 
           userId: user.uid, 
@@ -92,36 +100,23 @@ export default function FolhaPonto() {
       
       await update(ref(db, `ponto/${user.uid}/${dateKey}`), updates);
       
-      // 2. MAGIA: Verifica se esse usuário tem um chamado aberto no RH por "Esquecimento Real"
-      // Se tiver, atualizamos o chamado para que o RH veja o ponto registrado na hora!
+      // Integração com RH: Atualiza o caso se existir e muda status para Respondido
       const casoRhRef = ref(db, `rh/erros_ponto/${user.uid}`);
       const casoSnap = await get(casoRhRef);
-      
       if (casoSnap.exists()) {
           const casoData = casoSnap.val();
-          // Só atualiza se o caso não estiver concluído
           if (casoData.status !== 'Concluido') {
-             // Atualiza o objeto 'pontos' dentro do chamado do RH com o novo registro
              const novosPontos = { ...casoData.pontos, [tipo === 'entrada' ? 'e' : tipo === 'almoco_ida' ? 'si' : tipo === 'almoco_volta' ? 'vi' : 's']: horarioFormatado };
-             
-             // Muda status para "Respondido" (para ficar verde lá pro RH)
-             await update(casoRhRef, { 
-                 pontos: novosPontos,
-                 status: 'Respondido' // Isso faz aparecer o botão "Baixar" pro RH
-             });
+             await update(casoRhRef, { pontos: novosPontos, status: 'Respondido' });
           }
       }
 
       alert(`Ponto registrado: ${horarioFormatado}`);
 
-    } catch (error) { 
-        console.error(error);
-        alert("Erro ao registrar ponto."); 
-    }
+    } catch (error) { alert("Erro ao registrar ponto."); }
   };
 
   const irParaChatComUsuario = (usuarioFicticio) => {
-      // Adiciona na lista de contatos (seja mock ou real)
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
       if (!mocksAtivos.find(u => u.id === usuarioFicticio.id)) {
           mocksAtivos.push({
@@ -132,7 +127,6 @@ export default function FolhaPonto() {
           });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
-      
       update(ref(db, `rh/erros_ponto/${usuarioFicticio.id}`), { status: 'Notificado' });
       navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
   };
@@ -146,7 +140,17 @@ export default function FolhaPonto() {
   };
 
   const renderAcao = (item) => {
-      // Se for um "Esquecimento Real", a lógica de "Respondido" é acionada quando o usuário bate o ponto real
+      // --- REGRA DE SEGURANÇA (NOVO) ---
+      // Se o usuário logado for o dono do erro, E ele não for CEO/Diretoria:
+      // BLOQUEIA O BOTÃO.
+      if (item.id === user.uid && !isCEO) {
+          return (
+              <span style={{color: '#ef4444', fontSize:'0.7rem', fontWeight:'bold', display:'block', maxWidth:'80px', textAlign:'center'}}>
+                  🚫 Proibido Auto-abonar
+              </span>
+          );
+      }
+
       if (item.status === 'Respondido') {
           return (
               <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
@@ -175,14 +179,10 @@ export default function FolhaPonto() {
         
         {isRH && (
             <div className="toggle-rh-container">
-                <button 
-                    className={`toggle-btn ${!modoGestao ? 'active' : ''}`} 
-                    onClick={() => setModoGestao(false)}>
+                <button className={`toggle-btn ${!modoGestao ? 'active' : ''}`} onClick={() => setModoGestao(false)}>
                     👤 Meu Ponto
                 </button>
-                <button 
-                    className={`toggle-btn ${modoGestao ? 'active' : ''}`} 
-                    onClick={() => setModoGestao(true)}>
+                <button className={`toggle-btn ${modoGestao ? 'active' : ''}`} onClick={() => setModoGestao(true)}>
                     👮 Gestão RH 
                     {listaPendencias.length > 0 && <span className="badge-alert">{listaPendencias.length}</span>}
                 </button>
@@ -193,7 +193,6 @@ export default function FolhaPonto() {
       </header>
 
       <div className="ponto-container">
-        
         {!modoGestao && (
             <>
                 <div className="clock-card glass-effect">
@@ -201,7 +200,6 @@ export default function FolhaPonto() {
                   <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
                   <div className="status-badge-ponto">Online • Sincronizado</div>
                 </div>
-
                 <div className="registers-grid">
                   {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => (
                     <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''}`}>
@@ -222,22 +220,16 @@ export default function FolhaPonto() {
                     <h3>🔍 Auditoria de Inconsistências</h3>
                     <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
                 </div>
-
                 <div className="tabela-rh-wrapper">
                     <table className="tech-table">
                         <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
                         <tbody>
                             {listaPendencias.map(item => {
                                 let pontosVisuais = item.pontos || {};
-
                                 if (item.status === 'Respondido') {
-                                    if (item.erro === 'Atraso Excessivo') {
+                                    if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
                                         pontosVisuais = item.pontos;
-                                    }
-                                    else if (item.erro === 'Falta Injustificada') {
-                                        pontosVisuais = item.pontos;
-                                    }
-                                    else {
+                                    } else {
                                         pontosVisuais = {
                                             e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
                                             si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
@@ -246,12 +238,9 @@ export default function FolhaPonto() {
                                         };
                                     }
                                 }
-                                
-                                // Para o CASO REAL, queremos ver exatamente o que ele registrou
                                 if (item.erro === 'Esquecimento Real') {
                                    pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
                                 }
-
                                 return (
                                     <tr key={item.id}>
                                         <td>
@@ -263,26 +252,16 @@ export default function FolhaPonto() {
                                         <td><div className="erro-badge">{item.erro}</div></td>
                                         <td>
                                             <div className="timeline-ponto">
-                                                <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}>
-                                                    <span className="lbl">E</span>{pontosVisuais.e || '---'}
-                                                </div>
+                                                <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
                                                 <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}>
-                                                    <span className="lbl">SI</span>{pontosVisuais.si || '---'}
-                                                </div>
+                                                <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
                                                 <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}>
-                                                    <span className="lbl">VI</span>{pontosVisuais.vi || '---'}
-                                                </div>
+                                                <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
                                                 <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}>
-                                                    <span className="lbl">S</span>{pontosVisuais.s || '---'}
-                                                </div>
+                                                <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
                                             </div>
                                         </td>
-                                        <td>
-                                            {renderAcao(item)}
-                                        </td>
+                                        <td>{renderAcao(item)}</td>
                                     </tr>
                                 );
                             })}

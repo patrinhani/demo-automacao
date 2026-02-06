@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import './TeamsNotification.css'; // Vamos criar o CSS abaixo
+import './TeamsNotification.css';
 
 export default function TeamsNotification({ show, onClose, title, message }) {
   if (!show) return null;
@@ -18,9 +18,7 @@ export default function TeamsNotification({ show, onClose, title, message }) {
           <p>{message}</p>
         </div>
       </div>
-      <div className="teams-footer">
-        <button className="teams-btn-reply" onClick={onClose}>Responder</button>
-      </div>
+      {/* RODAPÉ REMOVIDO PARA NÃO TER BOTÕES */}
     </div>
   );
 }

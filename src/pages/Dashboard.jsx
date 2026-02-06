@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import TeamsNotification from '../components/TeamsNotification'; 
 import { db } from '../firebase';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get, set } from 'firebase/database';
 import { useUser } from '../contexts/UserContext'; 
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   
-  // CORREÇÃO 1: Pegamos 'uidAtivo' para garantir que vemos os dados de quem estamos simulando
   const { user, isAdmin, uidAtivo } = useUser();
 
   const [userProfile, setUserProfile] = useState({ nome: '...', cargo: '...' });
@@ -20,13 +20,14 @@ export default function Dashboard() {
   const [contagemGeral, setContagemGeral] = useState(0);
   const [proxFerias, setProxFerias] = useState('---');
 
-  // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Agora usa uidAtivo
+  // Estado para notificação Teams
+  const [showTeams, setShowTeams] = useState(false);
+  const [contagemReembolsos, setContagemReembolsos] = useState(0);
+
+  // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Baseado no uidAtivo
   useEffect(() => {
-    if (!uidAtivo) return; // Só busca se tiver um ID ativo definido
-    
-    // CORREÇÃO 2: Busca no caminho do uidAtivo, não do user.uid
+    if (!uidAtivo) return; 
     const userRef = ref(db, `users/${uidAtivo}`);
-    
     onValue(userRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -38,28 +39,23 @@ export default function Dashboard() {
     });
   }, [uidAtivo]);
 
-  // 2. TAREFAS (Sempre pessoais do uidAtivo)
+  // 2. TAREFAS
   useEffect(() => {
     if (!uidAtivo) return;
     const tarefasRef = ref(db, 'tarefas');
     onValue(tarefasRef, (snapshot) => {
       if (snapshot.exists()) {
-        const total = Object.values(snapshot.val())
-          // CORREÇÃO 3: Filtra pelo uidAtivo
-          .filter(t => t.userId === uidAtivo && t.status !== 'done').length;
-        setContagemTarefas(total);
+        setContagemTarefas(Object.values(snapshot.val()).filter(t => t.userId === uidAtivo && t.status !== 'done').length);
       } else {
         setContagemTarefas(0);
       }
     });
   }, [uidAtivo]);
 
-  // 3. FÉRIAS (Sempre pessoais do uidAtivo)
+  // 3. FÉRIAS
   useEffect(() => {
     if (!uidAtivo) return;
-    // CORREÇÃO 4: Busca férias do uidAtivo
-    const feriasRef = ref(db, `ferias/${uidAtivo}`);
-    onValue(feriasRef, (snapshot) => {
+    onValue(ref(db, `ferias/${uidAtivo}`), (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const lista = Object.values(data).sort((a, b) => new Date(b.dataInicio) - new Date(a.dataInicio));
@@ -72,131 +68,101 @@ export default function Dashboard() {
     });
   }, [uidAtivo]);
 
-  // 4. CONTADORES REATIVOS AO PERFIL
+  // 4. PENDÊNCIAS
   useEffect(() => {
     if (!uidAtivo) return;
+    const filterFunc = (s) => !s || ['pendente','em analise','solicitado','aguardando'].includes(s.toLowerCase());
 
-    const isPendente = (s) => {
-        if (!s) return true;
-        return ['pendente', 'em analise', 'em análise', 'solicitado', 'aguardando'].includes(s.toLowerCase());
-    };
-
-    // A. Viagens
     const unsubViagens = onValue(ref(db, 'viagens'), (snap) => {
         let c = 0;
         if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(uid => {
-                const userTrips = data[uid];
-                Object.values(userTrips).forEach(trip => {
-                    if (isPendente(trip.status)) {
-                        // Se for Admin, conta tudo. Se não, só as do uidAtivo.
-                        if (isAdmin) c++;
-                        else if (uid === uidAtivo) c++; // CORREÇÃO 5
-                    }
-                });
-            });
+            Object.entries(snap.val()).forEach(([uid, viags]) => Object.values(viags).forEach(v => {
+                if (filterFunc(v.status) && (isAdmin || uid === uidAtivo)) c++;
+            }));
         }
         setContagemViagens(c);
     });
 
-    // B. Solicitações Gerais
     const unsubGerais = onValue(ref(db, 'solicitacoes'), (snap) => {
       let c = 0;
       if (snap.exists()) {
-        const data = snap.val();
-        Object.values(data).forEach(categoria => {
-           if (typeof categoria === 'object') {
-               Object.values(categoria).forEach(item => {
-                   if (isPendente(item.status)) {
-                       if (isAdmin) c++;
-                       else if (item.userId === uidAtivo) c++; // CORREÇÃO 6
-                   }
-               });
-           }
-        });
+        Object.values(snap.val()).forEach(cat => Object.values(cat).forEach(i => {
+            if (filterFunc(i.status) && (isAdmin || i.userId === uidAtivo)) c++;
+        }));
       }
-      setContagemGeral(prev => c); 
+      setContagemGeral(c); 
     });
     
-    return () => { unsubViagens(); unsubGerais(); };
-  }, [uidAtivo, isAdmin]); // Depende de uidAtivo agora
+    const unsubReembolsos = onValue(ref(db, 'reembolsos'), (snap) => {
+      let c = 0;
+      if (snap.exists()) {
+          Object.values(snap.val()).forEach(i => {
+              if (i.status === 'em_analise' && (isAdmin || i.userId === uidAtivo)) c++;
+          });
+      }
+      setContagemReembolsos(c);
+    });
+    
+    return () => { unsubViagens(); unsubGerais(); unsubReembolsos(); };
+  }, [uidAtivo, isAdmin]); 
 
-  // Recriando o listener de reembolsos
-  const [contagemReembolsos, setContagemReembolsos] = useState(0);
+  // 5. MONITORAMENTO DE PONTO (TIMER 40s)
   useEffect(() => {
-      if(!uidAtivo) return;
-      return onValue(ref(db, 'reembolsos'), (snap) => {
-        let c = 0;
-        if (snap.exists()) {
-            Object.values(snap.val()).forEach(item => {
-                const pendente = item.status === 'em_analise';
-                // CORREÇÃO 7: Filtro final
-                if (isAdmin ? pendente : (item.userId === uidAtivo && pendente)) c++;
-            });
+    if (!user) return;
+    const verificarPonto = async () => {
+        const hoje = new Date().toISOString().split('T')[0];
+        const pontoRef = ref(db, `ponto/${user.uid}/${hoje}`);
+        const snapshot = await get(pontoRef);
+
+        if (!snapshot.exists() || !snapshot.val().entrada) {
+            console.log("⏳ Timer 40s iniciado...");
+            const timer = setTimeout(async () => {
+                const checkAgain = await get(pontoRef);
+                if (!checkAgain.exists() || !checkAgain.val().entrada) {
+                    setShowTeams(true); // ATIVA O ALERTA
+                    
+                    const userRef = ref(db, `users/${user.uid}`);
+                    const userSnap = await get(userRef);
+                    const userData = userSnap.val() || {};
+                    await set(ref(db, `rh/erros_ponto/${user.uid}`), {
+                        nome: userData.nome || user.email,
+                        cargo: userData.cargo || 'Colaborador',
+                        setor: userData.setor || 'Geral',
+                        data: 'Hoje',
+                        erro: 'Esquecimento Real',
+                        status: 'Pendente',
+                        pontos: { e: '---', si: '---', vi: '---', s: '---' },
+                        timestamp: Date.now()
+                    });
+                }
+            }, 40000);
+            return () => clearTimeout(timer);
         }
-        setContagemReembolsos(c);
-      });
-  }, [uidAtivo, isAdmin]);
+    };
+    verificarPonto();
+  }, [user]);
 
-
-  // SOMA TOTAL PARA O CARD
   const totalSolicitacoes = contagemReembolsos + contagemViagens + contagemGeral;
 
-  // --- CONFIGURAÇÃO DOS CARDS ---
   const stats = [
     { titulo: 'Tarefas Pendentes', valor: contagemTarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)', rota: '/tarefas' },
-    { 
-        titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
-        valor: totalSolicitacoes.toString(), 
-        icon: isAdmin ? '✅' : '📂', 
-        cor: 'var(--neon-purple)', 
-        rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes' 
-    },
+    { titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', valor: totalSolicitacoes.toString(), icon: isAdmin ? '✅' : '📂', cor: 'var(--neon-purple)', rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes' },
     { titulo: 'Próx. Férias', valor: proxFerias, icon: '🌴', cor: 'var(--neon-green)', rota: '/ferias' },
   ];
 
   const acessos = [
-    ...(isAdmin ? [
-      { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
-      { titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' },
-      { titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' } 
-    ] : []),
-    
-    { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
-    { titulo: 'Minhas Tarefas', desc: 'Organização de tarefas', icon: '⚡', rota: '/tarefas' },
-    { titulo: 'Reembolsos', desc: 'Solicitar Reembolso', icon: '💸', rota: '/solicitacao' },
-    { titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' },
-    { titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
-    { titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
-    { titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },
-    { titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },
-    { titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
-    { titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },
-    { titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
+    ...(isAdmin ? [{ titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },{ titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' },{ titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' }] : []),
+    { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },{ titulo: 'Minhas Tarefas', desc: 'Organização de tarefas', icon: '⚡', rota: '/tarefas' },{ titulo: 'Reembolsos', desc: 'Solicitar Reembolso', icon: '💸', rota: '/solicitacao' },{ titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' },{ titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },{ titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },{ titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },{ titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },{ titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },{ titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },{ titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },{ titulo: 'TechBank', desc: 'Conta Salário', icon: '🏦', rota: '/banco-login' }
   ];
 
   return (
     <div className="tech-layout">
-      {/* Luzes de Fundo */}
-      <div className="ambient-light light-1"></div>
-      <div className="ambient-light light-2"></div>
-      <div className="ambient-light light-3"></div>
-      <div className="ambient-light light-4"></div>
+      <div className="ambient-light light-1"></div><div className="ambient-light light-2"></div><div className="ambient-light light-3"></div><div className="ambient-light light-4"></div>
       
       <Sidebar />
       
       <main className="tech-main">
-        {/* BARRA DE DEBUG PARA VOCÊ TER CERTEZA (OPCIONAL) */}
-        {uidAtivo && (
-          <div style={{
-            position:'fixed', bottom:0, right:0, 
-            background:'rgba(0,0,0,0.8)', color:'#0f0', 
-            padding:'5px 10px', fontSize:'10px', zIndex:9999
-          }}>
-            SIMULANDO: {userProfile.nome} ({uidAtivo})
-          </div>
-        )}
+        {/* BARRA DE DEBUG REMOVIDA DAQUI */}
 
         <header className="tech-header">
           <div className="header-content">
@@ -205,7 +171,6 @@ export default function Dashboard() {
           </div>
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
-              {/* CORREÇÃO VISUAL: Agora exibe os dados carregados do perfil correto */}
               <span className="name">{userProfile.nome}</span>
               <span className="role">{userProfile.cargo}</span>
             </div>
@@ -247,6 +212,13 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
+
+      <TeamsNotification 
+        show={showTeams} 
+        onClose={() => setShowTeams(false)}
+        title="RH - Monitoramento Automático"
+        message="Detectamos uma inconsistência no seu registro de ponto (Ausência de Entrada). Em breve o RH entrará em contato."
+      />
     </div>
   );
 }
