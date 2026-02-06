@@ -30,9 +30,8 @@ def abrir_navegador_teste(nome_usuario, uid_alvo):
         
         nome_safe = urllib.parse.quote(nome_usuario)
         
-        # --- IMPORTANTE: Apontando para LOCALHOST ---
-        # Se o seu site roda em outra porta (ex: 3000), mude aqui!
-        link = f"http://localhost:5173/login?auth_bypass=true&dono={nome_safe}&target_uid={uid_alvo}"
+        # --- URL CORRIGIDA: Apontando para a raiz (/) para manter os parâmetros ---
+        link = f"http://localhost:5173/?auth_bypass=true&dono={nome_safe}&target_uid={uid_alvo}"
         
         print(f"   -> Acessando URL Mágica: {link}")
         page.goto(link) 
@@ -53,8 +52,8 @@ def abrir_navegador_teste(nome_usuario, uid_alvo):
             time.sleep(15)
             
         except Exception as e:
-            print("   -> ⚠️ O robô travou no login!")
-            print("   -> DICA: Olhe o navegador aberto. Se tiver erro vermelho no login, é senha ou usuário inexistente.")
+            print("   -> ⚠️ O robô travou no login ou não achou a dashboard!")
+            print(f"   -> Erro detalhado: {e}")
             time.sleep(20) # Deixa aberto pra você ler o erro na tela
             
         browser.close()
@@ -62,6 +61,8 @@ def abrir_navegador_teste(nome_usuario, uid_alvo):
 
 def ouvir_fila():
     ref_fila = db.reference('fila_automacao')
+    
+    # Limpa a fila ao iniciar para não processar comandos antigos
     ref_fila.set({}) 
     print("👀 Aguardando clique no site...")
     
@@ -71,9 +72,12 @@ def ouvir_fila():
             updates = {}
             for uid, dados in pedidos.items():
                 abrir_navegador_teste(dados.get('nome', 'Usuário'), uid)
+                # Marca para remoção
                 updates[f"fila_automacao/{uid}"] = None
+            
             if updates:
                 db.reference().update(updates)
+        
         time.sleep(0.5)
 
 if __name__ == "__main__":

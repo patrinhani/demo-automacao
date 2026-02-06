@@ -6,30 +6,6 @@ import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
 import './DevTools.css';
 
-// --- EQUIPE COMPLETA (DADOS REAIS PARA O BANCO) ---
-const EQUIPE_RESTAURACAO = [
-    // USUÁRIO DE TESTE (FUNDAMENTAL)
-    { id: "user_teste_demo", nome: "Cadastro Teste", email: "teste@techcorp.com.br", cargo: "Usuário de Testes", setor: "TI" },
-    
-    // DIRETORIA
-    { id: "user_patrinhani", nome: "Guilherme Patrinhani", email: "guilherme.patrinhani@techcorp.com.br", cargo: "CEO", setor: "Diretoria" },
-    { id: "user_gabriel", nome: "Gabriel Silva", email: "gabriel.silva@techcorp.com.br", cargo: "CTO", setor: "Diretoria" },
-    { id: "user_joel", nome: "Joel Santos", email: "joel.santos@techcorp.com.br", cargo: "CFO", setor: "Diretoria" },
-    
-    // TI & DEV
-    { id: "user_yan", nome: "Yan Rodrigues", email: "yan.rodrigues@techcorp.com.br", cargo: "Dev Fullstack", setor: "TI" },
-    { id: "user_lucas", nome: "Lucas Mendes", email: "lucas.mendes@techcorp.com.br", cargo: "Dev Júnior", setor: "TI" },
-    
-    // RH
-    { id: "user_agatha", nome: "Agatha Oliveira", email: "agatha.moraes@techcorp.com.br", cargo: "Gerente RH", setor: "RH" },
-    { id: "user_karen", nome: "Karen Gentil", email: "karen.santos@techcorp.com.br", cargo: "BP RH", setor: "RH" },
-    { id: "user_auricia", nome: "Auricia Duarte", email: "auricia.araujo@techcorp.com.br", cargo: "Analista RH", setor: "RH" },
-    
-    // FINANCEIRO
-    { id: "user_carlos", nome: "Carlos Augusto", email: "carlos.amaral@techcorp.com.br", cargo: "Controller", setor: "Financeiro" },
-    { id: "user_nicolly", nome: "Nicolly Rufino", email: "nicolly.sa@techcorp.com.br", cargo: "Analista Fin.", setor: "Financeiro" }
-];
-
 // --- MASSA DE DADOS PARA RH (28 CASOS) ---
 const MOCKS_RH = [
   { nome: "Lucas Mendes", cargo: "Dev. Júnior", setor: "TI", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
@@ -187,67 +163,30 @@ export default function DevTools() {
     addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
   };
 
-  // --- AÇÃO DE RESTAURAÇÃO ---
-  const restaurarEquipe = async () => {
-      const updates = {};
-      
-      EQUIPE_RESTAURACAO.forEach(u => {
-          updates[`users/${u.id}`] = {
-              nome: u.nome,
-              email: u.email,
-              cargo: u.cargo,
-              setor: u.setor,
-              foto: null
-          };
-      });
-
-      // Garante que o usuário logado também exista
-      if (auth.currentUser) {
-          updates[`users/${auth.currentUser.uid}`] = {
-              nome: auth.currentUser.displayName || "Admin Logado",
-              email: auth.currentUser.email,
-              cargo: "Super Admin",
-              setor: "DevTools"
-          };
-      }
-
-      try {
-          await update(ref(db), updates);
-          addLog("✅ Equipe Restaurada! (Teste, CEO, Yan...)");
-      } catch (e) {
-          addLog(`❌ Erro: ${e.message}`);
-      }
-  };
-
-  // --- CORREÇÃO AQUI: Limpa DB e LocalStorage ---
+  // --- NOVA VERSÃO: Limpa Casos RH + Histórico de Chats do Firebase ---
   const limparCasosRH = async () => {
     try {
-        await set(ref(db, 'rh/erros_ponto'), null);
-        localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
-        addLog("🗑️ Casos RH e lista de chats limpos.");
+        const updates = {};
+        // 1. Limpa os casos do RH
+        updates['rh/erros_ponto'] = null;
+        
+        // 2. Limpa fisicamente os chats do banco de dados
+        updates['chats/direto'] = null;
+        updates['chats/geral'] = null;
+        
+        // Executa a remoção no Firebase
+        await update(ref(db), updates);
+
+        // 3. Limpa o cache local
+        localStorage.removeItem('mocksAtivos');
+        
+        addLog("🗑️ Casos RH e Histórico de Chats excluídos.");
     } catch (e) {
         addLog(`❌ Erro: ${e.message}`);
     }
   };
 
-  // --- CORREÇÃO AQUI: Limpa DB e LocalStorage ---
-  const limparChats = async () => {
-    if(!window.confirm("⚠️ TEM CERTEZA? Isso excluirá o histórico de TODOS os chats!")) return;
-    try {
-      const updates = {};
-      updates['chats/direto'] = null; // Limpa chats privados
-      updates['chats/geral'] = null;  // Limpa chat geral
-      await update(ref(db), updates);
-      
-      localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
-      
-      addLog("💬 TODOS os Chats e contatos foram excluídos.");
-    } catch (e) {
-      addLog(`❌ Erro ao limpar chats: ${e.message}`);
-    }
-  };
-
-  // --- CORREÇÃO AQUI: Reset Total ---
+  // --- RESET TOTAL ---
   const limparTudo = async () => {
     if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
     const updates = {};
@@ -261,10 +200,10 @@ export default function DevTools() {
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
     updates['chats/direto'] = null; 
     updates['chats/geral'] = null;  
-    updates['users'] = null; // Limpa também usuários para testar a restauração
+    updates['users'] = null; // Limpa usuários também
     
     await update(ref(db), updates);
-    localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
+    localStorage.removeItem('mocksAtivos'); 
     
     addLog("☠️ WIPEOUT: Todos os dados e cache limpos.");
   };
@@ -288,7 +227,6 @@ export default function DevTools() {
           <div className="user-info-dev">
             Usuário Alvo: <strong>{userProfile?.email || 'Carregando...'}</strong>
             <br />
-            {/* DEBUG VISUAL: Para ter certeza que o estado está mudando */}
             <span style={{fontSize: '0.8rem', opacity: 0.7, color: '#a855f7'}}>
               Status Atual: {simulatedSetor || 'Nenhum'} ({simulatedRole})
             </span>
@@ -321,7 +259,7 @@ export default function DevTools() {
                 </select>
               </div>
 
-              {/* Seletor de Setor (CORRIGIDO: Sem lógica bloqueante) */}
+              {/* Seletor de Setor */}
               <div style={{ width: '100%' }}>
                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Setor</label>
                 <select 
@@ -330,14 +268,10 @@ export default function DevTools() {
                   value={simulatedSetor || ''} 
                   onChange={(e) => switchSetor(e.target.value)}
                 >
-                  {/* Opção padrão */}
                   <option value="">Selecione...</option>
-                  
-                  {/* Opções Requisitadas */}
                   <option value="Financeiro">Financeiro</option>
                   <option value="Recursos Humanos">RH (Recursos Humanos)</option>
 
-                  {/* FALLBACK: Se o setor atual não for Financeiro nem RH, mostra ele aqui para não travar o campo */}
                   {simulatedSetor && simulatedSetor !== 'Financeiro' && simulatedSetor !== 'Recursos Humanos' && (
                     <option value={simulatedSetor} disabled>
                       {simulatedSetor} (Atual - Não listado)
@@ -356,26 +290,14 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD DE RESTAURAÇÃO (NOVO) */}
-          <div className="dev-card" style={{borderTop: '4px solid #10b981'}}>
-            <div className="card-icon" style={{background: '#10b981'}}>🚑</div>
-            <h3>Consertar Chat</h3>
-            <p>Recria os usuários (Teste, CEO, etc) no banco.</p>
-            <div className="dev-actions">
-                <button className="btn-gen" onClick={restaurarEquipe}>Restaurar Equipe</button>
-            </div>
-          </div>
-
-          {/* CARD RH */}
+          {/* CARD RH (Agora unificado com exclusão de chat) */}
           <div className="dev-card destaque-rh">
             <div className="card-icon">👮</div>
             <h3>Gestão RH (Mocks)</h3>
             <p>Gera os 28 funcionários fictícios.</p>
             <div className="dev-actions">
               <button className="btn-gen" onClick={gerarCasosRH}>+ Gerar 28 Casos</button>
-              <button className="btn-del" onClick={limparCasosRH}>🗑️ Limpar Casos</button>
-              {/* NOVO BOTÃO: EXCLUIR CHATS */}
-              <button className="btn-del" style={{background: '#ef4444', borderColor: '#ef4444', color: 'white', marginTop: '5px', width: '100%'}} onClick={limparChats}>💬 Excluir Chats</button>
+              <button className="btn-del" onClick={limparCasosRH}>🗑️ Limpar Casos & Chats</button>
             </div>
           </div>
 

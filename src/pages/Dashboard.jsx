@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
-import { useUser } from '../contexts/UserContext'; // <--- INTEGRADO AO CONTEXTO
+import { useUser } from '../contexts/UserContext'; 
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   
-  // Pegamos os dados globais do Contexto (incluindo o 'isAdmin' que muda dinamicamente)
-  const { user, isAdmin } = useUser();
+  // CORREÇÃO 1: Pegamos 'uidAtivo' para garantir que vemos os dados de quem estamos simulando
+  const { user, isAdmin, uidAtivo } = useUser();
 
   const [userProfile, setUserProfile] = useState({ nome: '...', cargo: '...' });
 
@@ -20,11 +20,13 @@ export default function Dashboard() {
   const [contagemGeral, setContagemGeral] = useState(0);
   const [proxFerias, setProxFerias] = useState('---');
 
-  // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Apenas cosmético
+  // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Agora usa uidAtivo
   useEffect(() => {
-    if (!user) return;
+    if (!uidAtivo) return; // Só busca se tiver um ID ativo definido
     
-    const userRef = ref(db, `users/${user.uid}`);
+    // CORREÇÃO 2: Busca no caminho do uidAtivo, não do user.uid
+    const userRef = ref(db, `users/${uidAtivo}`);
+    
     onValue(userRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -34,27 +36,29 @@ export default function Dashboard() {
         });
       }
     });
-  }, [user]);
+  }, [uidAtivo]);
 
-  // 2. TAREFAS (Sempre pessoais)
+  // 2. TAREFAS (Sempre pessoais do uidAtivo)
   useEffect(() => {
-    if (!user) return;
+    if (!uidAtivo) return;
     const tarefasRef = ref(db, 'tarefas');
     onValue(tarefasRef, (snapshot) => {
       if (snapshot.exists()) {
         const total = Object.values(snapshot.val())
-          .filter(t => t.userId === user.uid && t.status !== 'done').length;
+          // CORREÇÃO 3: Filtra pelo uidAtivo
+          .filter(t => t.userId === uidAtivo && t.status !== 'done').length;
         setContagemTarefas(total);
       } else {
         setContagemTarefas(0);
       }
     });
-  }, [user]);
+  }, [uidAtivo]);
 
-  // 3. FÉRIAS (Sempre pessoais para o card)
+  // 3. FÉRIAS (Sempre pessoais do uidAtivo)
   useEffect(() => {
-    if (!user) return;
-    const feriasRef = ref(db, `ferias/${user.uid}`);
+    if (!uidAtivo) return;
+    // CORREÇÃO 4: Busca férias do uidAtivo
+    const feriasRef = ref(db, `ferias/${uidAtivo}`);
     onValue(feriasRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -66,11 +70,11 @@ export default function Dashboard() {
         setProxFerias('A definir');
       }
     });
-  }, [user]);
+  }, [uidAtivo]);
 
-  // 4. CONTADORES REATIVOS AO PERFIL (Muda quando 'isAdmin' muda)
+  // 4. CONTADORES REATIVOS AO PERFIL
   useEffect(() => {
-    if (!user) return;
+    if (!uidAtivo) return;
 
     const isPendente = (s) => {
         if (!s) return true;
@@ -86,9 +90,9 @@ export default function Dashboard() {
                 const userTrips = data[uid];
                 Object.values(userTrips).forEach(trip => {
                     if (isPendente(trip.status)) {
-                        // Se for Admin, conta tudo. Se não, só as minhas.
+                        // Se for Admin, conta tudo. Se não, só as do uidAtivo.
                         if (isAdmin) c++;
-                        else if (uid === user.uid) c++;
+                        else if (uid === uidAtivo) c++; // CORREÇÃO 5
                     }
                 });
             });
@@ -96,26 +100,7 @@ export default function Dashboard() {
         setContagemViagens(c);
     });
 
-    // B. Solicitações Gerais (Reembolsos, Helpdesk, etc que estão em 'solicitacoes' ou 'reembolsos')
-    // Nota: Seu código original separava reembolsos e 'solicitacoes'. Vou manter a lógica unificada ou somar.
-    // Para simplificar e manter compatibilidade, vou somar Reembolsos (raiz) + Solicitações (raiz)
-    
-    // B1. Reembolsos (Antigo nó raiz)
-    const unsubReembolsos = onValue(ref(db, 'reembolsos'), (snap) => {
-        let c = 0;
-        if (snap.exists()) {
-            Object.values(snap.val()).forEach(item => {
-                const pendente = item.status === 'em_analise';
-                if (isAdmin ? pendente : (item.userId === user.uid && pendente)) c++;
-            });
-        }
-        // Atualiza estado parcial (vamos somar no render ou usar estado separado se preferir, 
-        // mas aqui vou somar tudo em 'contagemGeral' para simplificar o card único)
-        // Como o React state é assíncrono, o ideal seria ter estados separados e somar no render.
-        // Vou usar uma lógica simplificada aqui: ContagemGeral será a soma de TUDO exceto viagens/tarefas.
-    });
-
-    // B2. Solicitações Gerais (Helpdesk, etc)
+    // B. Solicitações Gerais
     const unsubGerais = onValue(ref(db, 'solicitacoes'), (snap) => {
       let c = 0;
       if (snap.exists()) {
@@ -125,46 +110,43 @@ export default function Dashboard() {
                Object.values(categoria).forEach(item => {
                    if (isPendente(item.status)) {
                        if (isAdmin) c++;
-                       else if (item.userId === user.uid) c++;
+                       else if (item.userId === uidAtivo) c++; // CORREÇÃO 6
                    }
                });
            }
         });
       }
-      setContagemGeral(prev => c); // Nota: Em produção ideal, separaríamos os estados, mas aqui mantemos simples.
+      setContagemGeral(prev => c); 
     });
     
-    // *Importante*: Para corrigir a soma de Reembolsos + Gerais sem sobrescrever, 
-    // o ideal é separar. Vou restaurar 'contagemReembolsos' para garantir precisão.
-    
-    return () => { unsubViagens(); unsubReembolsos(); unsubGerais(); };
-  }, [user, isAdmin]); // <--- O PULO DO GATO: Recalcula quando 'isAdmin' muda
+    return () => { unsubViagens(); unsubGerais(); };
+  }, [uidAtivo, isAdmin]); // Depende de uidAtivo agora
 
-  // Recriando o listener de reembolsos separado para não perder a conta
+  // Recriando o listener de reembolsos
   const [contagemReembolsos, setContagemReembolsos] = useState(0);
   useEffect(() => {
-      if(!user) return;
+      if(!uidAtivo) return;
       return onValue(ref(db, 'reembolsos'), (snap) => {
         let c = 0;
         if (snap.exists()) {
             Object.values(snap.val()).forEach(item => {
                 const pendente = item.status === 'em_analise';
-                if (isAdmin ? pendente : (item.userId === user.uid && pendente)) c++;
+                // CORREÇÃO 7: Filtro final
+                if (isAdmin ? pendente : (item.userId === uidAtivo && pendente)) c++;
             });
         }
         setContagemReembolsos(c);
       });
-  }, [user, isAdmin]);
+  }, [uidAtivo, isAdmin]);
 
 
   // SOMA TOTAL PARA O CARD
   const totalSolicitacoes = contagemReembolsos + contagemViagens + contagemGeral;
 
-  // --- CONFIGURAÇÃO DOS CARDS (DINÂMICA) ---
+  // --- CONFIGURAÇÃO DOS CARDS ---
   const stats = [
     { titulo: 'Tarefas Pendentes', valor: contagemTarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)', rota: '/tarefas' },
     { 
-        // Texto e ícone mudam conforme o perfil
         titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', 
         valor: totalSolicitacoes.toString(), 
         icon: isAdmin ? '✅' : '📂', 
@@ -175,14 +157,12 @@ export default function Dashboard() {
   ];
 
   const acessos = [
-    // ITENS EXCLUSIVOS DE ADMIN/GESTOR
     ...(isAdmin ? [
       { titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },
       { titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' },
-      { titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' } // Adicionei Conciliação aqui
+      { titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' } 
     ] : []),
     
-    // ITENS COMUNS
     { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
     { titulo: 'Minhas Tarefas', desc: 'Organização de tarefas', icon: '⚡', rota: '/tarefas' },
     { titulo: 'Reembolsos', desc: 'Solicitar Reembolso', icon: '💸', rota: '/solicitacao' },
@@ -207,6 +187,17 @@ export default function Dashboard() {
       <Sidebar />
       
       <main className="tech-main">
+        {/* BARRA DE DEBUG PARA VOCÊ TER CERTEZA (OPCIONAL) */}
+        {uidAtivo && (
+          <div style={{
+            position:'fixed', bottom:0, right:0, 
+            background:'rgba(0,0,0,0.8)', color:'#0f0', 
+            padding:'5px 10px', fontSize:'10px', zIndex:9999
+          }}>
+            SIMULANDO: {userProfile.nome} ({uidAtivo})
+          </div>
+        )}
+
         <header className="tech-header">
           <div className="header-content">
             <h1>Visão Geral</h1>
@@ -214,6 +205,7 @@ export default function Dashboard() {
           </div>
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
+              {/* CORREÇÃO VISUAL: Agora exibe os dados carregados do perfil correto */}
               <span className="name">{userProfile.nome}</span>
               <span className="role">{userProfile.cargo}</span>
             </div>
@@ -224,7 +216,6 @@ export default function Dashboard() {
         </header>
 
         <div className="tech-scroll-content">
-          {/* CARDS DE ESTATÍSTICAS */}
           <section className="stats-row">
             {stats.map((stat, i) => (
               <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor, cursor: 'pointer' }} onClick={() => stat.rota && navigate(stat.rota)}>
@@ -239,7 +230,6 @@ export default function Dashboard() {
             ))}
           </section>
 
-          {/* GRID DE MÓDULOS (ACESSO RÁPIDO) */}
           <section className="modules-section">
             <h2 className="section-title">Acesso Rápido</h2>
             <div className="modules-grid-tech">

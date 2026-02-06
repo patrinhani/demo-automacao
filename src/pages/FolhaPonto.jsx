@@ -59,7 +59,6 @@ export default function FolhaPonto() {
       const unsubscribe = onValue(rhRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-              // CORREÇÃO CRÍTICA: USAR OBJECT.ENTRIES PARA PEGAR O ID CORRETO
               const lista = Object.entries(data).map(([key, val]) => ({
                   id: key, 
                   ...val
@@ -76,29 +75,60 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
+  // --- LÓGICA DE REGISTRO MODIFICADA PARA INTEGRAR COM O RH ---
   const registrarPonto = async (tipo) => {
     if (!user) return;
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
+    
     try {
-      await update(ref(db, `ponto/${user.uid}/${dateKey}`), { 
+      // 1. Registra o ponto normalmente no perfil do usuário
+      const updates = { 
           [tipo]: horarioFormatado, 
           userId: user.uid, 
           data: dateKey, 
           timestamp: Date.now() 
-      });
+      };
+      
+      await update(ref(db, `ponto/${user.uid}/${dateKey}`), updates);
+      
+      // 2. MAGIA: Verifica se esse usuário tem um chamado aberto no RH por "Esquecimento Real"
+      // Se tiver, atualizamos o chamado para que o RH veja o ponto registrado na hora!
+      const casoRhRef = ref(db, `rh/erros_ponto/${user.uid}`);
+      const casoSnap = await get(casoRhRef);
+      
+      if (casoSnap.exists()) {
+          const casoData = casoSnap.val();
+          // Só atualiza se o caso não estiver concluído
+          if (casoData.status !== 'Concluido') {
+             // Atualiza o objeto 'pontos' dentro do chamado do RH com o novo registro
+             const novosPontos = { ...casoData.pontos, [tipo === 'entrada' ? 'e' : tipo === 'almoco_ida' ? 'si' : tipo === 'almoco_volta' ? 'vi' : 's']: horarioFormatado };
+             
+             // Muda status para "Respondido" (para ficar verde lá pro RH)
+             await update(casoRhRef, { 
+                 pontos: novosPontos,
+                 status: 'Respondido' // Isso faz aparecer o botão "Baixar" pro RH
+             });
+          }
+      }
+
       alert(`Ponto registrado: ${horarioFormatado}`);
-    } catch (error) { alert("Erro ao registrar ponto."); }
+
+    } catch (error) { 
+        console.error(error);
+        alert("Erro ao registrar ponto."); 
+    }
   };
 
   const irParaChatComUsuario = (usuarioFicticio) => {
+      // Adiciona na lista de contatos (seja mock ou real)
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
       if (!mocksAtivos.find(u => u.id === usuarioFicticio.id)) {
           mocksAtivos.push({
               id: usuarioFicticio.id,
               nome: usuarioFicticio.nome,
               cargo: usuarioFicticio.cargo,
-              email: `${usuarioFicticio.nome.split(' ')[0].toLowerCase()}@techportal.com`
+              email: usuarioFicticio.nome ? `${usuarioFicticio.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com'
           });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
@@ -116,6 +146,7 @@ export default function FolhaPonto() {
   };
 
   const renderAcao = (item) => {
+      // Se for um "Esquecimento Real", a lógica de "Respondido" é acionada quando o usuário bate o ponto real
       if (item.status === 'Respondido') {
           return (
               <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
@@ -196,31 +227,65 @@ export default function FolhaPonto() {
                     <table className="tech-table">
                         <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
                         <tbody>
-                            {listaPendencias.map(item => (
-                                <tr key={item.id}>
-                                    <td>
-                                        <div className="user-cell">
-                                            <div className="avatar-mini">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
-                                            <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
-                                        </div>
-                                    </td>
-                                    <td><div className="erro-badge">{item.erro}</div></td>
-                                    <td>
-                                        <div className="timeline-ponto">
-                                            <div className={`time-pill ${!item.pontos?.e ? 'miss' : ''}`}><span className="lbl">E</span>{item.pontos?.e || '---'}</div>
-                                            <div className="arrow">→</div>
-                                            <div className={`time-pill ${!item.pontos?.si ? 'miss' : ''}`}><span className="lbl">SI</span>{item.pontos?.si || '---'}</div>
-                                            <div className="arrow">→</div>
-                                            <div className={`time-pill ${!item.pontos?.vi ? 'miss' : ''}`}><span className="lbl">VI</span>{item.pontos?.vi || '---'}</div>
-                                            <div className="arrow">→</div>
-                                            <div className={`time-pill ${!item.pontos?.s ? 'miss' : ''}`}><span className="lbl">S</span>{item.pontos?.s || '---'}</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {renderAcao(item)}
-                                    </td>
-                                </tr>
-                            ))}
+                            {listaPendencias.map(item => {
+                                let pontosVisuais = item.pontos || {};
+
+                                if (item.status === 'Respondido') {
+                                    if (item.erro === 'Atraso Excessivo') {
+                                        pontosVisuais = item.pontos;
+                                    }
+                                    else if (item.erro === 'Falta Injustificada') {
+                                        pontosVisuais = item.pontos;
+                                    }
+                                    else {
+                                        pontosVisuais = {
+                                            e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
+                                            si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
+                                            vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
+                                            s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
+                                        };
+                                    }
+                                }
+                                
+                                // Para o CASO REAL, queremos ver exatamente o que ele registrou
+                                if (item.erro === 'Esquecimento Real') {
+                                   pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
+                                }
+
+                                return (
+                                    <tr key={item.id}>
+                                        <td>
+                                            <div className="user-cell">
+                                                <div className="avatar-mini">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
+                                                <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
+                                            </div>
+                                        </td>
+                                        <td><div className="erro-badge">{item.erro}</div></td>
+                                        <td>
+                                            <div className="timeline-ponto">
+                                                <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}>
+                                                    <span className="lbl">E</span>{pontosVisuais.e || '---'}
+                                                </div>
+                                                <div className="arrow">→</div>
+                                                <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}>
+                                                    <span className="lbl">SI</span>{pontosVisuais.si || '---'}
+                                                </div>
+                                                <div className="arrow">→</div>
+                                                <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}>
+                                                    <span className="lbl">VI</span>{pontosVisuais.vi || '---'}
+                                                </div>
+                                                <div className="arrow">→</div>
+                                                <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}>
+                                                    <span className="lbl">S</span>{pontosVisuais.s || '---'}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {renderAcao(item)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
