@@ -1,168 +1,159 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db, auth } from '../firebase'; 
-import { ref, onValue, push, set, update } from "firebase/database"; 
+import { ref, onValue, push, set, get, update } from "firebase/database"; 
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
 
-// --- DIRETÓRIO CORPORATIVO OFICIAL (BASEADO NOS PDFS) ---
-// Estes dados são carregados estaticamente para garantir consistência de cargos.
-const TEAM_DIRECTORY = [
-  // --- DIRETORIA ---
-  { id: 'user_ceo', nome: "Guilherme Patrinhani Da Silva", cargo: "CEO", email: "guilherme.patrinhani@techcorp.com.br", avatar: 'G' },
-  { id: 'user_cto', nome: "Gabriel Silva", cargo: "CTO", email: "gabriel.silva@techcorp.com.br", avatar: 'G' },
-  { id: 'user_cfo', nome: "Joel Santos", cargo: "CFO", email: "joel.santos@techcorp.com.br", avatar: 'J' },
-
-  // --- GESTÃO ---
-  { id: 'user_agatha', nome: "Agatha Oliveira de Moraes", cargo: "Gerente de Pessoas e Cultura", email: "agatha.moraes@techcorp.com.br", avatar: 'A' },
-  { id: 'user_carlos_augusto', nome: "Carlos Augusto Paladino do Amaral", cargo: "Controller", email: "carlos.amaral@techcorp.com.br", avatar: 'C' },
-  { id: 'user_gabriel_gallo', nome: "Gabriel Aguera Bispo de Azevedo Gallo", cargo: "Business Partner (BP)", email: "gabriel.gallo@techcorp.com.br", avatar: 'G' },
-  { id: 'user_karen', nome: "Karen Gentil Ferreira dos Santos", cargo: "Business Partner (BP)", email: "karen.santos@techcorp.com.br", avatar: 'K' },
-
-  // --- RH ---
-  { id: 'user_ana_beatriz', nome: "Ana Beatriz Alves Simá", cargo: "Analista de RH Pleno", email: "ana.sima@techcorp.com.br", avatar: 'A' },
-  { id: 'user_ariane', nome: "Ariane dos Santos Souza", cargo: "Analista de RH Júnior", email: "ariane.souza@techcorp.com.br", avatar: 'A' },
-  { id: 'user_auricia', nome: "Auricia Duarte de Araujo", cargo: "Analista de RH Pleno", email: "auricia.araujo@techcorp.com.br", avatar: 'A' },
-  { id: 'user_erica', nome: "Erica Manoel Martinez", cargo: "Analista de RH Pleno", email: "erica.martinez@techcorp.com.br", avatar: 'E' },
-  { id: 'user_indigo', nome: "Índigo Sote Ribeiro Rezende", cargo: "Assistente de RH", email: "indigo.rezende@techcorp.com.br", avatar: 'Í' },
-  { id: 'user_jose_felipe', nome: "Jose Felipe Souza Santos", cargo: "Analista de RH Pleno", email: "jose.santos@techcorp.com.br", avatar: 'J' },
-  { id: 'user_kaio', nome: "Kaio Cesar Melo Silva", cargo: "Analista de RH Pleno", email: "kaio.silva@techcorp.com.br", avatar: 'K' },
-  { id: 'user_laryssa', nome: "Laryssa Roque da Silva", cargo: "Analista de RH Júnior", email: "laryssa.silva@techcorp.com.br", avatar: 'L' },
-  { id: 'user_nicolly_paciencia', nome: "Nicolly da Cruz Paciência", cargo: "Assistente de RH", email: "nicolly.paciencia@techcorp.com.br", avatar: 'N' },
-  { id: 'user_sabrina', nome: "Sabrina da Silva Monteiro Pedreira", cargo: "Analista de RH Júnior", email: "sabrina.pedreira@techcorp.com.br", avatar: 'S' },
-
-  // --- FINANCEIRO ---
-  { id: 'user_ana_caroline', nome: "Ana Caroline Mota Diniz", cargo: "Analista Financeiro Jr", email: "ana.diniz@techcorp.com.br", avatar: 'A' },
-  { id: 'user_beatriz', nome: "Beatriz Yukari do Rosario", cargo: "Auxiliar Financeiro", email: "beatriz.rosario@techcorp.com.br", avatar: 'B' },
-  { id: 'user_ellen', nome: "Ellen Cristina de Oliveira", cargo: "Analista Financeiro Sr", email: "ellen.oliveira@techcorp.com.br", avatar: 'E' },
-  { id: 'user_guilherme_castro', nome: "Guilherme da Cruz Castro", cargo: "Analista Financeiro Jr", email: "guilherme.castro@techcorp.com.br", avatar: 'G' },
-  { id: 'user_isabella', nome: "Isabella Bueno de Oliveira", cargo: "Analista Financeiro Jr", email: "isabella.oliveira@techcorp.com.br", avatar: 'I' },
-  { id: 'user_julia', nome: "Julia Rodrigues do Nascimento", cargo: "Auxiliar Financeiro", email: "julia.nascimento@techcorp.com.br", avatar: 'J' },
-  { id: 'user_kaique', nome: "Kaique Rodrigues dos Santos", cargo: "Auxiliar Financeiro", email: "kaique.santos@techcorp.com.br", avatar: 'K' },
-  { id: 'user_livia', nome: "Livia Vitória Friederich Reis", cargo: "Analista Financeiro Jr", email: "livia.reis@techcorp.com.br", avatar: 'L' },
-  { id: 'user_mariana_lopes', nome: "Mariana Fernandes Lopes", cargo: "Auxiliar Financeiro", email: "mariana.lopes@techcorp.com.br", avatar: 'M' },
-  { id: 'user_nicolly_sa', nome: "Nicolly dos Santos Rufino de Sá", cargo: "Analista Financeiro Sr", email: "nicolly.sa@techcorp.com.br", avatar: 'N' },
-  { id: 'user_vitoria', nome: "Vitoria Hially França Galvão", cargo: "Auxiliar Financeiro", email: "vitoria.galvao@techcorp.com.br", avatar: 'V' }
+// --- LISTA FIXA (BACKUP) ---
+const TEAM_FIXO = [
+  { id: "user_teste_demo", nome: "Cadastro Teste", cargo: "Usuário de Testes", email: "teste@techcorp.com.br" },
+  { id: "user_patrinhani", nome: "Guilherme Patrinhani", cargo: "CEO", email: "guilherme@tech.com" },
+  { id: "user_yan", nome: "Yan Rodrigues", cargo: "Dev Fullstack", email: "yan@tech.com" },
+  // ... (outros fixos se quiser)
 ];
 
-const RESPOSTAS_AUTOMATICAS = [
-    "Oi! Tudo bem? Já verifico isso para você.",
-    "Olá! Recebi sua mensagem, assim que possível te retorno.",
-    "Opa, estou em reunião agora, mas já te chamo.",
-    "Combinado! Fico no aguardo."
+// --- RESPOSTAS DO ROBÔ ---
+const RESPOSTAS_ROBO = [
+    "Oi! Nossa, esqueci totalmente de bater o ponto ontem. Vou ajustar aqui, desculpa!",
+    "Bom dia! Eu estava em reunião externa e acabei esquecendo. Pode ajustar pra mim?",
+    "Opa, foi mal. Meu celular ficou sem bateria bem na hora da saída.",
+    "Olá! Eu bati, mas acho que o sistema não pegou. Vou verificar.",
+    "Oi RH, desculpa a falha. Tive que sair correndo pra pegar o ônibus e esqueci.",
+    "Prontinho! Já ajustei a batida lá no sistema.",
+    "Oi! Desculpa a demora, acabei de corrigir o horário.",
+    "Feito! Inseri a justificativa e o horário correto."
 ];
 
 export default function ChatInterno() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // Recebe dados do RH
   
   const [user, setUser] = useState(null);
   
-  // Listas
-  const [listaCompleta, setListaCompleta] = useState(TEAM_DIRECTORY);
-  const [listaExibida, setListaExibida] = useState(TEAM_DIRECTORY);
+  // Lista unificada (Fixos + Mocks do RH)
+  const [todosUsuarios, setTodosUsuarios] = useState([]);
+  // Lista filtrada na tela
+  const [usuariosExibidos, setUsuariosExibidos] = useState([]);
   
-  // Estado do Chat
   const [canalAtivo, setCanalAtivo] = useState({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' });
   const [mensagens, setMensagens] = useState([]);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [menuAberto, setMenuAberto] = useState(false);
+  
   const [naoLidas, setNaoLidas] = useState({});
+  const [ultimasInteracoes, setUltimasInteracoes] = useState({}); 
   const [termoBusca, setTermoBusca] = useState('');
 
   const scrollRef = useRef(null);
-  const timeoutsRef = useRef({});
 
   // 1. AUTH
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-          setUser(currentUser);
-      } else {
-          navigate('/');
-      }
+      if (currentUser) setUser(currentUser);
+      else navigate('/');
     });
     return () => unsubscribe();
   }, [navigate]);
 
-  // 2. GARANTIR QUE O USUÁRIO LOGADO ESTÁ NA LISTA
-  useEffect(() => {
-      if (!user) return;
-
-      setListaCompleta(prevLista => {
-          // Verifica se o usuário logado já está na lista oficial (pelo email)
-          const euNaLista = prevLista.find(u => u.email === user.email);
-          
-          if (!euNaLista) {
-              // Se não estiver (ex: Yan logou com Google), adiciona ele para não ficar de fora
-              const meuPerfil = {
-                  id: user.uid,
-                  nome: user.displayName || "Eu",
-                  cargo: "Colaborador",
-                  email: user.email,
-                  avatar: (user.displayName || "E")[0].toUpperCase()
-              };
-              // Adiciona no topo, mas não altera a constante original
-              return [meuPerfil, ...prevLista];
-          }
-          return prevLista;
-      });
-  }, [user]);
-
-  // 3. GERENCIAR "CHAMAR" (Deep Link da Folha de Ponto)
-  useEffect(() => {
-      const target = location.state?.chatTarget;
-      
-      if (target) {
-          // Procura na lista completa
-          const usuarioAlvo = listaCompleta.find(u => u.nome === target.nome || u.id === target.id);
-          
-          if (usuarioAlvo) {
-              // Se achou na lista oficial, usa os dados oficiais
-              setTimeout(() => {
-                  setCanalAtivo({ id: usuarioAlvo.id, nome: `👤 ${usuarioAlvo.nome}`, desc: usuarioAlvo.cargo });
-              }, 100);
-          } else {
-              // Se for alguém novo (ex: um mock gerado dinamicamente que não está na lista oficial), adiciona temporariamente
-              const novoUsuario = {
-                  id: target.id,
-                  nome: target.nome,
-                  cargo: target.cargo || 'Colaborador',
-                  email: target.email || 'N/A',
-                  avatar: target.nome[0].toUpperCase()
-              };
-              setListaCompleta(prev => [novoUsuario, ...prev]);
-              setTimeout(() => {
-                  setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo });
-              }, 100);
-          }
-      }
-  }, [location.state, listaCompleta]); // Dependência ajustada para reagir a mudanças
-
-  // 4. SISTEMA DE BUSCA (Filtro Local)
-  useEffect(() => {
-      if (termoBusca.trim() === '') {
-          // Ordena alfabeticamente quando não há busca
-          const ordenada = [...listaCompleta].sort((a, b) => a.nome.localeCompare(b.nome));
-          setListaExibida(ordenada);
-      } else {
-          const termo = termoBusca.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          
-          const filtrados = listaCompleta.filter(u => {
-              const nome = u.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              const cargo = u.cargo.toLowerCase();
-              return nome.includes(termo) || cargo.includes(termo);
-          });
-          setListaExibida(filtrados);
-      }
-  }, [termoBusca, listaCompleta]);
-
-  // 5. CARREGAR MENSAGENS
+  // 2. CARREGAR LISTA DE USUÁRIOS (FIXOS + MOCKS RH)
   useEffect(() => {
     if (!user) return;
+
+    // A. Carrega Mocks do RH (LocalStorage)
+    const mocksSalvos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
+    // Adiciona flag isMock para o robô saber quem é
+    const mocksFormatados = mocksSalvos.map(m => ({ ...m, isMock: true, cargo: m.cargo || 'Colaborador (RH)' }));
+
+    // B. Combina com lista fixa
+    let combinados = [...TEAM_FIXO, ...mocksFormatados];
+
+    // C. Verifica se veio alguém pelo botão "Chamar" do RH
+    const target = location.state?.chatTarget;
+    if (target) {
+        // Se ele não estiver na lista (ex: acabou de ser gerado), adiciona
+        if (!combinados.find(u => u.id === target.id)) {
+            combinados.push({ ...target, isMock: true });
+        }
+        
+        // Abre o chat automaticamente se for a primeira vez renderizando com esse state
+        if (canalAtivo.id === 'geral') {
+            setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo, isMock: true });
+        }
+    }
+
+    // Remove duplicatas e o próprio usuário
+    const unicos = Array.from(new Map(combinados.map(item => [item.id, item])).values())
+                        .filter(u => u.email !== user.email);
+
+    setTodosUsuarios(unicos);
+  }, [user, location.state]);
+
+  // 3. MONITORAR MENSAGENS E ORDENAÇÃO
+  useEffect(() => {
+    if (!user) return;
+    const chatsRef = ref(db, 'chats/direto');
     
-    // Marca como lida ao abrir
+    const unsubscribe = onValue(chatsRef, (snapshot) => {
+      const data = snapshot.val();
+      const novasInteracoes = {};
+      const novasNaoLidas = { ...naoLidas };
+
+      if (data) {
+          Object.keys(data).forEach((chatId) => {
+            if (chatId.includes(user.uid)) {
+              const msgs = Object.values(data[chatId]);
+              const ultimaMsg = msgs[msgs.length - 1];
+              const outroId = chatId.replace(user.uid, '').replace('_', '');
+
+              // Guarda timestamp para ordenar
+              novasInteracoes[outroId] = ultimaMsg.timestamp;
+
+              // Badge de não lida
+              if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
+                 const lastRead = Number(localStorage.getItem(`last_read_${outroId}`) || 0);
+                 if (ultimaMsg.timestamp > lastRead) {
+                     novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1; 
+                 }
+              }
+            }
+          });
+      }
+      setUltimasInteracoes(novasInteracoes);
+      setNaoLidas(novasNaoLidas);
+    });
+    return () => unsubscribe();
+  }, [user, canalAtivo.id]);
+
+  // 4. FILTRO INTELIGENTE (Busca ou Quem já falou)
+  useEffect(() => {
+      let lista = todosUsuarios.filter(u => {
+          // Se tem busca, filtra pelo nome/cargo
+          if (termoBusca) {
+              const t = termoBusca.toLowerCase();
+              return (u.nome && u.nome.toLowerCase().includes(t)) || 
+                     (u.cargo && u.cargo.toLowerCase().includes(t));
+          }
+          
+          // Se não tem busca, mostra só quem já tem interação OU é o canal ativo
+          return ultimasInteracoes[u.id] !== undefined || canalAtivo.id === u.id;
+      });
+
+      // Ordena por mensagem mais recente
+      lista.sort((a, b) => {
+          const timeA = ultimasInteracoes[a.id] || 0;
+          const timeB = ultimasInteracoes[b.id] || 0;
+          return timeB - timeA;
+      });
+
+      setUsuariosExibidos(lista);
+  }, [todosUsuarios, ultimasInteracoes, termoBusca, canalAtivo]);
+
+  // 5. CARREGAR MENSAGENS ATUAIS
+  useEffect(() => {
+    if (!user) return;
+
     if (naoLidas[canalAtivo.id]) {
       setNaoLidas(prev => { const n = {...prev}; delete n[canalAtivo.id]; return n; });
     }
@@ -170,26 +161,88 @@ export default function ChatInterno() {
     let path = canalAtivo.id === 'geral' 
         ? 'chats/geral' 
         : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
-
+    
     const unsubscribe = onValue(ref(db, path), (snapshot) => {
       const data = snapshot.val();
-      const msgsCarregadas = data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : [];
-      setMensagens(msgsCarregadas);
+      const lista = data ? Object.entries(data).map(([k, v]) => ({ id: k, ...v })) : [];
+      setMensagens(lista);
+      
+      // Marca lido
+      if (lista.length > 0 && canalAtivo.id !== 'geral') {
+          const ult = lista[lista.length-1];
+          localStorage.setItem(`last_read_${canalAtivo.id}`, ult.timestamp + 1);
+      }
     });
     return () => unsubscribe();
   }, [canalAtivo, user]); 
 
+  // Scroll
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
 
-  // 6. ENVIAR MENSAGEM
+  // --- 6. AUTO-REPLY DO ROBÔ (A LÓGICA DO LUCAS) ---
+  useEffect(() => {
+      // Condições para o robô responder:
+      // 1. Não estamos no geral
+      // 2. Tem mensagem
+      // 3. O usuário atual do chat é um MOCK (tem a flag isMock ou está na lista de mocks)
+      if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
+
+      const ultimaMsg = mensagens[mensagens.length - 1];
+      
+      // OBRIGATÓRIO: A última mensagem tem que ser MINHA (do user logado).
+      // Se a última mensagem for do robô (ID dele), ele NÃO responde de novo.
+      if (ultimaMsg.uid !== user.uid) return;
+
+      // Descobre se o canal ativo é um mock
+      const usuarioAtual = todosUsuarios.find(u => u.id === canalAtivo.id);
+      
+      if (usuarioAtual && usuarioAtual.isMock) {
+          const mockId = usuarioAtual.id;
+          const mockNome = usuarioAtual.nome.replace('👤 ', ''); // Limpa o nome
+          const meuId = user.uid;
+          
+          // Tempo aleatório entre 3s e 7s (rápido para testar, mas humano)
+          const tempoEspera = Math.floor(Math.random() * (7000 - 3000 + 1) + 3000);
+
+          console.log(`🤖 Robô ${mockNome} vai responder em ${tempoEspera}ms`);
+
+          const timer = setTimeout(async () => {
+              const resposta = RESPOSTAS_ROBO[Math.floor(Math.random() * RESPOSTAS_ROBO.length)];
+              const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
+
+              try {
+                  await set(push(ref(db, path)), {
+                      usuario: mockNome,
+                      uid: mockId, // Importante: ID do mock para não ser igual ao meu
+                      texto: resposta,
+                      timestamp: Date.now(),
+                      avatar: mockNome[0]
+                  });
+                  
+                  // Tenta atualizar status no RH (opcional, ignora erro se falhar)
+                  try {
+                      const mockRef = ref(db, `rh/erros_ponto/${mockId}`);
+                      const snap = await get(mockRef);
+                      if (snap.exists()) await update(mockRef, { status: 'Respondido' });
+                  } catch(e) { /* ignora erro de permissão no RH */ }
+
+              } catch (e) { console.error("Erro Robô:", e); }
+          }, tempoEspera);
+
+          return () => clearTimeout(timer);
+      }
+  }, [mensagens, canalAtivo, user, todosUsuarios]);
+
+
+  // 7. ENVIAR (USUÁRIO REAL)
   const enviarMensagem = async (e) => {
     e.preventDefault();
     if (!novaMensagem.trim() || !user) return;
-    
+
     let path = canalAtivo.id === 'geral' 
         ? 'chats/geral' 
         : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
-
+    
     await set(push(ref(db, path)), {
       usuario: user.displayName || user.email.split('@')[0],
       uid: user.uid,
@@ -200,46 +253,9 @@ export default function ChatInterno() {
     setNovaMensagem('');
   };
 
-  // 7. ROBÔ AUTO-REPLY
-  useEffect(() => {
-      if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
-      const lastMsg = mensagens[mensagens.length - 1];
-      
-      // Se eu mandei a mensagem para alguém da lista
-      if (lastMsg.uid === user.uid) {
-          const isUserFromList = listaCompleta.some(u => u.id === canalAtivo.id);
-          
-          if(isUserFromList) {
-              const targetId = canalAtivo.id;
-              const targetName = canalAtivo.nome.replace('👤 ', '');
-              
-              if(timeoutsRef.current[targetId]) clearTimeout(timeoutsRef.current[targetId]);
-
-              // Responde aleatoriamente entre 3 e 8 segundos
-              const time = Math.random() * 5000 + 3000; 
-              
-              timeoutsRef.current[targetId] = setTimeout(async () => {
-                  const reply = RESPOSTAS_AUTOMATICAS[Math.floor(Math.random() * RESPOSTAS_AUTOMATICAS.length)];
-                  const ids = [user.uid, targetId].sort();
-                  
-                  await set(push(ref(db, `chats/direto/${ids[0]}_${ids[1]}`)), {
-                      usuario: targetName,
-                      uid: targetId,
-                      texto: reply,
-                      timestamp: Date.now(),
-                      avatar: '👤'
-                  });
-              }, time);
-          }
-      }
-  }, [mensagens, listaCompleta]);
-
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
-  const formatarNome = (nome) => {
-      if(!nome) return 'User';
-      const parts = nome.split(' ');
-      return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1]}` : parts[0];
-  };
+  const formatarNome = (n) => n ? n.split(' ')[0] : 'User';
+  const getAvatar = (n) => n ? n[0].toUpperCase() : 'U';
 
   return (
     <div className="tech-layout-chat">
@@ -259,89 +275,96 @@ export default function ChatInterno() {
       <div className="chat-container glass-effect">
         <aside className={`chat-sidebar ${menuAberto ? 'menu-aberto' : ''}`}>
           <div className="sidebar-title">
-            Diretório ({listaExibida.length})
+            Conversas
             {menuAberto && <span onClick={() => setMenuAberto(false)} style={{float:'right'}}>✕</span>}
           </div>
-
+          
           <div className="chat-search-wrapper">
               <span className="search-icon">🔍</span>
               <input 
                   type="text" 
                   className="chat-search-input" 
-                  placeholder="Pesquisar colega..." 
+                  placeholder="Buscar ou iniciar..." 
                   value={termoBusca}
                   onChange={(e) => setTermoBusca(e.target.value)}
               />
           </div>
 
           <div className="channels-list custom-scroll">
-            <button className={`channel-btn ${canalAtivo.id === 'geral' ? 'active' : ''}`} onClick={() => setCanalAtivo({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' })}>
-              <span className="channel-name">📢 Geral</span><span className="channel-desc">Para todos</span>
+            <button 
+              className={`channel-btn ${canalAtivo.id === 'geral' ? 'active' : ''}`}
+              onClick={() => { setCanalAtivo({ id: 'geral', nome: '📢 Geral', desc: 'Mural' }); setMenuAberto(false); }}
+            >
+              <span className="channel-name">📢 Geral</span>
             </button>
-            
+
             <div style={{margin: '15px 10px 5px', fontSize: '0.7rem', color: '#94a3b8', textTransform:'uppercase', borderTop: '1px solid #ffffff1a', paddingTop: '10px'}}>
-                Colaboradores
+              Recentes
             </div>
-            
-            {listaExibida.map((u) => (
-                <button 
-                    key={u.id} 
-                    className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`} 
-                    onClick={() => setCanalAtivo({ id: u.id, nome: `👤 ${u.nome}`, desc: u.cargo })}
-                >
-                  <div style={{display:'flex', alignItems:'center', width:'100%'}}>
+
+            {usuariosExibidos.map(u => (
+              <button 
+                key={u.id} 
+                className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`}
+                onClick={() => { setCanalAtivo({ id: u.id, nome: `👤 ${u.nome}`, desc: u.cargo, isMock: u.isMock }); setMenuAberto(false); }}
+              >
+                <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                     <div className="contact-avatar-small" style={{
-                        marginRight:'10px', 
-                        background: '#3b82f6', 
-                        width:'32px', 
-                        height:'32px', 
-                        borderRadius:'50%', 
-                        display:'flex', 
-                        alignItems:'center', 
-                        justifyContent:'center', 
-                        fontSize:'0.9rem', 
-                        fontWeight:'bold',
-                        color: 'white'
+                        background: u.isMock ? '#10b981' : '#3b82f6', // Verde para Mocks, Azul para Reais
+                        width: '32px', height: '32px', borderRadius: '50%', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
                     }}>
-                        {u.avatar || u.nome[0]}
+                        {getAvatar(u.nome)}
                     </div>
-                    <div style={{flex:1, overflow:'hidden', textAlign:'left'}}>
-                        <span className="channel-name" style={{display:'block', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-                            {formatarNome(u.nome)}
-                        </span>
-                        <span className="channel-desc" style={{display:'block', fontSize:'0.7rem', color:'#9ca3af', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-                            {u.cargo}
-                        </span>
+                    <div style={{textAlign:'left'}}>
+                        <div className="channel-name">{formatarNome(u.nome)}</div>
+                        <div className="channel-desc" style={{fontSize: '0.7rem', opacity: 0.7}}>{u.cargo}</div>
                     </div>
-                    {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
                   </div>
-                </button>
+                  {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
+                </div>
+              </button>
             ))}
             
-            {listaExibida.length === 0 && <div style={{padding:'20px', textAlign:'center', color:'#666', fontSize:'0.8rem'}}>Ninguém encontrado.</div>}
+            {usuariosExibidos.length === 0 && (
+                <div style={{padding:'20px', color:'#666', fontSize:'0.8rem', textAlign:'center'}}>
+                    {termoBusca ? 'Ninguém encontrado.' : 'Nenhuma conversa iniciada.\nBusque alguém para começar.'}
+                </div>
+            )}
           </div>
         </aside>
 
         {menuAberto && <div className="overlay-menu" onClick={() => setMenuAberto(false)}></div>}
 
         <main className="chat-area">
-          <div className="chat-header"><h3>{canalAtivo.nome}</h3><span>{mensagens.length} msg</span></div>
+          <div className="chat-header"><h3>{canalAtivo.nome}</h3></div>
+
           <div className="messages-scroll" ref={scrollRef}>
             {mensagens.map((msg) => (
               <div key={msg.id} className={`message-bubble ${msg.uid === user?.uid ? 'mine' : 'other'}`}>
                 <div className="msg-content">
-                  <div className="msg-top"><span className="msg-user">{formatarNome(msg.usuario)}</span><span className="msg-time">{formatarHora(msg.timestamp)}</span></div>
+                  <div className="msg-top">
+                    <span className="msg-user">{formatarNome(msg.usuario)}</span>
+                    <span className="msg-time">{formatarHora(msg.timestamp)}</span>
+                  </div>
                   <p className="msg-text">{msg.texto}</p>
                 </div>
               </div>
             ))}
           </div>
-          
+
           <form className="chat-input-area" onSubmit={enviarMensagem}>
-            <input value={novaMensagem} onChange={e => setNovaMensagem(e.target.value)} className="chat-input" placeholder="Mensagem..." />
+            <input 
+              type="text" 
+              placeholder={`Mensagem para ${canalAtivo.nome}...`}
+              value={novaMensagem}
+              onChange={(e) => setNovaMensagem(e.target.value)}
+              className="chat-input"
+            />
             <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
           </form>
-
         </main>
       </div>
     </div>

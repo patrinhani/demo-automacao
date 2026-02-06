@@ -6,6 +6,30 @@ import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
 import './DevTools.css';
 
+// --- EQUIPE COMPLETA (DADOS REAIS PARA O BANCO) ---
+const EQUIPE_RESTAURACAO = [
+    // USUÁRIO DE TESTE (FUNDAMENTAL)
+    { id: "user_teste_demo", nome: "Cadastro Teste", email: "teste@techcorp.com.br", cargo: "Usuário de Testes", setor: "TI" },
+    
+    // DIRETORIA
+    { id: "user_patrinhani", nome: "Guilherme Patrinhani", email: "guilherme.patrinhani@techcorp.com.br", cargo: "CEO", setor: "Diretoria" },
+    { id: "user_gabriel", nome: "Gabriel Silva", email: "gabriel.silva@techcorp.com.br", cargo: "CTO", setor: "Diretoria" },
+    { id: "user_joel", nome: "Joel Santos", email: "joel.santos@techcorp.com.br", cargo: "CFO", setor: "Diretoria" },
+    
+    // TI & DEV
+    { id: "user_yan", nome: "Yan Rodrigues", email: "yan.rodrigues@techcorp.com.br", cargo: "Dev Fullstack", setor: "TI" },
+    { id: "user_lucas", nome: "Lucas Mendes", email: "lucas.mendes@techcorp.com.br", cargo: "Dev Júnior", setor: "TI" },
+    
+    // RH
+    { id: "user_agatha", nome: "Agatha Oliveira", email: "agatha.moraes@techcorp.com.br", cargo: "Gerente RH", setor: "RH" },
+    { id: "user_karen", nome: "Karen Gentil", email: "karen.santos@techcorp.com.br", cargo: "BP RH", setor: "RH" },
+    { id: "user_auricia", nome: "Auricia Duarte", email: "auricia.araujo@techcorp.com.br", cargo: "Analista RH", setor: "RH" },
+    
+    // FINANCEIRO
+    { id: "user_carlos", nome: "Carlos Augusto", email: "carlos.amaral@techcorp.com.br", cargo: "Controller", setor: "Financeiro" },
+    { id: "user_nicolly", nome: "Nicolly Rufino", email: "nicolly.sa@techcorp.com.br", cargo: "Analista Fin.", setor: "Financeiro" }
+];
+
 // --- MASSA DE DADOS PARA RH (28 CASOS) ---
 const MOCKS_RH = [
   { nome: "Lucas Mendes", cargo: "Dev. Júnior", setor: "TI", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
@@ -163,6 +187,38 @@ export default function DevTools() {
     addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
   };
 
+  // --- AÇÃO DE RESTAURAÇÃO ---
+  const restaurarEquipe = async () => {
+      const updates = {};
+      
+      EQUIPE_RESTAURACAO.forEach(u => {
+          updates[`users/${u.id}`] = {
+              nome: u.nome,
+              email: u.email,
+              cargo: u.cargo,
+              setor: u.setor,
+              foto: null
+          };
+      });
+
+      // Garante que o usuário logado também exista
+      if (auth.currentUser) {
+          updates[`users/${auth.currentUser.uid}`] = {
+              nome: auth.currentUser.displayName || "Admin Logado",
+              email: auth.currentUser.email,
+              cargo: "Super Admin",
+              setor: "DevTools"
+          };
+      }
+
+      try {
+          await update(ref(db), updates);
+          addLog("✅ Equipe Restaurada! (Teste, CEO, Yan...)");
+      } catch (e) {
+          addLog(`❌ Erro: ${e.message}`);
+      }
+  };
+
   // --- CORREÇÃO AQUI: Limpa DB e LocalStorage ---
   const limparCasosRH = async () => {
     try {
@@ -205,6 +261,7 @@ export default function DevTools() {
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
     updates['chats/direto'] = null; 
     updates['chats/geral'] = null;  
+    updates['users'] = null; // Limpa também usuários para testar a restauração
     
     await update(ref(db), updates);
     localStorage.removeItem('mocksAtivos'); // LIMPEZA DO LOCALSTORAGE
@@ -299,6 +356,16 @@ export default function DevTools() {
             </div>
           </div>
 
+          {/* CARD DE RESTAURAÇÃO (NOVO) */}
+          <div className="dev-card" style={{borderTop: '4px solid #10b981'}}>
+            <div className="card-icon" style={{background: '#10b981'}}>🚑</div>
+            <h3>Consertar Chat</h3>
+            <p>Recria os usuários (Teste, CEO, etc) no banco.</p>
+            <div className="dev-actions">
+                <button className="btn-gen" onClick={restaurarEquipe}>Restaurar Equipe</button>
+            </div>
+          </div>
+
           {/* CARD RH */}
           <div className="dev-card destaque-rh">
             <div className="card-icon">👮</div>
@@ -374,6 +441,16 @@ export default function DevTools() {
               <button className="btn-del" onClick={limparConciliacao}>🗑️ Limpar</button>
             </div>
           </div>
+
+          {/* CARD RESET TOTAL */}
+          <div className="dev-card" style={{borderTop: '4px solid #ef4444'}}>
+             <div className="card-icon" style={{background: '#ef4444'}}>☠️</div>
+             <h3>Zona de Perigo</h3>
+             <div className="dev-actions">
+                <button className="btn-del" onClick={limparTudo}>Limpar Tudo</button>
+             </div>
+          </div>
+
         </div>
 
         <div className="dev-console-wrapper">
