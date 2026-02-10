@@ -104,7 +104,31 @@ export default function DevTools() {
     await update(ref(db), updates);
     addLog("⏰ Ponto gerado (Mês Completo).");
   };
+
+  // --- FUNÇÃO ORIGINAL (Limpa apenas ponto do usuário) ---
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
+
+  // --- NOVA FUNÇÃO SOLICITADA: Limpa TUDO de Ponto (Batido + Indevido) ---
+  const limparHistoricoPontoUnificado = async () => {
+    if (!window.confirm("⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?")) return;
+    
+    try {
+        const updates = {};
+        // 1. Apaga histórico de ponto batido (Se quiser geral, use 'ponto' apenas. Aqui mantive o do usuário para segurança, mas se quiser global mude para 'ponto')
+        // Considerando que você disse "todo o histórico integrado", vou limpar o nó do usuário E o nó de erros global.
+        
+        updates[`ponto/${userProfile.uid}`] = null; // Limpa ponto do usuário atual
+        // updates['ponto'] = null; // <--- DESCOMENTE SE QUISER LIMPAR O PONTO DE TODOS OS USUÁRIOS
+        
+        // 2. Apaga histórico de ponto indevido (Mocks do RH)
+        updates['rh/erros_ponto'] = null;
+
+        await update(ref(db), updates);
+        addLog("🧹 Histórico COMPLETO (Ponto + RH) removido.");
+    } catch (e) {
+        addLog(`❌ Erro ao limpar histórico unificado: ${e.message}`);
+    }
+  };
 
   const gerarHelpdesk = () => {
     const tickets = [{ titulo: "Mouse quebrado", categoria: "hardware", prioridade: "baixa", status: "pendente", descricao: "Não clica" }];
@@ -308,7 +332,16 @@ export default function DevTools() {
             <p>Preenche mês todo.</p>
             <div className="dev-actions">
               <button className="btn-gen" onClick={gerarPonto}>+ Gerar</button>
-              <button className="btn-del" onClick={limparPonto}>🗑️</button>
+              <button className="btn-del" onClick={limparPonto}>🗑️ Pessoal</button>
+              
+              {/* --- BOTÃO NOVO --- */}
+              <button 
+                className="btn-del" 
+                style={{background: '#ef4444', width: '100%', marginTop: '5px', fontSize: '0.8rem'}} 
+                onClick={limparHistoricoPontoUnificado}
+              >
+                🧨 Limpar Tudo (Ponto + RH)
+              </button>
             </div>
           </div>
 

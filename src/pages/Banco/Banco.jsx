@@ -14,20 +14,41 @@ export default function Banco() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [saldo, setSaldo] = useState(0);
   const [extrato, setExtrato] = useState([]);
+  
+  // Guardamos as permissões herdadas da URL (TechPortal -> Banco)
+  const [inheritedPermissions, setInheritedPermissions] = useState(null);
 
+  // --- 1. CONFIGURAÇÃO INICIAL E LEITURA DE URL ---
   useEffect(() => {
     document.title = "Horizon Bank | Secure";
+    
+    // Ler parâmetros da URL
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role');   // ex: gestor, colaborador, admin
+    const setorParam = params.get('setor'); // ex: Financeiro, RH, Geral
+
+    if (roleParam || setorParam) {
+      console.log(`🏦 Horizon Bank: Detectado Role=${roleParam}, Setor=${setorParam}`);
+      setInheritedPermissions({ 
+        role: roleParam || 'colaborador', 
+        setor: setorParam || 'Geral' 
+      });
+    }
+
     return () => document.title = "TechPortal";
   }, []);
 
-  // --- LÓGICA DE DADOS INTELIGENTE ---
+  // --- 2. LÓGICA DE DADOS (CORPORATIVO vs PESSOAL) ---
   useEffect(() => {
     if (!contaUser) return;
 
-    const isCorporate = ['admin', 'gestor', 'financeiro'].includes(contaUser.accessLevel);
+    // REGRA DE OURO: Quem vê a conta da EMPRESA?
+    // 1. Admin
+    // 2. Qualquer pessoa do setor 'Financeiro' (Gestor ou Colaborador)
+    const isCorporate = contaUser.role === 'admin' || contaUser.setor === 'Financeiro';
 
     if (isCorporate) {
-      // --- PERFIL CORPORATIVO: LÊ DO FIREBASE (DADOS DA EMPRESA) ---
+      // --- PERFIL CORPORATIVO: LÊ DO FIREBASE ---
       const bancoRef = ref(db, 'banco_mock');
       const unsubscribe = onValue(bancoRef, (snapshot) => {
         const data = snapshot.val();
@@ -46,35 +67,89 @@ export default function Banco() {
       return () => unsubscribe();
 
     } else {
-      // --- PERFIL COLABORADOR: DADOS PESSOAIS SIMULADOS (MOCK LOCAL) ---
-      // O colaborador vê a "Conta Salário" dele
-      setSaldo(3450.20); 
+      // --- PERFIL PESSOAL: DADOS MOCKADOS LOCAIS ---
+      // Diferença: Gestor ganha mais que Colaborador
+      const salarioBase = contaUser.role === 'gestor' ? 12500.00 : 3450.20;
+      
+      setSaldo(salarioBase); 
       setExtrato([
         { data: new Date().toISOString(), desc: "PIX ENVIADO - ALUGUEL", doc: "PIX-99", valor: -1800.00, tipo: "D" },
         { data: new Date().toISOString(), desc: "IFOOD *LUNCH", doc: "CART", valor: -45.90, tipo: "D" },
         { data: new Date().toISOString(), desc: "UBER TRIP", doc: "CART", valor: -22.50, tipo: "D" },
-        { data: new Date().toISOString(), desc: "CREDITO SALÁRIO MENSAL", doc: "FOLHA", valor: 5200.00, tipo: "C" },
-        { data: new Date().toISOString(), desc: "REEMBOLSO APROVADO #992", doc: "CORP", valor: 125.00, tipo: "C" },
+        { data: new Date().toISOString(), desc: "CREDITO SALÁRIO MENSAL", doc: "FOLHA", valor: salarioBase, tipo: "C" },
       ]);
     }
-  }, [contaUser]); // Recarrega se o usuário mudar o perfil no DevTools
+  }, [contaUser]);
 
-  const simularPerfilBanco = (nivel) => {
+  // --- 3. LOGIN COM HERANÇA ---
+  const handleLoginSuccess = (dadosPadraoDoLogin) => {
+    if (inheritedPermissions) {
+       console.log("🔓 Aplicando permissões herdadas:", inheritedPermissions);
+       
+       const { role, setor } = inheritedPermissions;
+       const isCorporate = role === 'admin' || setor === 'Financeiro';
+       
+       // Monta o usuário final combinando o login com a permissão da URL
+       const usuarioFinal = {
+          ...dadosPadraoDoLogin,
+          role: role,
+          setor: setor,
+          
+          // Ajusta nome e cargo visualmente
+          nome: isCorporate ? "Conta Corporativa" : dadosPadraoDoLogin.nome,
+          cargo: isCorporate ? (role === 'gestor' ? 'Diretor Financeiro' : 'Analista Financeiro') : `${role.charAt(0).toUpperCase() + role.slice(1)} de ${setor}`,
+          
+          // Flag antiga de compatibilidade (para não quebrar componentes internos)
+          accessLevel: isCorporate ? 'financeiro' : 'colaborador' 
+       };
+       setContaUser(usuarioFinal);
+       
+    } else {
+       // Acesso direto sem vir do portal (usa padrão)
+       setContaUser({ ...dadosPadraoDoLogin, role: 'colaborador', setor: 'Geral' });
+    }
+  };
+
+  // Ferramenta de Dev interna do Banco (Atualizada para nova lógica)
+  const simularPerfilBanco = (preset) => {
     if (!contaUser) return;
-    let novoCargo = 'Analista';
-    if (nivel === 'admin') novoCargo = 'Diretor Financeiro';
-    if (nivel === 'financeiro') novoCargo = 'Gerente de Contas';
-    if (nivel === 'colaborador') novoCargo = 'Analista de Sistemas';
     
-    setContaUser(prev => ({ ...prev, accessLevel: nivel, cargo: novoCargo }));
+    let novoRole = 'colaborador';
+    let novoSetor = 'Geral';
+    let novoNome = 'Usuário Teste';
+
+    switch (preset) {
+        case 'admin':
+            novoRole = 'admin'; novoSetor = 'Tecnologia'; novoNome = 'Admin Master';
+            break;
+        case 'financeiro': // Simulando um Analista do Financeiro
+            novoRole = 'colaborador'; novoSetor = 'Financeiro'; novoNome = 'Analista Fin.';
+            break;
+        case 'rh_gestor':
+            novoRole = 'gestor'; novoSetor = 'RH'; novoNome = 'Gerente RH';
+            break;
+        case 'colaborador':
+            novoRole = 'colaborador'; novoSetor = 'TI'; novoNome = 'Dev Frontend';
+            break;
+        default:
+            break;
+    }
+    
+    setContaUser(prev => ({ 
+        ...prev, 
+        role: novoRole, 
+        setor: novoSetor, 
+        nome: novoNome,
+        accessLevel: (novoRole === 'admin' || novoSetor === 'Financeiro') ? 'financeiro' : 'colaborador'
+    }));
   };
 
   if (!contaUser) {
-    return <BancoLogin onLoginSuccess={(dados) => setContaUser(dados)} />;
+    return <BancoLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Define permissões de visualização
-  const isCorporateView = ['admin', 'gestor', 'financeiro'].includes(contaUser.accessLevel);
+  // Verifica se é visualização Corporativa
+  const isCorporateView = contaUser.role === 'admin' || contaUser.setor === 'Financeiro';
 
   return (
     <div className="infinite-layout">
@@ -87,7 +162,7 @@ export default function Banco() {
         </div>
         
         <div className="account-type-badge">
-          {isCorporateView ? 'CONTA EMPRESARIAL' : 'CONTA SALÁRIO'}
+          {isCorporateView ? 'CONTA EMPRESARIAL' : 'CONTA PESSOAL'}
         </div>
         
         <nav className="infinite-nav">
@@ -99,8 +174,9 @@ export default function Banco() {
             <span className="icon">💳</span> Extrato
           </button>
           
-          {isCorporateView && (
-            <button className={activeTab === 'invest' ? 'active' : ''} onClick={() => alert("Área de Investimentos Corporativos")}>
+          {/* Gestores de qualquer área podem ver Investimentos Pessoais Premium, Financeiro vê Investimentos da Empresa */}
+          {(isCorporateView || contaUser.role === 'gestor') && (
+            <button className={activeTab === 'invest' ? 'active' : ''} onClick={() => alert(isCorporateView ? "Investimentos Corporativos" : "Investimentos Premium (Pessoa Física)")}>
               <span className="icon">📈</span> Investimentos
             </button>
           )}
@@ -115,10 +191,12 @@ export default function Banco() {
             <div className="avatar">{contaUser.nome[0]}</div>
             <div className="info">
               <strong>{contaUser.nome.split(' ')[0]}</strong>
-              <small style={{color:'#f59e0b'}}>{contaUser.cargo}</small>
+              <small style={{color:'#f59e0b', fontSize:'0.7rem'}}>
+                 {contaUser.setor} | {contaUser.role.toUpperCase()}
+              </small>
             </div>
           </div>
-          <button className="btn-logout-infinite" onClick={() => window.close()}>Sair</button>
+          <button className="btn-logout-infinite" onClick={() => window.close()}>Fechar</button>
         </div>
       </aside>
 
@@ -135,9 +213,9 @@ export default function Banco() {
           {activeTab === 'dashboard' && (
             <BancoDashboard 
               saldo={saldo} 
-              accessLevel={contaUser.accessLevel} 
+              accessLevel={isCorporateView ? 'financeiro' : 'colaborador'} // Compatibilidade
               onNavigate={setActiveTab}
-              isCorporate={isCorporateView} // Passamos a flag para o dashboard saber o que mostrar
+              isCorporate={isCorporateView} 
             />
           )}
           
@@ -145,26 +223,28 @@ export default function Banco() {
             <BancoExtrato 
               extrato={extrato} 
               saldo={saldo} 
-              isCorporate={isCorporateView} // Bloqueia RPA se não for corporate
+              isCorporate={isCorporateView} 
             />
           )}
 
           {activeTab === 'cards' && (
              <BancoCartoes 
-               accessLevel={contaUser.accessLevel} 
-               isCorporate={isCorporateView} // Mostra cartões diferentes
+               accessLevel={isCorporateView ? 'financeiro' : 'colaborador'}
+               isCorporate={isCorporateView} 
              />
           )}
         </div>
       </main>
 
+      {/* Widget Dev Interno */}
       {isDev && (
         <div className="bank-dev-widget">
-          <div className="dev-widget-header">🛠️ DEV MODE</div>
+          <div className="dev-widget-header">🛠️ SIMULAR PERFIL</div>
           <div className="dev-widget-body">
-            <button onClick={() => simularPerfilBanco('admin')} className={contaUser.accessLevel === 'admin' ? 'active' : ''}>ADMIN</button>
-            <button onClick={() => simularPerfilBanco('financeiro')} className={contaUser.accessLevel === 'financeiro' ? 'active' : ''}>FINANCEIRO</button>
-            <button onClick={() => simularPerfilBanco('colaborador')} className={contaUser.accessLevel === 'colaborador' ? 'active' : ''}>COLABORADOR</button>
+            <button onClick={() => simularPerfilBanco('admin')} className={contaUser.role === 'admin' ? 'active' : ''}>ADMIN</button>
+            <button onClick={() => simularPerfilBanco('financeiro')} className={contaUser.setor === 'Financeiro' ? 'active' : ''}>FINAN (CORP)</button>
+            <button onClick={() => simularPerfilBanco('rh_gestor')} className={contaUser.setor === 'RH' && contaUser.role === 'gestor' ? 'active' : ''}>GESTOR RH</button>
+            <button onClick={() => simularPerfilBanco('colaborador')} className={contaUser.role === 'colaborador' && contaUser.setor !== 'Financeiro' ? 'active' : ''}>COLAB (TI)</button>
           </div>
         </div>
       )}

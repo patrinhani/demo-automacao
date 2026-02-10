@@ -7,6 +7,9 @@ import { ref, onValue, get, set } from 'firebase/database';
 import { useUser } from '../contexts/UserContext'; 
 import './Dashboard.css';
 
+// 🔊 SOM DA NOTIFICAÇÃO (Mesmo do Chat/Popup)
+const CAMINHO_SOM = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   
@@ -23,6 +26,21 @@ export default function Dashboard() {
   // Estado para notificação Teams
   const [showTeams, setShowTeams] = useState(false);
   const [contagemReembolsos, setContagemReembolsos] = useState(0);
+
+  // 🔊 NOVO: Tocar som quando a notificação aparecer
+  useEffect(() => {
+    if (showTeams) {
+      // Cria o áudio usando a URL externa (Mixkit)
+      const audio = new Audio(CAMINHO_SOM); 
+      
+      // Volume ajustado para não assustar
+      audio.volume = 0.6; 
+      
+      audio.play().catch((erro) => {
+        console.warn("Autoplay bloqueado ou erro ao tocar som:", erro);
+      });
+    }
+  }, [showTeams]);
 
   // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Baseado no uidAtivo
   useEffect(() => {
@@ -115,11 +133,11 @@ export default function Dashboard() {
         const snapshot = await get(pontoRef);
 
         if (!snapshot.exists() || !snapshot.val().entrada) {
-            console.log("⏳ Timer 40s iniciado...");
+            console.log("⏳ Timer 10min iniciado...");
             const timer = setTimeout(async () => {
                 const checkAgain = await get(pontoRef);
                 if (!checkAgain.exists() || !checkAgain.val().entrada) {
-                    setShowTeams(true); // ATIVA O ALERTA
+                    setShowTeams(true); // ATIVA O ALERTA (e toca o som)
                     
                     const userRef = ref(db, `users/${user.uid}`);
                     const userSnap = await get(userRef);
@@ -135,7 +153,7 @@ export default function Dashboard() {
                         timestamp: Date.now()
                     });
                 }
-            }, 40000);
+            }, 600000);
             return () => clearTimeout(timer);
         }
     };
@@ -162,8 +180,6 @@ export default function Dashboard() {
       <Sidebar />
       
       <main className="tech-main">
-        {/* BARRA DE DEBUG REMOVIDA DAQUI */}
-
         <header className="tech-header">
           <div className="header-content">
             <h1>Visão Geral</h1>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from '../components/Sidebar'; // Adicionado Sidebar que faltava na visualização
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import { ref, set } from "firebase/database"; 
 import { db, auth, firebaseConfig } from '../firebase'; 
 import Logo from '../components/Logo';
@@ -9,7 +10,6 @@ import { jsPDF } from "jspdf";
 import './CadastroUsuario.css';
 
 // --- CONFIGURAÇÃO DE CARGOS COM PESOS (PROBABILIDADE) ---
-// Peso maior = maior chance de ser sorteado.
 const TABELA_CARGOS = [
   // --- RECURSOS HUMANOS ---
   { cargo: "Assistente de RH", salario: 2100.00, setor: "Recursos Humanos", peso: 40 },
@@ -56,19 +56,16 @@ export default function CadastroUsuario() {
   // --- LÓGICA DE SORTEIO PONDERADO ---
   const sortearCargoPorSetor = (setorAlvo) => {
     const cargosDoSetor = TABELA_CARGOS.filter(c => c.setor === setorAlvo);
-    
-    // Soma total dos pesos
     const pesoTotal = cargosDoSetor.reduce((acc, item) => acc + item.peso, 0);
     let random = Math.random() * pesoTotal;
     
-    // Seleciona baseado no peso
     for (const cargo of cargosDoSetor) {
       if (random < cargo.peso) {
         return cargo;
       }
       random -= cargo.peso;
     }
-    return cargosDoSetor[0]; // Fallback
+    return cargosDoSetor[0]; 
   };
 
   const gerarPDFBoasVindas = (user, cargoInfo) => {
@@ -94,7 +91,7 @@ export default function CadastroUsuario() {
     doc.rect(20, 80, 170, 45);
     doc.setFont("helvetica", "bold");
     doc.text("LOGIN:", 25, 90);
-    doc.text("SENHA TEMPORÁRIA:", 25, 100);
+    doc.text("SENHA PROVISÓRIA:", 25, 100); // Texto ajustado
     doc.text("MATRÍCULA:", 25, 110);
     doc.text("CARGO:", 25, 120);
 
@@ -124,7 +121,6 @@ export default function CadastroUsuario() {
   const handleCriarUsuariosEmLote = async (e) => {
     e.preventDefault();
     
-    // Quebra por linha e remove vazios
     const linhasBrutas = listaNomes.split('\n').filter(n => n.trim().length > 0);
     
     if (linhasBrutas.length === 0) {
@@ -143,63 +139,62 @@ export default function CadastroUsuario() {
 
       for (let i = 0; i < linhasBrutas.length; i++) {
         const linhaOriginal = linhasBrutas[i];
-        
-        // --- NOVA LÓGICA DE PARSEAMENTO (Nome ; Setor) ---
-        // Aceita separadores: ponto e vírgula (;) ou traço (-)
-        const partes = linhaOriginal.split(/[;-]/);
+        const partes = linhaOriginal.split(/[;-]/); // Separa por ; ou -
         
         const nomeLimpo = partes[0].trim();
         let setorAlvo = "";
         
-        // Verifica se o usuário especificou um setor
+        // Detecção de Setor Manual
         if (partes.length > 1) {
           const comando = partes[1].toLowerCase().trim();
-          
-          if (comando.includes('rh') || comando.includes('recursos') || comando.includes('humanos')) {
-            setorAlvo = "Recursos Humanos";
-          } else if (comando.includes('fin') || comando.includes('banco') || comando.includes('contas')) {
-            setorAlvo = "Financeiro";
-          }
+          if (comando.includes('rh') || comando.includes('recursos')) setorAlvo = "Recursos Humanos";
+          else if (comando.includes('fin') || comando.includes('banco')) setorAlvo = "Financeiro";
         }
 
-        // Se não especificou (ou não entendeu o comando), sorteia 50/50
+        // Sorteio se não definido
         if (!setorAlvo) {
           setorAlvo = Math.random() < 0.5 ? "Recursos Humanos" : "Financeiro";
         }
 
-        setProgresso(`Processando ${i + 1} de ${linhasBrutas.length}: ${nomeLimpo} -> ${setorAlvo}...`);
+        setProgresso(`Criando ${i + 1}/${linhasBrutas.length}: ${nomeLimpo} (${setorAlvo})...`);
         
-        // Sorteia cargo dentro do setor definido (respeitando os pesos)
         const cargoSorteado = sortearCargoPorSetor(setorAlvo);
-
         const emailGerado = gerarEmail(nomeLimpo);
         const matriculaGerada = gerarMatricula();
 
-        // Criar Auth no Firebase
+        // 1. Criar Auth no Firebase (App Secundário)
         const userCredential = await createUserWithEmailAndPassword(
           secondaryAuth, 
           emailGerado, 
           commonData.senhaPadrao
         );
-        const novoUid = userCredential.user.uid;
+        const novoUsuario = userCredential.user;
+        const novoUid = novoUsuario.uid;
 
-        // Salvar no Realtime Database
+        // 2. Atualizar Display Name no Auth
+        await updateProfile(novoUsuario, { displayName: nomeLimpo });
+
+        // 3. Salvar no Realtime Database (COM A SENHA!)
         await set(ref(db, `users/${novoUid}`), {
           nome: nomeLimpo,
           email: emailGerado,
           matricula: matriculaGerada,
           unidade: commonData.unidade,
           admissao: commonData.admissao,
+          
           cargo: cargoSorteado.cargo,
           setor: cargoSorteado.setor,
           salarioBase: cargoSorteado.salario,
-          role: 'colaborador',
+          
+          role: 'colaborador', // Todos nascem como colaborador padrão
+          senha: commonData.senhaPadrao, // <--- O CAMPO QUE FALTAVA
+          
           forceChangePassword: true,
           createdAt: new Date().toISOString(),
           createdBy: auth.currentUser.uid
         });
 
-        // Gerar PDF individual
+        // 4. Gerar PDF
         gerarPDFBoasVindas({
           nome: nomeLimpo,
           email: emailGerado,
@@ -208,117 +203,119 @@ export default function CadastroUsuario() {
         }, cargoSorteado);
 
         sucessos++;
-        // Pausa para evitar bloqueios ou sobreposição de download
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 500)); // Delay para não travar
       }
 
-      alert(`✅ PROCESSO CONCLUÍDO!\n${sucessos} usuários criados com sucesso.`);
-      navigate('/dashboard');
+      alert(`✅ SUCESSO!\n${sucessos} usuários criados.`);
+      setListaNomes(""); // Limpa lista
 
     } catch (error) {
-      console.error("Erro:", error);
-      alert("Erro durante o processo em lote: " + error.message);
+      console.error("Erro no lote:", error);
+      alert("Erro parcial ou total: " + error.message);
     } finally {
-      if (secondaryApp) await signOut(getAuth(secondaryApp));
+      if (secondaryApp) await signOut(getAuth(secondaryApp)); // Limpa app secundário
       setLoading(false);
       setProgresso("");
     }
   };
 
-  if (checkingAuth) return <div className="loading-screen">Verificando permissões...</div>;
+  if (checkingAuth) return <div className="loading-screen">Carregando...</div>;
 
   return (
-    <div className="cadastro-layout">
-      <header className="tech-header-glass">
-        <div className="header-left">
-           <div style={{transform: 'scale(0.8)'}}><Logo /></div>
-           <span className="divider">|</span>
-           <span className="page-title">Gestão de Acessos (Lote Inteligente)</span>
+    <div className="tech-layout">
+      {/* Adicionei o Sidebar para manter a consistência visual */}
+      <Sidebar />
+      <div className="ambient-light light-2"></div>
+
+      <main className="tech-main">
+        <header className="tech-header-glass">
+            <div className="header-left">
+            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
+            <span className="divider">|</span>
+            <span className="page-title">Fábrica de Usuários (Lote)</span>
+            </div>
+        </header>
+
+        <div className="cadastro-container" style={{padding:'20px'}}>
+            <div className="form-card-glass" style={{maxWidth:'800px', margin:'0 auto'}}>
+            <div className="form-header">
+                <h2>Gerador de Usuários em Massa</h2>
+                <p style={{fontSize: '0.9rem', opacity: 0.8}}>
+                Cria logins reais, salva senhas no banco para testes e gera PDFs de boas-vindas.
+                </p>
+            </div>
+
+            <form onSubmit={handleCriarUsuariosEmLote} className="cadastro-form">
+                
+                <div className="form-row">
+                <div className="form-group" style={{flex: 2}}>
+                    <label>Lista de Nomes (Um por linha)</label>
+                    <textarea 
+                    value={listaNomes} 
+                    onChange={(e) => setListaNomes(e.target.value)} 
+                    required 
+                    autoFocus 
+                    placeholder={"Exemplos:\nAna Costa\nPedro Santos ; Financeiro\nLucas Silva ; RH"}
+                    rows={8}
+                    style={{
+                        width: '100%',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: '1px solid #334155',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        color: '#e2e8f0',
+                        fontSize: '1rem',
+                        fontFamily: 'monospace'
+                    }}
+                    />
+                </div>
+                </div>
+
+                <div className="form-row">
+                <div className="form-group">
+                    <label>Senha Padrão (Salva no Banco)</label>
+                    <input 
+                    type="text" 
+                    value={commonData.senhaPadrao} 
+                    onChange={(e) => setCommonData({...commonData, senhaPadrao: e.target.value})} 
+                    required 
+                    style={{color:'#34d399', fontWeight:'bold'}}
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Unidade</label>
+                    <select value={commonData.unidade} onChange={(e) => setCommonData({...commonData, unidade: e.target.value})}>
+                    <option>Matriz SP - TechHub</option>
+                    <option>Filial RJ - Centro</option>
+                    <option>Filial MG - Savassi</option>
+                    <option>Home Office</option>
+                    </select>
+                </div>
+                </div>
+
+                {loading && (
+                <div style={{
+                    textAlign: 'center', 
+                    color: '#0ea5e9', 
+                    margin: '1rem 0', 
+                    fontWeight: 'bold',
+                    padding: '10px',
+                    background: 'rgba(14, 165, 233, 0.1)',
+                    borderRadius: '8px'
+                }}>
+                    ⏳ {progresso}
+                </div>
+                )}
+
+                <div className="form-actions">
+                <button type="submit" className="btn-create-user" disabled={loading || !listaNomes.trim()}>
+                    {loading ? 'Processando...' : '🚀 Gerar Usuários'}
+                </button>
+                </div>
+            </form>
+            </div>
         </div>
-        <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Cancelar ✖</button>
-      </header>
-
-      <div className="cadastro-container">
-        <div className="form-card-glass">
-          <div className="form-header">
-            <h2>Cadastrar Usuários em Lote</h2>
-            <p style={{fontSize: '0.9rem', opacity: 0.8}}>
-              <strong>Dica:</strong> Digite apenas o nome para setor aleatório, ou use "Nome ; Setor" para forçar.
-            </p>
-          </div>
-
-          <form onSubmit={handleCriarUsuariosEmLote} className="cadastro-form">
-            
-            <div className="form-row">
-              <div className="form-group" style={{flex: 2}}>
-                <label>Lista de Nomes (Um por linha)</label>
-                <textarea 
-                  value={listaNomes} 
-                  onChange={(e) => setListaNomes(e.target.value)} 
-                  required 
-                  autoFocus 
-                  placeholder={"Exemplos:\nJoão Silva  (Aleatório)\nMaria Souza ; RH  (Forçar RH)\nCarlos Lima ; Fin  (Forçar Financeiro)"}
-                  rows={8}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(15, 23, 42, 0.8)',
-                    border: '1px solid #334155',
-                    padding: '0.8rem',
-                    borderRadius: '8px',
-                    color: '#e2e8f0',
-                    fontSize: '1rem',
-                    fontFamily: 'monospace', // Ajuda a visualizar melhor a lista
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Data de Admissão (Para todos)</label>
-                <input 
-                  type="date" 
-                  value={commonData.admissao} 
-                  onChange={(e) => setCommonData({...commonData, admissao: e.target.value})} 
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Unidade</label>
-                <select value={commonData.unidade} onChange={(e) => setCommonData({...commonData, unidade: e.target.value})}>
-                  <option>Matriz SP - TechHub</option>
-                  <option>Filial RJ - Centro</option>
-                  <option>Filial MG - Savassi</option>
-                  <option>Remoto</option>
-                </select>
-              </div>
-            </div>
-
-            <hr className="divider-neon" />
-
-            {loading && (
-              <div style={{
-                textAlign: 'center', 
-                color: '#0ea5e9', 
-                marginBottom: '1rem', 
-                fontWeight: 'bold',
-                padding: '10px',
-                background: 'rgba(14, 165, 233, 0.1)',
-                borderRadius: '8px'
-              }}>
-                {progresso}
-              </div>
-            )}
-
-            <div className="form-actions">
-              <button type="submit" className="btn-create-user" disabled={loading || !listaNomes.trim()}>
-                {loading ? 'Processando...' : 'Gerar Todos os Usuários e PDFs'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

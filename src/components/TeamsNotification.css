@@ -1,105 +1,160 @@
-.teams-toast {
+/* ======================================================
+   NOTIFICAÇÃO TECHCORP (Substitui estilo Teams)
+   ====================================================== */
+
+.tech-toast {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 320px;
-    background: #1f1f1f;
-    border: 1px solid #333;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    font-family: 'Segoe UI', sans-serif;
+    bottom: 30px;
+    right: 30px;
+    width: 340px;
+    
+    /* Estilo Glassmorphism igual ao ChatInterno */
+    background: rgba(15, 23, 42, 0.95); /* Dark Slate */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    
+    border-radius: 12px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     z-index: 9999;
     color: white;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.teams-toast-header {
-    background: #2b2b2b;
-    padding: 8px 12px;
+/* Borda brilhante sutil no topo (Estilo Neon) */
+.tech-toast::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.8), transparent);
+}
+
+/* --- HEADER --- */
+.tech-toast-header {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tech-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-    border-bottom: 1px solid #333;
 }
 
-.teams-icon {
-    background: #4f52b2;
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 12px;
+.tech-icon {
+    font-size: 14px;
 }
 
-.teams-app-name {
-    font-size: 12px;
-    color: #aaa;
-    flex-grow: 1;
+.tech-app-name {
+    font-size: 0.75rem;
+    color: #94a3b8; /* Slate 400 */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.teams-close {
+.tech-close {
     background: none;
     border: none;
-    color: #aaa;
+    color: #94a3b8;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.2s;
 }
 
-.teams-content {
-    padding: 12px;
+.tech-close:hover {
+    color: #ef4444; /* Vermelho ao passar o mouse */
+}
+
+/* --- CONTEÚDO --- */
+.tech-content {
+    padding: 16px;
     display: flex;
-    gap: 12px;
+    gap: 14px;
+    align-items: flex-start;
 }
 
-.teams-avatar-mock {
-    width: 40px;
-    height: 40px;
-    background: #4f52b2;
+/* Avatar do Robô com Status */
+.tech-avatar-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.tech-avatar-img {
+    width: 42px;
+    height: 42px;
+    background: rgba(59, 130, 246, 0.15); /* Azul translúcido */
+    border: 1px solid rgba(59, 130, 246, 0.3);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
+    color: white;
 }
 
-.teams-text strong {
+.tech-status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background-color: #ef4444; /* Vermelho para alerta/erro */
+    border: 2px solid #0f172a; /* Cor do fundo para "recortar" */
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); /* Glow vermelho */
+    animation: pulse-red 2s infinite;
+}
+
+/* Texto */
+.tech-text {
+    flex: 1;
+}
+
+.tech-text strong {
     display: block;
-    font-size: 14px;
+    font-size: 0.95rem;
+    color: #fff;
     margin-bottom: 4px;
+    font-weight: 600;
 }
 
-.teams-text p {
-    font-size: 13px;
-    color: #ccc;
+.tech-text p {
+    font-size: 0.85rem;
+    color: #cbd5e1; /* Slate 300 */
     margin: 0;
     line-height: 1.4;
 }
 
-.teams-footer {
-    padding: 8px 12px;
-    background: #252525;
-}
-
-.teams-btn-reply {
-    background: #4f52b2;
-    color: white;
-    border: none;
-    padding: 6px 16px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    width: 100%;
-}
-
+/* --- ANIMAÇÕES --- */
 .slide-in-right {
-    animation: slideIn 0.5s ease-out forwards;
+    animation: slideInTech 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+@keyframes slideInTech {
+    from { 
+        transform: translateX(120%) scale(0.9); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }

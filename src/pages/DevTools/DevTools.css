@@ -224,3 +224,28 @@
   color: #d8b4fe; padding: 6px 16px; border-radius: 6px; cursor: pointer;
 }
 .tech-back-btn:hover { background: #a855f7; color: white; border-color: #a855f7; }
+
+/* ... (Mantenha o resto do CSS igual) ... */
+
+/* ADICIONE ISTO AO FINAL DO ARQUIVO: */
+
+/* Botão de Perigo Sólido (Texto Branco) */
+.btn-danger-solid {
+  background: #ef4444;
+  color: white !important; /* Força texto branco */
+  border: 1px solid #dc2626;
+  width: 100%;
+  margin-top: 5px;
+  font-size: 0.8rem;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.btn-danger-solid:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
