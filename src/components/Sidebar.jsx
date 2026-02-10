@@ -24,11 +24,10 @@ export default function Sidebar() {
 
   // --- MUDANÇA: ENVIA CARGO E SETOR NA URL ---
   const abrirBancoExterno = () => {
-    // Monta a URL com os dois parâmetros para o banco saber exatamente quem é você
     const params = new URLSearchParams();
     
-    if (simulatedRole) params.append('role', simulatedRole);   // ex: gestor, colaborador
-    if (simulatedSetor) params.append('setor', simulatedSetor); // ex: Financeiro, RH
+    if (simulatedRole) params.append('role', simulatedRole);
+    if (simulatedSetor) params.append('setor', simulatedSetor);
     
     window.open(`/banco?${params.toString()}`, '_blank');
   };
@@ -52,7 +51,12 @@ export default function Sidebar() {
             <button onClick={() => switchProfile('rh')} style={{ flex:1, fontSize:'9px', padding:'5px', background: userSetor === 'RH' ? '#a855f7' : '#333' }}>RH</button>
             <button onClick={() => switchProfile('colaborador')} style={{ flex:1, fontSize:'9px', padding:'5px', background: simulatedRole === 'colaborador' ? '#a855f7' : '#333' }}>COLAB</button>
           </div>
+          
+          {/* Botões de Ferramentas */}
           <button onClick={() => navigate('/dev-tools')} style={{ width:'100%', background: 'transparent', border:'1px solid #a855f7', color:'#d8b4fe', fontSize:'11px', padding:'5px', borderRadius:'4px' }}>Fábrica de Dados ⚡</button>
+          
+          {/* --- NOVO BOTÃO ADICIONADO AQUI --- */}
+          <button onClick={() => navigate('/pdf-factory')} style={{ width:'100%', background: 'transparent', border:'1px solid #a855f7', color:'#d8b4fe', fontSize:'11px', padding:'5px', borderRadius:'4px', marginTop: '5px' }}>Fábrica de PDF 🖨️</button>
         </div>
       )}
 
@@ -102,7 +106,7 @@ export default function Sidebar() {
           <button className={`nav-item ${isActive('/Carreira')}`} onClick={() => navigate('/Carreira')}><span className="icon">🚀</span> Carreira</button>
         </div>
 
-        {/* === COMUNICAÇÃO (Onde o Chat foi inserido) === */}
+        {/* === COMUNICAÇÃO === */}
         <div className="nav-section">
           <span className="nav-title">Comunicação</span>
           <button className={`nav-item ${isActive('/chat')}`} onClick={() => navigate('/chat')}><span className="icon">💬</span> Chat Interno</button>

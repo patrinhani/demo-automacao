@@ -3,39 +3,42 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useUser } from '../../contexts/UserContext';
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable'; // Caso tenha tabelas complexas
+import 'jspdf-autotable'; 
+
+import { db } from '../../firebase'; 
+import { ref, get } from 'firebase/database'; 
+
 import './PDFFactory.css';
 
 export default function PDFFactory() {
   const { isDev } = useUser();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('boasvindas');
+  const [previewUrl, setPreviewUrl] = useState(null);
+  
+  const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+  const [progressoBatch, setProgressoBatch] = useState("");
 
-  // Estado único para o formulário (campos mudam conforme a aba)
   const [formData, setFormData] = useState({
-    // Boas Vindas
-    nome: 'João Dev',
-    email: 'joao.dev@tech.com',
-    senha: 'SenhaForte123',
-    matricula: '900123',
-    cargo: 'Senior Fullstack',
-    
-    // Holerite
+    nome: 'Usuario Exemplo',
+    email: 'usuario.comprido@techcorp.com.br', // Exemplo longo para teste
+    senha: 'Mudar@123',
+    cargo: 'Novo Colaborador',
+    dataInicio: '2023-10-25',
+    horarioInicio: '09:00',
+    // ...outros campos mantidos
     mes: '10/2023',
     salarioBase: 8500,
     horasExtras: 1500,
     descontos: 2000,
-    
-    // Nota Fiscal
     cliente: 'Cliente Teste Ltda',
     cnpj: '12.345.678/0001-90',
     valorNota: 15000,
     descricaoServico: 'Desenvolvimento de Software Customizado'
   });
 
-  // Segurança: Só Dev entra
   useEffect(() => {
-    if (isDev === false) { // Verifica explicitamente false (carregado)
+    if (isDev === false) { 
       alert("Acesso restrito a Desenvolvedores.");
       navigate('/dashboard');
     }
@@ -45,140 +48,206 @@ export default function PDFFactory() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- GERADORES DE PDF ---
+  // =========================================================================
+  // --- GERADOR DE PDF (COM CORREÇÃO DE TAMANHO DE FONTE) ---
+  // =========================================================================
 
-  const gerarBoasVindas = () => {
+  const montarDocBoasVindas = (dadosOverride = null) => {
+    const dados = dadosOverride || formData; 
+
     const doc = new jsPDF();
+    const dataFormatada = dados.dataInicio ? dados.dataInicio.split('-').reverse().join('/') : '--/--/----';
+
+    // 1. Fundo Tech
+    doc.setFillColor(248, 250, 252); 
+    doc.rect(0, 0, 210, 297, 'F');
     
-    // Header Azul
-    doc.setFillColor(14, 165, 233); // #0ea5e9
-    doc.rect(0, 0, 210, 40, 'F');
+    // Linhas diagonais
+    doc.setDrawColor(226, 232, 240); 
+    doc.setLineWidth(0.5);
+    for (let i = -100; i < 300; i += 10) {
+      doc.line(0, i, 210, i + 100); 
+    }
+
+    // Moldura
+    doc.setDrawColor(168, 85, 247); 
+    doc.setLineWidth(2);
+    doc.roundedRect(10, 10, 190, 277, 4, 4);
+
+    // 2. Cabeçalho
+    doc.setFillColor(168, 85, 247);
+    doc.circle(105, 40, 12, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text("BEM-VINDO À TECHCORP", 105, 25, { align: "center" });
-
-    // Corpo
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(16);
-    doc.text(`Olá, ${formData.nome}!`, 20, 60);
     doc.setFontSize(12);
-    doc.text("Abaixo estão suas credenciais de acesso geradas manualmente:", 20, 70);
-
-    // Box de Credenciais
-    doc.setDrawColor(14, 165, 233);
-    doc.rect(20, 80, 170, 50);
-    
     doc.setFont("helvetica", "bold");
-    doc.text("LOGIN:", 25, 95);
-    doc.text("SENHA:", 25, 105);
-    doc.text("MATRÍCULA:", 25, 115);
-    doc.text("CARGO:", 25, 125);
+    doc.text("TC", 105, 42, { align: "center" });
 
+    doc.setTextColor(30, 41, 59); 
+    doc.setFontSize(22);
+    doc.text("BEM-VINDO AO TIME", 105, 65, { align: "center" });
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); 
     doc.setFont("helvetica", "normal");
-    doc.text(formData.email, 75, 95);
-    doc.text(formData.senha, 75, 105);
-    doc.text(formData.matricula, 75, 115);
-    doc.text(formData.cargo, 75, 125);
+    doc.text("Seu acesso oficial ao ecossistema TechCorp", 105, 72, { align: "center" });
 
-    doc.save(`BoasVindas_${formData.nome}.pdf`);
+    // 3. Card Central
+    doc.setDrawColor(203, 213, 225);
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(35, 90, 140, 120, 3, 3, 'FD');
+    doc.setFillColor(168, 85, 247); 
+    doc.rect(36, 91, 138, 4, 'F'); 
+
+    // Dados Principais
+    doc.setTextColor(15, 23, 42); 
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text((dados.nome || "Colaborador").toUpperCase(), 105, 115, { align: "center" });
+    
+    doc.setTextColor(168, 85, 247); 
+    doc.setFontSize(11);
+    doc.text(dados.cargo || "Cargo não definido", 105, 122, { align: "center" });
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(50, 130, 160, 130);
+
+    // Detalhes
+    const startY = 145;
+    const col1X = 50;
+    const col2X = 115;
+    const lineHeight = 18;
+
+    // --- FUNÇÃO CORRIGIDA: AUTO-AJUSTE DE FONTE ---
+    const drawItem = (x, y, label, valueStr, color, maxWidth = 50) => {
+        const valorFinal = String(valueStr || "");
+
+        // Marcador (Bolinha)
+        doc.setFillColor(...color); 
+        doc.circle(x, y - 1, 1.5, 'F');
+
+        // Rótulo
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139); 
+        doc.setFont("helvetica", "bold");
+        doc.text(label, x + 5, y);
+
+        // Valor (Com ajuste automático de tamanho)
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(15, 23, 42); 
+        
+        let fontSize = 11; // Tamanho ideal
+        doc.setFontSize(fontSize);
+        
+        // Reduz a fonte enquanto o texto for maior que o espaço permitido (maxWidth)
+        // O limite mínimo da fonte é 6 para não ficar ilegível
+        while (doc.getTextWidth(valorFinal) > maxWidth && fontSize > 6) {
+            fontSize -= 0.5;
+            doc.setFontSize(fontSize);
+        }
+
+        doc.text(valorFinal, x + 5, y + 6);
+    };
+
+    // Aumentei um pouco o maxWidth (55) para aproveitar bem o espaço
+    drawItem(col1X, startY, "DATA DE INICIO", dataFormatada, [59, 130, 246], 55); 
+    drawItem(col1X, startY + lineHeight, "HORARIO", `${dados.horarioInicio || "09:00"} h`, [16, 185, 129], 55); 
+    
+    // Login e Senha podem ser longos, então o auto-ajuste vai atuar aqui
+    drawItem(col2X, startY, "LOGIN DE ACESSO", dados.email || "email@tech.com", [249, 115, 22], 55); 
+    drawItem(col2X, startY + lineHeight, "SENHA PROVISORIA", dados.senha || "Mudar@123", [239, 68, 68], 55); 
+
+    // --- MENSAGEM DE AVISO ---
+    doc.setFillColor(254, 226, 226); 
+    doc.roundedRect(45, 185, 120, 15, 2, 2, 'F'); 
+    
+    doc.setFontSize(9);
+    doc.setTextColor(185, 28, 28); 
+    doc.setFont("helvetica", "bold");
+    doc.text("E OBRIGATORIO ESTAR COM O CONVITE", 105, 191, { align: "center" });
+    doc.text("EM MAOS NO DIA DE INICIO.", 105, 196, { align: "center" });
+
+    // 4. Rodapé
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); 
+    doc.setFont("helvetica", "normal");
+    doc.text("Este documento e pessoal e intransferivel.", 105, 220, { align: "center" });
+
+    return doc;
   };
 
-  const gerarHolerite = () => {
-    const doc = new jsPDF();
-    const salario = parseFloat(formData.salarioBase);
-    const extras = parseFloat(formData.horasExtras);
-    const desc = parseFloat(formData.descontos);
-    const liquido = salario + extras - desc;
+  const montarDocHolerite = () => { const doc = new jsPDF(); doc.text("Holerite", 10, 10); return doc; };
+  const montarDocNotaFiscal = () => { const doc = new jsPDF(); doc.text("NFE", 10, 10); return doc; };
 
-    // Header
-    doc.setFontSize(18);
-    doc.text("DEMONSTRATIVO DE PAGAMENTO", 105, 20, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(`Referência: ${formData.mes}`, 105, 28, { align: "center" });
-    doc.line(10, 35, 200, 35);
+  // --- EFEITOS E AÇÕES ---
 
-    // Dados Func
-    doc.text(`Funcionário: ${formData.nome}`, 15, 45);
-    doc.text(`Matrícula: ${formData.matricula}`, 150, 45);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let doc;
+      if (activeTab === 'boasvindas') doc = montarDocBoasVindas(); 
+      if (activeTab === 'holerite') doc = montarDocHolerite();
+      if (activeTab === 'nfe') doc = montarDocNotaFiscal();
+      if (doc) setPreviewUrl(doc.output('bloburl'));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData, activeTab]);
 
-    // Tabela (Desenhada manualmente para controle total)
-    let y = 60;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(10, y-5, 190, 8, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.text("DESCRIÇÃO", 15, y);
-    doc.text("VENCIMENTOS", 110, y);
-    doc.text("DESCONTOS", 160, y);
-    doc.setFont(undefined, 'normal');
-
-    y += 10;
-    doc.text("Salário Base", 15, y);
-    doc.text(salario.toFixed(2), 135, y, { align: 'right' });
-
-    y += 8;
-    doc.text("Horas Extras / Prêmios", 15, y);
-    doc.text(extras.toFixed(2), 135, y, { align: 'right' });
-
-    y += 8;
-    doc.text("INSS / IRRF / Benefícios", 15, y);
-    doc.text(desc.toFixed(2), 185, y, { align: 'right' });
-
-    // Totais
-    y += 20;
-    doc.line(10, y, 200, y);
-    y += 10;
-    doc.setFont(undefined, 'bold');
-    doc.text("LÍQUIDO A RECEBER:", 120, y);
-    doc.setFontSize(14);
-    doc.text(`R$ ${liquido.toFixed(2)}`, 190, y, { align: 'right' });
-
-    doc.save(`Holerite_${formData.mes.replace('/','-')}.pdf`);
+  const handleDownload = () => {
+    let doc;
+    if (activeTab === 'boasvindas') doc = montarDocBoasVindas();
+    else if (activeTab === 'holerite') doc = montarDocHolerite();
+    else if (activeTab === 'nfe') doc = montarDocNotaFiscal();
+    
+    if (doc) doc.save(`Preview_${activeTab}.pdf`);
   };
 
-  const gerarNotaFiscal = () => {
-    const doc = new jsPDF();
-    
-    // Logo Tech
-    doc.setFontSize(24);
-    doc.setTextColor(168, 85, 247); // Roxo Tech
-    doc.text("TECHCORP", 20, 30);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text("NOTA FISCAL DE SERVIÇOS ELETRÔNICA - NFS-e", 120, 25);
-    doc.text(`Emissão: ${new Date().toLocaleDateString()}`, 120, 30);
+  // --- GERAÇÃO EM LOTE COM DELAY ---
+  const handleGerarLoteBanco = async () => {
+    if (!confirm("Gerar PDFs para TODOS os usuários? Isso pode levar alguns segundos.")) return;
+    setIsGeneratingBatch(true);
+    setProgressoBatch("Iniciando...");
 
-    doc.setDrawColor(0);
-    doc.line(10, 40, 200, 40);
+    try {
+      const usersRef = ref(db, 'users'); 
+      const snapshot = await get(usersRef);
 
-    // Tomador
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text("TOMADOR DO SERVIÇO", 20, 50);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text(`Razão Social: ${formData.cliente}`, 20, 60);
-    doc.text(`CNPJ: ${formData.cnpj}`, 20, 65);
+      if (snapshot.exists()) {
+        const usersData = snapshot.val();
+        const listaUsuarios = Object.values(usersData);
+        const total = listaUsuarios.length;
+        let count = 0;
 
-    // Serviço
-    doc.rect(15, 80, 180, 80);
-    doc.setFont(undefined, 'bold');
-    doc.text("DISCRIMINAÇÃO DOS SERVIÇOS", 20, 90);
-    doc.setFont(undefined, 'normal');
-    
-    // Quebra de linha automática
-    const splitText = doc.splitTextToSize(formData.descricaoServico, 170);
-    doc.text(splitText, 20, 100);
+        for (const userData of listaUsuarios) {
+          count++;
+          setProgressoBatch(`Gerando ${count} de ${total}...`);
 
-    // Valor
-    doc.setFillColor(230, 230, 230);
-    doc.rect(130, 170, 65, 20, 'F');
-    doc.setFontSize(12);
-    doc.text("VALOR TOTAL:", 135, 182);
-    doc.setFont(undefined, 'bold');
-    doc.text(`R$ ${parseFloat(formData.valorNota).toFixed(2)}`, 190, 182, { align: 'right' });
+          const dadosCompletos = {
+            nome: userData.nome || "Sem Nome",
+            email: userData.email || "Sem Email",
+            cargo: userData.cargo || "Colaborador",
+            senha: userData.senha || "Mudar@123",
+            dataInicio: formData.dataInicio,
+            horarioInicio: formData.horarioInicio
+          };
 
-    doc.save(`NFE_${formData.cliente}.pdf`);
+          const pdfDoc = montarDocBoasVindas(dadosCompletos);
+          pdfDoc.save(`Convite_${dadosCompletos.nome.replace(/\s+/g, '_')}.pdf`);
+
+          // Delay de 800ms para evitar bloqueio de múltiplos downloads
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        setProgressoBatch("Concluído!");
+        alert(`Sucesso! ${count} arquivos gerados. Verifique sua pasta de Downloads.`);
+      } else {
+        alert("Nenhum usuário encontrado no banco de dados.");
+      }
+    } catch (error) {
+      console.error("Erro no lote:", error);
+      alert("Erro ao buscar usuários: " + error.message);
+    } finally {
+      setIsGeneratingBatch(false);
+      setProgressoBatch("");
+    }
   };
 
   if (!isDev) return null;
@@ -192,7 +261,7 @@ export default function PDFFactory() {
         <header className="tech-header">
           <div className="header-content">
             <h1>🏭 Fábrica de PDFs</h1>
-            <p>Gerador de Documentos para Teste e Validação</p>
+            <p>Gerador e Visualizador em Tempo Real</p>
           </div>
           <div className="dev-badge">DEV MODE</div>
         </header>
@@ -200,121 +269,66 @@ export default function PDFFactory() {
         <div className="tech-scroll-content">
           <div className="pdf-factory-container">
             
-            {/* ABAS */}
             <div className="factory-tabs">
-              <button 
-                className={activeTab === 'boasvindas' ? 'active' : ''} 
-                onClick={() => setActiveTab('boasvindas')}
-              >
-                🎉 Kit Boas-Vindas
-              </button>
-              <button 
-                className={activeTab === 'holerite' ? 'active' : ''} 
-                onClick={() => setActiveTab('holerite')}
-              >
-                💰 Holerite
-              </button>
-              <button 
-                className={activeTab === 'nfe' ? 'active' : ''} 
-                onClick={() => setActiveTab('nfe')}
-              >
-                🧾 Nota Fiscal
-              </button>
+              <button className={activeTab === 'boasvindas' ? 'active' : ''} onClick={() => setActiveTab('boasvindas')}>🎉 Convite Tech</button>
+              <button className={activeTab === 'holerite' ? 'active' : ''} onClick={() => setActiveTab('holerite')}>💰 Holerite</button>
+              <button className={activeTab === 'nfe' ? 'active' : ''} onClick={() => setActiveTab('nfe')}>🧾 Nota Fiscal</button>
             </div>
 
-            <div className="factory-card">
-              {/* FORMULÁRIO BOAS VINDAS */}
-              {activeTab === 'boasvindas' && (
-                <div className="form-grid">
-                  <div className="form-group-tech">
-                    <label>Nome do Funcionário</label>
-                    <input name="nome" value={formData.nome} onChange={handleChange} />
+            <div className="factory-content-grid">
+              
+              <div className="factory-card">
+                {activeTab === 'boasvindas' && (
+                  <>
+                    <div style={{background: 'rgba(59, 130, 246, 0.1)', padding:'15px', borderRadius:'8px', marginBottom:'20px', border:'1px solid #3b82f6'}}>
+                      <h4 style={{color:'#60a5fa', margin:'0 0 10px 0'}}>🚀 Geração em Lote</h4>
+                      <p style={{fontSize:'0.8rem', color:'#cbd5e1', marginBottom:'10px'}}>
+                        Usa usuários do Realtime DB. Configure Data e Horário abaixo.
+                      </p>
+                      
+                      {isGeneratingBatch && (
+                         <div style={{marginBottom:'10px', color:'#bef264', fontWeight:'bold', fontSize:'0.9rem'}}>
+                           {progressoBatch}
+                         </div>
+                      )}
+
+                      <button 
+                        className="btn-generate" 
+                        style={{background: isGeneratingBatch ? '#475569' : '#3b82f6', width:'100%'}}
+                        onClick={handleGerarLoteBanco}
+                        disabled={isGeneratingBatch}
+                      >
+                        {isGeneratingBatch ? '⏳ Gerando...' : '🏭 Gerar Convites para TODOS'}
+                      </button>
+                    </div>
+
+                    <div className="form-grid">
+                      <div className="form-group-tech"><label>Data Início (Padrão)</label><input type="date" name="dataInicio" value={formData.dataInicio} onChange={handleChange} /></div>
+                      <div className="form-group-tech"><label>Horário (Padrão)</label><input type="time" name="horarioInicio" value={formData.horarioInicio} onChange={handleChange} /></div>
+                      
+                      <div className="form-group-tech full-width"><hr style={{borderColor:'#334155'}}/><label>Dados para Preview</label></div>
+                      <div className="form-group-tech"><label>Nome</label><input name="nome" value={formData.nome} onChange={handleChange} /></div>
+                      <div className="form-group-tech"><label>Cargo</label><input name="cargo" value={formData.cargo} onChange={handleChange} /></div>
+                      <div className="form-group-tech"><label>Email</label><input name="email" value={formData.email} onChange={handleChange} /></div>
+                      <div className="form-group-tech"><label>Senha</label><input name="senha" value={formData.senha} onChange={handleChange} /></div>
+                    </div>
+                  </>
+                )}
+
+                {activeTab !== 'boasvindas' && (
+                  <div className="form-grid">
+                     <div className="form-group-tech full-width" style={{textAlign:'center', color:'#aaa'}}>Selecione Convite para usar o Lote.</div>
                   </div>
-                  <div className="form-group-tech">
-                    <label>Cargo</label>
-                    <input name="cargo" value={formData.cargo} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>E-mail</label>
-                    <input name="email" value={formData.email} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Senha Provisória</label>
-                    <input name="senha" value={formData.senha} onChange={handleChange} />
-                  </div>
-                  
-                  <div className="action-area">
-                    <button className="btn-generate" onClick={gerarBoasVindas}>
-                      🖨️ Baixar PDF de Boas-Vindas
-                    </button>
-                  </div>
+                )}
+
+                <div className="action-area">
+                  <button className="btn-generate" onClick={handleDownload}>💾 Baixar Preview</button>
                 </div>
-              )}
+              </div>
 
-              {/* FORMULÁRIO HOLERITE */}
-              {activeTab === 'holerite' && (
-                <div className="form-grid">
-                  <div className="form-group-tech">
-                    <label>Nome</label>
-                    <input name="nome" value={formData.nome} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Mês de Referência</label>
-                    <input name="mes" value={formData.mes} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Salário Base (R$)</label>
-                    <input type="number" name="salarioBase" value={formData.salarioBase} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Horas Extras / Bônus (R$)</label>
-                    <input type="number" name="horasExtras" value={formData.horasExtras} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Descontos Totais (R$)</label>
-                    <input type="number" name="descontos" value={formData.descontos} onChange={handleChange} />
-                  </div>
-
-                  <div className="action-area">
-                    <button className="btn-generate" onClick={gerarHolerite}>
-                      🖨️ Gerar Holerite
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* FORMULÁRIO NOTA FISCAL */}
-              {activeTab === 'nfe' && (
-                <div className="form-grid">
-                  <div className="form-group-tech">
-                    <label>Cliente (Razão Social)</label>
-                    <input name="cliente" value={formData.cliente} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>CNPJ</label>
-                    <input name="cnpj" value={formData.cnpj} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech">
-                    <label>Valor da Nota (R$)</label>
-                    <input type="number" name="valorNota" value={formData.valorNota} onChange={handleChange} />
-                  </div>
-                  <div className="form-group-tech full-width">
-                    <label>Descrição do Serviço</label>
-                    <textarea 
-                      name="descricaoServico" 
-                      value={formData.descricaoServico} 
-                      onChange={handleChange} 
-                      rows="4"
-                    />
-                  </div>
-
-                  <div className="action-area">
-                    <button className="btn-generate" onClick={gerarNotaFiscal}>
-                      🖨️ Emitir Nota Fiscal (Teste)
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="preview-card">
+                {previewUrl ? <iframe src={previewUrl} className="pdf-iframe" title="PDF Preview" /> : <div style={{padding:'20px', color:'white'}}>Carregando...</div>}
+              </div>
 
             </div>
           </div>

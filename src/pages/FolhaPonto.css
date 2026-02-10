@@ -9,19 +9,29 @@
   background-color: #0f172a;
   overflow: hidden;
   position: relative;
+  /* Garante que não tenha rolagem horizontal na página inteira */
+  width: 100vw; 
 }
 
-/* Container Principal */
+/* Container de Rolagem (Ocupa a largura total para a scrollbar ficar na borda) */
 .ponto-container {
   flex: 1;
   overflow-y: auto;
-  padding: 30px;
-  max-width: 1000px;
+  overflow-x: hidden; /* Remove scroll horizontal do container principal */
   width: 100%;
-  margin: 0 auto;
+  padding: 30px 20px; /* Padding lateral menor para mobile */
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  align-items: center; /* Centraliza o filho */
+}
+
+/* Conteúdo Centralizado (Aqui limitamos a largura visual) */
+.ponto-content {
+    width: 100%;
+    max-width: 1250px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
 /* --- CARD DO RELÓGIO (DESTAQUE) --- */
@@ -31,7 +41,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 40px;
-  margin-top: 30px;
+  margin-top: 10px; /* Ajuste fino */
   text-align: center;
   box-shadow: 0 0 40px rgba(59, 130, 246, 0.1);
   position: relative;
@@ -140,221 +150,33 @@
   opacity: 0.7;
 }
 
-/* -----------------------------------------------------------
-   NOVOS ESTILOS PARA GESTÃO RH
-   ----------------------------------------------------------- */
+/* ===========================================================
+   HEADER E BOTÕES DE TOGGLE
+   =========================================================== */
 
-.toggle-rh-container {
-    display: flex;
-    background: rgba(0,0,0,0.3);
-    padding: 4px;
-    border-radius: 20px;
-    gap: 5px;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.toggle-btn {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    padding: 8px 16px;
-    border-radius: 16px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: 0.3s;
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.toggle-btn.active {
-    background: var(--neon-purple, #a855f7);
-    color: white;
-    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
-}
-
-.badge-pendencia {
-    background: #ef4444;
-    color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-    min-width: 20px;
-    text-align: center;
-}
-
-/* Tabela de Gestão */
-.gestao-rh-container {
-    padding: 20px;
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.rh-header-section {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.rh-header-section h3 { color: white; font-size: 1.2rem; }
-.rh-header-section p { color: #94a3b8; font-size: 0.9rem; }
-
-.tech-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.tech-table th {
-    text-align: left;
-    padding: 12px;
-    color: #64748b;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.tech-table td {
-    padding: 15px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    color: #e2e8f0;
-    vertical-align: middle;
-}
-
-.user-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.avatar-mini {
-    width: 35px;
-    height: 35px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-}
-
-.user-cell span {
-    display: block;
-    font-size: 0.75rem;
-    color: #94a3b8;
-}
-
-/* Timeline e Badges */
-.timeline-ponto {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(0,0,0,0.2);
-    padding: 8px;
-    border-radius: 8px;
-    width: fit-content;
-}
-
-.time-pill {
-    background: rgba(255,255,255,0.05);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-family: monospace;
-    border: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 50px;
-}
-
-.time-pill .lbl {
-    font-size: 0.6rem;
-    color: #64748b;
-    font-weight: bold;
-    margin-bottom: 2px;
-}
-
-.time-pill.miss {
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.arrow {
-    color: #64748b;
-    font-size: 0.8rem;
-}
-
-.erro-badge {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    display: inline-block;
-    margin-bottom: 4px;
-}
-
-/* Botões de Ação */
-.btn-chamar {
-    background: var(--neon-blue);
-    color: #000;
-    border: none;
-    padding: 6px 15px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.btn-chamar:hover {
-    box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
-    transform: translateY(-2px);
-}
-
-.btn-resolve-rh {
-    background: transparent;
-    border: 1px solid #22c55e;
-    color: #22c55e;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-.btn-resolve-rh:hover { background: #22c55e; color: white; }
-
-/* ... (Mantenha o CSS anterior dos cards e relógio) ... */
-
-/* HEADER VIDRO COM FLEXBOX */
 .tech-header-glass {
     display: flex;
-    justify-content: space-between; /* Itens nas pontas */
+    justify-content: space-between;
     align-items: center;
     padding: 20px 40px;
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative; /* Para centralização absoluta */
+    position: relative;
+    flex-shrink: 0; /* Impede que o header encolha */
 }
 
-/* CONTAINER DOS BOTÕES DE TROCA - CENTRALIZADO */
 .toggle-rh-container {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%); /* O segredo da centralização perfeita */
+    transform: translateX(-50%);
     display: flex;
     background: rgba(0,0,0,0.3);
     padding: 4px;
     border-radius: 20px;
     gap: 5px;
     border: 1px solid rgba(255,255,255,0.1);
+    z-index: 10;
 }
 
 .toggle-btn {
@@ -370,6 +192,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
 }
 
 .toggle-btn.active {
@@ -378,9 +201,8 @@
     box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
-/* BOLINHA VERMELHA (BADGE) */
 .badge-alert {
-    background: #ef4444; /* Vermelho forte */
+    background: #ef4444;
     color: white;
     font-size: 0.7rem;
     padding: 2px 6px;
@@ -398,33 +220,259 @@
     100% { transform: scale(1); }
 }
 
-/* ... (Resto do CSS da tabela e timeline) ... */
-.tabela-rh-wrapper { overflow-x: auto; margin-top: 20px; }
-.tech-table { width: 100%; border-collapse: collapse; }
-.tech-table th { text-align: left; padding: 10px; color: #888; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.tech-table td { padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd; vertical-align: middle; }
+/* ===========================================================
+   GESTÃO RH E TABELA (CORREÇÃO DE LAYOUT)
+   =========================================================== */
 
-.user-cell { display: flex; align-items: center; gap: 10px; }
-.avatar-mini { width: 35px; height: 35px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+.gestao-rh-container {
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
 
-.timeline-ponto { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; width: fit-content; }
-.time-pill { background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; min-width: 40px; }
-.time-pill.miss { border-color: rgba(239, 68, 68, 0.5); color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-.lbl { font-size: 0.6rem; color: #64748b; font-weight: bold; }
-.arrow { color: #64748b; font-size: 0.8rem; }
+.rh-header-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
 
-.erro-badge { background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: inline-block; margin-bottom: 4px; }
+.rh-header-section h3 { color: white; font-size: 1.2rem; }
+.rh-header-section p { color: #94a3b8; font-size: 0.9rem; }
 
-.btn-chamar { background: var(--neon-blue); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.btn-chamar:hover { box-shadow: 0 0 10px rgba(0, 243, 255, 0.4); transform: translateY(-2px); }
+.tabela-rh-wrapper { 
+    overflow-x: auto; /* Rolagem interna da tabela apenas se necessário */
+    margin-top: 10px;
+    padding-bottom: 10px; /* Espaço para scrollbar horizontal não comer bordas */
+}
 
-.btn-resolve-rh { background: transparent; border: 1px solid #22c55e; color: #22c55e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-.btn-resolve-rh:hover { background: #22c55e; color: white; }
+.tech-table {
+    width: 100%;
+    min-width: 950px; /* Garante que a tabela não esprema */
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.tech-table th {
+    text-align: left;
+    padding: 10px;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.tech-table td {
+    padding: 8px 12px; /* Mais padding lateral */
+    color: #e2e8f0;
+    vertical-align: middle;
+    background: rgba(30, 41, 59, 0.3);
+    border-top: 1px solid rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.tech-table td:last-child {
+    padding-right: 20px; /* Padding extra para o botão não cortar na direita */
+}
+
+.tech-table td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+.tech-table td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* -----------------------------------------------------------
+   ESTILO DE PERFIL (OTIMIZADO)
+   ----------------------------------------------------------- */
+
+.user-profile-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    max-width: 220px; 
+}
+
+.user-profile-container:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.avatar-glow {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: white;
+    font-size: 1rem;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.user-info-modern {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-info-modern strong {
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-info-modern small {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* -----------------------------------------------------------
+   ESTILO DE DATA
+   ----------------------------------------------------------- */
+
+.date-badge {
+    background: rgba(59, 130, 246, 0.08);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+    white-space: nowrap;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+}
+
+/* -----------------------------------------------------------
+   TIMELINE, ERROS E AÇÕES
+   ----------------------------------------------------------- */
+
+.timeline-ponto {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.8);
+    padding: 6px 10px;
+    border-radius: 8px;
+    width: fit-content;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.time-pill {
+    background: rgba(255,255,255,0.03);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-family: monospace;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 40px;
+}
+
+.time-pill .lbl {
+    font-size: 0.55rem;
+    color: #64748b;
+    font-weight: bold;
+    margin-bottom: 1px;
+}
+
+.time-pill.miss {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.arrow {
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.erro-badge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: inline-block;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    white-space: nowrap;
+}
+
+/* Botões */
+.btn-chamar {
+    background: var(--neon-blue);
+    color: #000;
+    border: none;
+    padding: 6px 16px; /* Aumentei um pouco */
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap; 
+    min-width: 100px; /* Garante tamanho mínimo */
+}
+
+.btn-chamar:hover {
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    transform: translateY(-2px);
+    background: #00f3ff;
+}
+
+.btn-resolve-rh {
+    background: transparent;
+    border: 1px solid #22c55e;
+    color: #22c55e;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-resolve-rh:hover {
+    background: #22c55e;
+    color: white;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+}
 
 /* RESPONSIVIDADE */
 @media (max-width: 850px) {
   .registers-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  
+  .tech-header-glass {
+      flex-direction: column;
+      gap: 15px;
+  }
+  
+  .toggle-rh-container {
+      position: relative;
+      left: auto;
+      transform: none;
+      margin-top: 10px;
   }
 }
 
@@ -436,6 +484,11 @@
     font-size: 3rem;
   }
   .ponto-container {
-    padding: 20px;
+    padding: 15px;
+    width: 100%;
+  }
+  .toggle-btn {
+      padding: 6px 12px;
+      font-size: 0.85rem;
   }
 }

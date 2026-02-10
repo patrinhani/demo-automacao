@@ -21,6 +21,21 @@ export default function FolhaPonto() {
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
+  const gerarDataInconsistencia = (item) => {
+      if (item._visualDate) return item._visualDate;
+      const isCurrentUser = user && item.id === user.uid;
+      const isYan = item.nome && item.nome.toLowerCase().includes('yan');
+
+      if (isCurrentUser || isYan) {
+          return new Date().toLocaleDateString('pt-BR');
+      }
+      
+      const hoje = new Date();
+      const diasAtras = Math.floor(Math.random() * 15) + 1; 
+      const dataAleatoria = new Date(hoje.setDate(hoje.getDate() - diasAtras));
+      return dataAleatoria.toLocaleDateString('pt-BR');
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -82,8 +97,6 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  // --- DICIONÁRIO DE NOMES PROFISSIONAIS ---
-  // Transforma o nome feio do banco em nome bonito na tela
   const formatarNomeErro = (erroOriginal) => {
       const mapa = {
           'Esquecimento Real': 'Ausência de Registro',
@@ -93,36 +106,17 @@ export default function FolhaPonto() {
       return mapa[erroOriginal] || erroOriginal;
   };
 
-  // REGISTRO DE PONTO (COM VALIDAÇÃO DE SEQUÊNCIA)
   const registrarPonto = async (tipo) => {
     if (!user) return;
-
-    // --- REGRAS DE FILA INDIANA ---
-    if (tipo === 'almoco_ida' && !registros.entrada) {
-        alert("🚫 Ação Negada: Você precisa registrar a ENTRADA antes de sair para o almoço.");
-        return;
-    }
-    if (tipo === 'almoco_volta' && !registros.almoco_ida) {
-        alert("🚫 Ação Negada: Você não registrou a SAÍDA para o almoço.");
-        return;
-    }
-    if (tipo === 'saida' && !registros.almoco_volta) {
-        alert("🚫 Ação Negada: Você precisa registrar o RETORNO do almoço antes da saída final.");
-        return;
-    }
-    // -----------------------------
+    if (tipo === 'almoco_ida' && !registros.entrada) { alert("🚫 Ação Negada: Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
+    if (tipo === 'almoco_volta' && !registros.almoco_ida) { alert("🚫 Ação Negada: Você não registrou a SAÍDA para o almoço."); return; }
+    if (tipo === 'saida' && !registros.almoco_volta) { alert("🚫 Ação Negada: Você precisa registrar o RETORNO do almoço antes da saída final."); return; }
 
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
     
     try {
-      const updates = { 
-          [tipo]: horarioFormatado, 
-          userId: user.uid, 
-          data: dateKey, 
-          timestamp: Date.now() 
-      };
-      
+      const updates = { [tipo]: horarioFormatado, userId: user.uid, data: dateKey, timestamp: Date.now() };
       await update(ref(db, `ponto/${user.uid}/${dateKey}`), updates);
       
       const casoRhRef = ref(db, `rh/erros_ponto/${user.uid}`);
@@ -165,7 +159,7 @@ export default function FolhaPonto() {
       if (item.id === user.uid && !isCEO) {
           return (
               <span style={{color: '#ef4444', fontSize:'0.7rem', fontWeight:'bold', display:'block', maxWidth:'80px', textAlign:'center'}}>
-                  🚫 Proibido Auto-abonar
+                  🚫 Auto-gestão Bloqueada
               </span>
           );
       }
@@ -210,104 +204,119 @@ export default function FolhaPonto() {
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Voltar ↩</button>
       </header>
 
+      {/* Container Principal Full Width (para a scrollbar ficar na borda) */}
       <div className="ponto-container">
-        {!modoGestao && (
-            <>
-                <div className="clock-card glass-effect">
-                  <h2 className="time-display">{horaAtual.toLocaleTimeString('pt-BR')}</h2>
-                  <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
-                  <div className="status-badge-ponto">Online • Sincronizado</div>
-                </div>
-                <div className="registers-grid">
-                  {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => {
-                    // Lógica visual para travar botão
-                    const isLocked = () => {
-                        if (registros[tipo]) return false; 
-                        switch(tipo) {
-                            case 'almoco_ida': return !registros.entrada;
-                            case 'almoco_volta': return !registros.almoco_ida;
-                            case 'saida': return !registros.almoco_volta;
-                            default: return false;
-                        }
-                    };
-                    const locked = isLocked();
+        {/* Wrapper Centralizado (para o conteúdo não esticar demais) */}
+        <div className="ponto-content">
+            {!modoGestao && (
+                <>
+                    <div className="clock-card glass-effect">
+                    <h2 className="time-display">{horaAtual.toLocaleTimeString('pt-BR')}</h2>
+                    <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
+                    <div className="status-badge-ponto">Online • Sincronizado</div>
+                    </div>
+                    <div className="registers-grid">
+                    {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => {
+                        const isLocked = () => {
+                            if (registros[tipo]) return false; 
+                            switch(tipo) {
+                                case 'almoco_ida': return !registros.entrada;
+                                case 'almoco_volta': return !registros.almoco_ida;
+                                case 'saida': return !registros.almoco_volta;
+                                default: return false;
+                            }
+                        };
+                        const locked = isLocked();
 
-                    return (
-                        <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''} ${locked ? 'locked' : ''}`}>
-                            <span className="card-label">{tipo.replace('_', ' ')}</span>
-                            <div className="time-value">{registros[tipo] || '--:--'}</div>
-                            <button 
-                                className="btn-register" 
-                                onClick={() => registrarPonto(tipo)} 
-                                disabled={!!registros[tipo] || locked}
-                                style={locked ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
-                            >
-                                {registros[tipo] ? 'Registrado' : locked ? 'Aguardando' : 'Registrar'}
-                            </button>
-                        </div>
-                    );
-                  })}
-                </div>
-            </>
-        )}
+                        return (
+                            <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''} ${locked ? 'locked' : ''}`}>
+                                <span className="card-label">{tipo.replace('_', ' ')}</span>
+                                <div className="time-value">{registros[tipo] || '--:--'}</div>
+                                <button 
+                                    className="btn-register" 
+                                    onClick={() => registrarPonto(tipo)} 
+                                    disabled={!!registros[tipo] || locked}
+                                    style={locked ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
+                                >
+                                    {registros[tipo] ? 'Registrado' : locked ? 'Aguardando' : 'Registrar'}
+                                </button>
+                            </div>
+                        );
+                    })}
+                    </div>
+                </>
+            )}
 
-        {modoGestao && isRH && (
-            <div className="gestao-rh-container">
-                <div className="rh-header-section">
-                    <h3>🔍 Auditoria de Inconsistências</h3>
-                    <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
-                </div>
-                <div className="tabela-rh-wrapper">
-                    <table className="tech-table">
-                        <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
-                        <tbody>
-                            {listaPendencias.map(item => {
-                                let pontosVisuais = item.pontos || {};
-                                if (item.status === 'Respondido') {
-                                    if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
-                                        pontosVisuais = item.pontos;
-                                    } else {
-                                        pontosVisuais = {
-                                            e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
-                                            si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
-                                            vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
-                                            s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
-                                        };
+            {modoGestao && isRH && (
+                <div className="gestao-rh-container">
+                    <div className="rh-header-section">
+                        <h3>🔍 Auditoria de Inconsistências</h3>
+                        <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
+                    </div>
+                    <div className="tabela-rh-wrapper">
+                        <table className="tech-table">
+                            <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
+                            <tbody>
+                                {listaPendencias.map(item => {
+                                    const dataVisual = gerarDataInconsistencia(item);
+                                    item._visualDate = dataVisual;
+
+                                    let pontosVisuais = item.pontos || {};
+                                    if (item.status === 'Respondido') {
+                                        if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
+                                            pontosVisuais = item.pontos;
+                                        } else {
+                                            pontosVisuais = {
+                                                e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
+                                                si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
+                                                vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
+                                                s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
+                                            };
+                                        }
                                     }
-                                }
-                                if (item.erro === 'Esquecimento Real') {
-                                   pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
-                                }
-                                return (
-                                    <tr key={item.id}>
-                                        <td>
-                                            <div className="user-cell">
-                                                <div className="avatar-mini">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
-                                                <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
-                                            </div>
-                                        </td>
-                                        {/* AQUI ESTÁ A MUDANÇA VISUAL */}
-                                        <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
-                                        <td>
-                                            <div className="timeline-ponto">
-                                                <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
-                                                <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
-                                                <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
-                                                <div className="arrow">→</div>
-                                                <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
-                                            </div>
-                                        </td>
-                                        <td>{renderAcao(item)}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                    if (item.erro === 'Esquecimento Real') {
+                                    pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
+                                    }
+                                    return (
+                                        <tr key={item.id}>
+                                            <td>
+                                                <div className="user-profile-container">
+                                                    <div className="avatar-glow">
+                                                        {item.nome && item.nome[0] ? item.nome[0] : '?'}
+                                                    </div>
+                                                    <div className="user-info-modern">
+                                                        <strong>{item.nome}</strong>
+                                                        <small>{item.cargo}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="date-badge">
+                                                    {dataVisual}
+                                                </div>
+                                            </td>
+                                            <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
+                                            <td>
+                                                <div className="timeline-ponto">
+                                                    <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
+                                                    <div className="arrow">›</div>
+                                                    <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
+                                                    <div className="arrow">›</div>
+                                                    <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
+                                                    <div className="arrow">›</div>
+                                                    <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
+                                                </div>
+                                            </td>
+                                            <td>{renderAcao(item)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        )}
+            )}
+        </div>
       </div>
     </div>
   );

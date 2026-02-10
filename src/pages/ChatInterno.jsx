@@ -6,98 +6,63 @@ import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo'; 
 import './ChatInterno.css';
 
-// --- LISTA FIXA (BACKUP/DEMO) ---
+// --- LISTA FIXA ---
 const TEAM_FIXO = [
   { id: "user_teste_demo", nome: "Cadastro Teste", cargo: "Usuário de Testes", email: "teste@techcorp.com.br" },
-  { id: "user_patrinhani", nome: "Guilherme Patrinhani", cargo: "CEO", email: "guilherme@tech.com" },
 ];
 
-// --- 🧠 INTELIGÊNCIA DO ROBÔ: RESPOSTAS POR CONTEXTO ---
+// --- 🧠 INTELIGÊNCIA DO ROBÔ: RESPOSTAS DINÂMICAS ---
 const RESPOSTAS_CONTEXTUAIS = {
-
-    // 1. FALTAS (O cara nem apareceu)
-
     "Falta Injustificada": [
-
         "Oi! Mil desculpas, eu passei muito mal ontem e acabei não conseguindo avisar. Tenho atestado.",
         "Bom dia! Tive um problema urgente com meu filho na escola e precisei sair correndo. Vou enviar o comprovante no ponto.",
         "Olá, tive um imprevisto pessoal grave ontem. Vou ver com minha gestora para abonar...",
         "Oi RH, meu carro quebrou no meio da estrada e fiquei sem sinal. Desculpa o sumiço!"
-
     ],
-
-    // 2. MARCAÇÃO ÍMPAR - ESPECÍFICAS (O código vai escolher qual usar)
-
-    "MI_Saida": [ // Falta só a saída (S)
-
+    "MI_Saida": [
         "Opa! Esqueci de bater a saída ontem, sai na correria para pegar o ônibus.",
-        "Oi! Bati o ponto, mas acho que a digital não leu direito na saída. Saí às 18:00.",
+        "Oi! Bati o ponto, mas acho que a digital não leu direito na saída. Saí às {saida}.",
         "Desculpa, esqueci totalmente de registrar a saída. Fiquei focado no deploy e passou.",
-        "Vixi, fui embora e esqueci de bater o ponto na saída. Pode ajustar pra 17:30 por favor."
-
+        "Vixi, fui embora e esqueci de bater o ponto na saída. Pode ajustar pra {saida} por favor."
     ],
-
-    "MI_Almoco": [ // Falta almoço (SI ou VI)
-
+    "MI_Almoco": [
         "Bom dia! Esqueci de bater o ponto na hora do almoço. Fui e voltei no horário normal.",
         "Oi, acabei esquecendo de registrar a ida para o almoço. Pode corrigir por favor.",
-        "Olá! O sistema não pegou minha batida de volta do almoço, mas eu voltei às 13:00.",
+        "Olá! O sistema não pegou minha batida de volta do almoço, mas eu voltei às {almoco_volta}.",
         "Putz, passei direto na catraca do almoço e esqueci de registrar. Foi mal!"
-
     ],
-
-    "MI_Geral": [ // Só tem entrada e mais nada
-
+    "MI_Geral": [
         "Oi! Tive uma emergência e precisei sair logo depois de chegar. Esqueci de bater.",
         "Bom dia. O sistema travou depois da minha entrada e não consegui marcar mais nada.",
         "Oi, marquei a entrada, mas precisei ir ao médico de urgência e não bati a saída."
-
     ],
-
-    // 3. OUTROS CASOS
-
     "Atraso Excessivo": [
-
         "Oi! O trânsito estava caótico hoje por causa da chuva. Desculpa o atraso.",
-        "Bom dia! Tive um problema no metrô e demorou muito pra chegar.",
+        "Bom dia! Tive um problema no metrô e demorou muito pra chegar. Cheguei só {entrada}.",
         "Olá, acabei dormindo demais porque o despertador não tocou. Vou compensar hoje!",
         "Tive que passar na farmácia antes de vir e acabei atrasando. Foi mal!"
-
     ],
-
     "Batida Duplicada": [
-
         "Oi! Acho que bati o dedo duas vezes sem querer na entrada. Pode desconsiderar uma por favor.",
         "O sistema travou e acho que registrou duplicado. Fui olhar agora e vi dois registros.",
         "Bom dia, apareceu duplicado pra mim. Foi erro meu na hora de passar o crachá."
-
     ],
-
     "Ponto Britânico": [
-
         "Oi! Eu tenho o costume de bater certinho no horário, mas vou variar os minutos como pediram.",
         "Não sabia que não podia bater exatamente no mesmo horário todo dia. Vou me atentar!",
         "É mania minha de esperar dar 17:00:00 pra bater. Vou mudar isso."
-
     ],
-
     "Hora Extra N/A": [
-
         "Oi! Tive que ficar até mais tarde ontem pra fechar aquele relatório urgente.",
         "O gestor pediu pra eu ficar um pouco mais pra ajudar no suporte. Esqueci de avisar.",
         "Fiquei finalizando a task do projeto novo. Não vai se repetir sem autorização."
-
     ],
-
     "default": [ 
-
         "Oi! Pode verificar meu ponto? Acho que tem algo errado.",
         "Olá, pode me ajudar com essa pendência no meu espelho de ponto? Obrigado.",
         "Opa, preciso justificar esse dia. Obrigado por avisar.",
         "Oi RH, desculpa a falha. Pode ajustar pra mim? por favor."
-
     ]
-
 };
 
 export default function ChatInterno() {
@@ -106,7 +71,6 @@ export default function ChatInterno() {
   
   const [user, setUser] = useState(null);
   
-  // Lista unificada
   const [todosUsuarios, setTodosUsuarios] = useState([]);
   const [usuariosExibidos, setUsuariosExibidos] = useState([]);
   
@@ -119,6 +83,8 @@ export default function ChatInterno() {
   const [ultimasInteracoes, setUltimasInteracoes] = useState({}); 
   const [termoBusca, setTermoBusca] = useState('');
 
+  const processedInitialState = useRef(false);
+  const lastProcessedMsgRef = useRef(null);
   const scrollRef = useRef(null);
 
   // 1. AUTH
@@ -130,25 +96,17 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // 2. CARREGAR LISTA DE USUÁRIOS (AGORA BUSCANDO MOCKS DO BANCO)
+  // 2. CARREGAR LISTA DE USUÁRIOS
   useEffect(() => {
     if (!user) return;
-
-    // A. Busca Usuários REAIS
-    const usersRef = ref(db, 'users');
-    
-    // B. Busca Mocks do RH (Direto do banco, não do LocalStorage)
-    // Assim, mesmo se o status for "Concluido", ele existe e aparece no histórico
-    const mocksRef = ref(db, 'rh/erros_ponto');
 
     const unsubscribe = onValue(ref(db), (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
         const dbUsers = data.users || {};
-        const dbMocks = data.rh?.erros_ponto || {}; // Pega todos os casos RH
+        const dbMocks = data.rh?.erros_ponto || {}; 
 
-        // 1. Processa Reais
         let listaReais = Object.entries(dbUsers).map(([uid, u]) => ({
             id: uid,
             nome: u.nome || u.email, 
@@ -158,7 +116,6 @@ export default function ChatInterno() {
             isMock: false
         }));
 
-        // 2. Processa Mocks (Transforma os casos do RH em "Usuários de Chat")
         let listaMocks = Object.entries(dbMocks).map(([id, m]) => ({
             id: id,
             nome: m.nome,
@@ -167,32 +124,40 @@ export default function ChatInterno() {
             isMock: true
         }));
 
-        // 3. Combina Tudo
-        let combinados = [...listaReais, ...TEAM_FIXO, ...listaMocks];
+        let combinados = [...listaMocks, ...TEAM_FIXO, ...listaReais];
 
-        // 4. Verifica se veio alguém pelo botão "Chamar" (Garante entrada imediata)
         const target = location.state?.chatTarget;
-        if (target) {
+        if (target && !processedInitialState.current) {
             if (!combinados.find(u => u.id === target.id)) {
                 combinados.push({ ...target, isMock: true });
             }
-            // Abre o chat se estiver no 'Geral'
-            if (canalAtivo.id === 'geral') {
-                setCanalAtivo({ id: target.id, nome: `👤 ${target.nome}`, desc: target.cargo, isMock: true });
-            }
         }
 
-        // 5. Remove duplicatas e o próprio usuário
         const unicos = Array.from(new Map(combinados.map(item => [item.id, item])).values())
-                            .filter(u => u.email !== user.email && u.id !== user.uid);
+                                         .filter(u => u.email !== user.email && u.id !== user.uid);
 
         setTodosUsuarios(unicos);
     });
 
     return () => unsubscribe();
-  }, [user, location.state]); 
+  }, [user]); 
 
-  // 3. MONITORAR MENSAGENS
+  // 2.5 PROCESSAR ESTADO INICIAL
+  useEffect(() => {
+      if (location.state?.chatTarget && !processedInitialState.current) {
+          const target = location.state.chatTarget;
+          setCanalAtivo({ 
+              id: target.id, 
+              nome: `👤 ${target.nome}`, 
+              desc: target.cargo, 
+              isMock: true 
+          });
+          processedInitialState.current = true;
+          window.history.replaceState({}, document.title);
+      }
+  }, [location.state]);
+
+  // 3. MONITORAR MENSAGENS E NÃO LIDAS
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
@@ -206,7 +171,7 @@ export default function ChatInterno() {
           Object.keys(data).forEach((chatId) => {
             if (chatId.includes(user.uid)) {
               const msgs = Object.values(data[chatId]);
-              if (msgs.length > 0) { // Garante que tem mensagem
+              if (msgs.length > 0) {
                   const ultimaMsg = msgs[msgs.length - 1];
                   const outroId = chatId.replace(user.uid, '').replace('_', '');
 
@@ -215,8 +180,12 @@ export default function ChatInterno() {
                   if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
                     const lastRead = Number(localStorage.getItem(`last_read_${outroId}`) || 0);
                     if (ultimaMsg.timestamp > lastRead) {
-                        novasNaoLidas[outroId] = (novasNaoLidas[outroId] || 0) + 1; 
+                        const count = msgs.filter(m => m.timestamp > lastRead).length;
+                        novasNaoLidas[outroId] = count > 0 ? count : 0;
                     }
+                  } else if (canalAtivo.id === outroId) {
+                      novasNaoLidas[outroId] = 0;
+                      localStorage.setItem(`last_read_${outroId}`, ultimaMsg.timestamp + 1);
                   }
               }
             }
@@ -226,7 +195,7 @@ export default function ChatInterno() {
       setNaoLidas(novasNaoLidas);
     });
     return () => unsubscribe();
-  }, [user, canalAtivo.id]);
+  }, [user, canalAtivo.id]); 
 
   // 4. FILTRO
   useEffect(() => {
@@ -237,7 +206,6 @@ export default function ChatInterno() {
                      (u.cargo && u.cargo.toLowerCase().includes(t)) ||
                      (u.email && u.email.toLowerCase().includes(t));
           }
-          // Se tiver interação (histórico), ele aparece, INDEPENDENTE do status no RH
           return ultimasInteracoes[u.id] !== undefined || canalAtivo.id === u.id;
       });
 
@@ -253,8 +221,13 @@ export default function ChatInterno() {
   // 5. CARREGAR CONVERSA
   useEffect(() => {
     if (!user) return;
+    
     if (naoLidas[canalAtivo.id]) {
-      setNaoLidas(prev => { const n = {...prev}; delete n[canalAtivo.id]; return n; });
+        setNaoLidas(prev => { 
+            const n = {...prev}; 
+            delete n[canalAtivo.id]; 
+            return n; 
+        });
     }
 
     let path = canalAtivo.id === 'geral' 
@@ -276,20 +249,24 @@ export default function ChatInterno() {
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
 
-  // --- 6. AUTO-REPLY DO ROBÔ (COM INTELIGÊNCIA DE PONTO) ---
+  // --- 6. AUTO-REPLY DO ROBÔ ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
+      
       if (ultimaMsg.uid !== user.uid) return; 
 
       const usuarioAtual = todosUsuarios.find(u => u.id === canalAtivo.id);
       
-      if (usuarioAtual && usuarioAtual.isMock) {
+      if (usuarioAtual && usuarioAtual.isMock === true) {
           const mockId = usuarioAtual.id;
-          
-          const jaRespondeu = mensagens.some(msg => msg.uid === mockId);
-          if (jaRespondeu) return; 
+
+          if (lastProcessedMsgRef.current === ultimaMsg.id) return;
+          lastProcessedMsgRef.current = ultimaMsg.id;
+
+          const jaRespondeuNoPassado = mensagens.some(msg => msg.uid === mockId);
+          if (jaRespondeuNoPassado) return;
 
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
@@ -298,22 +275,21 @@ export default function ChatInterno() {
           console.log(`🤖 Robô ${mockNome} vai responder em ${tempoEspera}ms`);
 
           const timer = setTimeout(async () => {
-              // 1. BUSCA O ERRO E OS PONTOS PRA SABER O QUE RESPONDER
               let listaRespostas = RESPOSTAS_CONTEXTUAIS['default'];
-              
+              let pontosReais = {}; 
+
               try {
                   const snapshot = await get(ref(db, `rh/erros_ponto/${mockId}`));
                   if (snapshot.exists()) {
                       const dadosMock = snapshot.val();
                       const erroTipo = dadosMock.erro; 
-                      const p = dadosMock.pontos || {}; 
+                      pontosReais = dadosMock.pontos || {}; 
                       
                       if (erroTipo) {
                           if (erroTipo === 'Marcação Ímpar') {
-                              // --- LÓGICA DE DETETIVE DE PONTO ---
-                              const faltaEntrada = !p.e || p.e === '---';
-                              const faltaSaida = !p.s || p.s === '---';
-                              const faltaAlmoco = (!p.si || p.si === '---') || (!p.vi || p.vi === '---');
+                              const faltaEntrada = !pontosReais.e || pontosReais.e === '---';
+                              const faltaSaida = !pontosReais.s || pontosReais.s === '---';
+                              const faltaAlmoco = (!pontosReais.si || pontosReais.si === '---') || (!pontosReais.vi || pontosReais.vi === '---');
 
                               if (faltaAlmoco && !faltaSaida) {
                                   listaRespostas = RESPOSTAS_CONTEXTUAIS['MI_Almoco'];
@@ -330,20 +306,30 @@ export default function ChatInterno() {
                           }
                       }
                       
-                      // Já marca como respondido
                       await update(ref(db, `rh/erros_ponto/${mockId}`), { status: 'Respondido' });
                   }
               } catch(e) { console.error("Erro ao buscar contexto:", e); }
 
-              // 2. ESCOLHE RESPOSTA
-              const resposta = listaRespostas[Math.floor(Math.random() * listaRespostas.length)];
+              let textoFinal = listaRespostas[Math.floor(Math.random() * listaRespostas.length)];
+
+              const h_entrada = pontosReais.e && pontosReais.e !== '---' ? pontosReais.e : '08:00';
+              const h_almoco_ida = pontosReais.si && pontosReais.si !== '---' ? pontosReais.si : '12:00';
+              const h_almoco_volta = pontosReais.vi && pontosReais.vi !== '---' ? pontosReais.vi : '13:00';
+              const h_saida = pontosReais.s && pontosReais.s !== '---' ? pontosReais.s : '17:30';
+
+              textoFinal = textoFinal
+                  .replace('{entrada}', h_entrada)
+                  .replace('{saida}', h_saida)
+                  .replace('{almoco_ida}', h_almoco_ida)
+                  .replace('{almoco_volta}', h_almoco_volta);
+
               const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
 
               try {
                   await set(push(ref(db, path)), {
                       usuario: mockNome,
                       uid: mockId,
-                      texto: resposta,
+                      texto: textoFinal,
                       timestamp: Date.now(),
                       avatar: mockNome[0]
                   });
@@ -354,7 +340,6 @@ export default function ChatInterno() {
           return () => clearTimeout(timer);
       }
   }, [mensagens, canalAtivo, user, todosUsuarios]);
-
 
   // 7. ENVIAR
   const enviarMensagem = async (e) => {
@@ -375,20 +360,35 @@ export default function ChatInterno() {
     setNovaMensagem('');
   };
 
+  const handleSelectChat = (u) => {
+      setCanalAtivo({ 
+          id: u.id, 
+          nome: `👤 ${u.nome}`, 
+          desc: u.cargo, 
+          isMock: u.isMock 
+      });
+      
+      setNaoLidas(prev => { 
+          const n = {...prev}; 
+          delete n[u.id]; 
+          return n; 
+      });
+
+      const agora = Date.now();
+      localStorage.setItem(`last_read_${u.id}`, agora);
+
+      setMenuAberto(false);
+  };
+
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
   
-  // --- ATUALIZAÇÃO AQUI ---
   const formatarNome = (n) => {
     if (!n) return 'User';
-    // Remove o ícone se existir para limpar a string
     const nomeLimpo = n.replace('👤 ', '').trim();
     const partes = nomeLimpo.split(' ');
-    
-    // Se tiver sobrenome, pega o primeiro e o último
     if (partes.length > 1) {
         return `${partes[0]} ${partes[partes.length - 1]}`;
     }
-    // Se for nome único, retorna ele mesmo
     return partes[0];
   };
   
@@ -443,24 +443,20 @@ export default function ChatInterno() {
               <button 
                 key={u.id} 
                 className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`}
-                onClick={() => { setCanalAtivo({ id: u.id, nome: `👤 ${u.nome}`, desc: u.cargo, isMock: u.isMock }); setMenuAberto(false); }}
+                onClick={() => handleSelectChat(u)}
               >
-                <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
-                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                    <div className="contact-avatar-small" style={{
-                        background: u.isMock ? '#10b981' : '#3b82f6', 
-                        width: '32px', height: '32px', borderRadius: '50%', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                        color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
-                    }}>
+                {/* NOVA ESTRUTURA VISUAL DO PERFIL */}
+                <div className="user-profile-chat">
+                    <div className={`avatar-glow-chat ${u.isMock ? 'mock' : ''}`}>
                         {getAvatar(u.nome)}
                     </div>
-                    <div style={{textAlign:'left'}}>
-                        <div className="channel-name">{formatarNome(u.nome)}</div>
-                        <div className="channel-desc" style={{fontSize: '0.7rem', opacity: 0.7}}>{u.cargo}</div>
+                    
+                    <div className="user-info-chat">
+                        <strong>{formatarNome(u.nome)}</strong>
+                        <small>{u.cargo}</small>
                     </div>
-                  </div>
-                  {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
+
+                    {naoLidas[u.id] > 0 && <div className="badge-notificacao">{naoLidas[u.id]}</div>}
                 </div>
               </button>
             ))}

@@ -1,5 +1,5 @@
 .pdf-factory-container {
-    max-width: 900px;
+    max-width: 1400px; /* Mais largo para caber preview */
     margin: 0 auto;
     padding: 20px;
 }
@@ -41,7 +41,20 @@
     transform: translateY(-2px);
 }
 
-/* Card Principal */
+/* --- GRID LAYOUT (Form + Preview) --- */
+.factory-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 50% para cada */
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1000px) {
+    .factory-content-grid {
+        grid-template-columns: 1fr; /* Empilha em telas menores */
+    }
+}
+
 .factory-card {
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid #334155;
@@ -50,7 +63,33 @@
     backdrop-filter: blur(10px);
 }
 
-/* Grid do Formulário */
+/* --- PREVIEW AREA --- */
+.preview-card {
+    background: #525659; /* Cor padrão de fundo PDF */
+    border-radius: 12px;
+    overflow: hidden;
+    height: 700px; /* Altura fixa para scrollar se necessário */
+    border: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    background: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Form Styles */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -79,7 +118,6 @@
     font-size: 0.9rem;
 }
 
-/* Botão de Ação */
 .action-area {
     grid-column: span 2;
     margin-top: 20px;

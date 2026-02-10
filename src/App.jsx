@@ -42,8 +42,9 @@ import PortalCliente from './pages/PortalCliente';
 import ChatInterno from './pages/ChatInterno'; 
 import Tarefas from './pages/Tarefas';
 
-// --- FERRAMENTAS ---
+// --- FERRAMENTAS & DEV ---
 import DevTools from './pages/DevTools/DevTools';
+import PDFFactory from './pages/DevTools/PDFFactory'; // <--- (1) IMPORTAÇÃO ADICIONADA
 
 // --- NOVO MÓDULO: BANCO (Horizon Bank) ---
 // Importamos apenas o arquivo principal (Container). 
@@ -106,8 +107,9 @@ function App() {
           <Route path="/portal-cliente" element={<PortalCliente />} />
           <Route path="/chat" element={<ChatInterno />} />
 
-          {/* --- ROTA OCULTA/DEV --- */}
+          {/* --- ROTAS DE FERRAMENTAS/DEV --- */}
           <Route path="/dev-tools" element={<DevTools />} />
+          <Route path="/pdf-factory" element={<PDFFactory />} /> {/* <--- (2) ROTA ADICIONADA */}
           
           {/* --- ROTA DO BANCO (SIMULAÇÃO EXTERNA) --- */}
           {/* Ao acessar /banco, o React carrega o arquivo Banco.jsx */}
