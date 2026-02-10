@@ -16,7 +16,7 @@ export default function FolhaPonto() {
   const [modoGestao, setModoGestao] = useState(false);
   
   const [isRH, setIsRH] = useState(false);
-  const [isCEO, setIsCEO] = useState(false); // NOVO ESTADO: Identifica Chefia
+  const [isCEO, setIsCEO] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
@@ -35,12 +35,10 @@ export default function FolhaPonto() {
               const cargo = (userData.cargo || '').toLowerCase();
               const role = userData.role || '';
               
-              // Verifica se é RH
               if(setor.includes('recursos humanos') || setor.includes('rh') || cargo.includes('c.e.o') || role === 'admin') {
                   setIsRH(true);
               }
 
-              // LÓGICA DE EXCEÇÃO (YAN E GUI): Se for CEO/Diretoria/Admin, pode tudo.
               if (cargo.includes('ceo') || cargo.includes('diretoria') || role === 'admin') {
                   setIsCEO(true);
               }
@@ -84,9 +82,36 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  // REGISTRO DE PONTO (INTEGRADO AO RH)
+  // --- DICIONÁRIO DE NOMES PROFISSIONAIS ---
+  // Transforma o nome feio do banco em nome bonito na tela
+  const formatarNomeErro = (erroOriginal) => {
+      const mapa = {
+          'Esquecimento Real': 'Ausência de Registro',
+          'Atraso Excessivo': 'Atraso Crítico',
+          'Falta Injustificada': 'Falta Não Justificada'
+      };
+      return mapa[erroOriginal] || erroOriginal;
+  };
+
+  // REGISTRO DE PONTO (COM VALIDAÇÃO DE SEQUÊNCIA)
   const registrarPonto = async (tipo) => {
     if (!user) return;
+
+    // --- REGRAS DE FILA INDIANA ---
+    if (tipo === 'almoco_ida' && !registros.entrada) {
+        alert("🚫 Ação Negada: Você precisa registrar a ENTRADA antes de sair para o almoço.");
+        return;
+    }
+    if (tipo === 'almoco_volta' && !registros.almoco_ida) {
+        alert("🚫 Ação Negada: Você não registrou a SAÍDA para o almoço.");
+        return;
+    }
+    if (tipo === 'saida' && !registros.almoco_volta) {
+        alert("🚫 Ação Negada: Você precisa registrar o RETORNO do almoço antes da saída final.");
+        return;
+    }
+    // -----------------------------
+
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
     
@@ -100,7 +125,6 @@ export default function FolhaPonto() {
       
       await update(ref(db, `ponto/${user.uid}/${dateKey}`), updates);
       
-      // Integração com RH: Atualiza o caso se existir e muda status para Respondido
       const casoRhRef = ref(db, `rh/erros_ponto/${user.uid}`);
       const casoSnap = await get(casoRhRef);
       if (casoSnap.exists()) {
@@ -110,9 +134,7 @@ export default function FolhaPonto() {
              await update(casoRhRef, { pontos: novosPontos, status: 'Respondido' });
           }
       }
-
-      alert(`Ponto registrado: ${horarioFormatado}`);
-
+      alert(`✅ Ponto registrado: ${horarioFormatado}`);
     } catch (error) { alert("Erro ao registrar ponto."); }
   };
 
@@ -140,9 +162,6 @@ export default function FolhaPonto() {
   };
 
   const renderAcao = (item) => {
-      // --- REGRA DE SEGURANÇA (NOVO) ---
-      // Se o usuário logado for o dono do erro, E ele não for CEO/Diretoria:
-      // BLOQUEIA O BOTÃO.
       if (item.id === user.uid && !isCEO) {
           return (
               <span style={{color: '#ef4444', fontSize:'0.7rem', fontWeight:'bold', display:'block', maxWidth:'80px', textAlign:'center'}}>
@@ -150,7 +169,6 @@ export default function FolhaPonto() {
               </span>
           );
       }
-
       if (item.status === 'Respondido') {
           return (
               <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
@@ -201,15 +219,34 @@ export default function FolhaPonto() {
                   <div className="status-badge-ponto">Online • Sincronizado</div>
                 </div>
                 <div className="registers-grid">
-                  {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => (
-                    <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''}`}>
-                      <span className="card-label">{tipo.replace('_', ' ')}</span>
-                      <div className="time-value">{registros[tipo] || '--:--'}</div>
-                      <button className="btn-register" onClick={() => registrarPonto(tipo)} disabled={!!registros[tipo] || (tipo === 'almoco_ida' && !registros.entrada)}>
-                        {registros[tipo] ? 'Registrado' : 'Registrar'}
-                      </button>
-                    </div>
-                  ))}
+                  {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => {
+                    // Lógica visual para travar botão
+                    const isLocked = () => {
+                        if (registros[tipo]) return false; 
+                        switch(tipo) {
+                            case 'almoco_ida': return !registros.entrada;
+                            case 'almoco_volta': return !registros.almoco_ida;
+                            case 'saida': return !registros.almoco_volta;
+                            default: return false;
+                        }
+                    };
+                    const locked = isLocked();
+
+                    return (
+                        <div key={tipo} className={`register-card ${registros[tipo] ? 'filled' : ''} ${locked ? 'locked' : ''}`}>
+                            <span className="card-label">{tipo.replace('_', ' ')}</span>
+                            <div className="time-value">{registros[tipo] || '--:--'}</div>
+                            <button 
+                                className="btn-register" 
+                                onClick={() => registrarPonto(tipo)} 
+                                disabled={!!registros[tipo] || locked}
+                                style={locked ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
+                            >
+                                {registros[tipo] ? 'Registrado' : locked ? 'Aguardando' : 'Registrar'}
+                            </button>
+                        </div>
+                    );
+                  })}
                 </div>
             </>
         )}
@@ -249,7 +286,8 @@ export default function FolhaPonto() {
                                                 <div><strong>{item.nome}</strong><br/><small>{item.cargo}</small></div>
                                             </div>
                                         </td>
-                                        <td><div className="erro-badge">{item.erro}</div></td>
+                                        {/* AQUI ESTÁ A MUDANÇA VISUAL */}
+                                        <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
                                         <td>
                                             <div className="timeline-ponto">
                                                 <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>

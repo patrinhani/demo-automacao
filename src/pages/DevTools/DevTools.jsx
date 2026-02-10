@@ -108,17 +108,14 @@ export default function DevTools() {
   // --- FUNÇÃO ORIGINAL (Limpa apenas ponto do usuário) ---
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
 
-  // --- NOVA FUNÇÃO SOLICITADA: Limpa TUDO de Ponto (Batido + Indevido) ---
+  // --- NOVA FUNÇÃO UNIFICADA (Ponto Pessoal + RH) ---
   const limparHistoricoPontoUnificado = async () => {
     if (!window.confirm("⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?")) return;
     
     try {
         const updates = {};
-        // 1. Apaga histórico de ponto batido (Se quiser geral, use 'ponto' apenas. Aqui mantive o do usuário para segurança, mas se quiser global mude para 'ponto')
-        // Considerando que você disse "todo o histórico integrado", vou limpar o nó do usuário E o nó de erros global.
-        
-        updates[`ponto/${userProfile.uid}`] = null; // Limpa ponto do usuário atual
-        // updates['ponto'] = null; // <--- DESCOMENTE SE QUISER LIMPAR O PONTO DE TODOS OS USUÁRIOS
+        // 1. Apaga histórico de ponto batido do usuário atual
+        updates[`ponto/${userProfile.uid}`] = null;
         
         // 2. Apaga histórico de ponto indevido (Mocks do RH)
         updates['rh/erros_ponto'] = null;
@@ -187,30 +184,20 @@ export default function DevTools() {
     addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
   };
 
-  // --- NOVA VERSÃO: Limpa Casos RH + Histórico de Chats do Firebase ---
   const limparCasosRH = async () => {
     try {
         const updates = {};
-        // 1. Limpa os casos do RH
         updates['rh/erros_ponto'] = null;
-        
-        // 2. Limpa fisicamente os chats do banco de dados
         updates['chats/direto'] = null;
         updates['chats/geral'] = null;
-        
-        // Executa a remoção no Firebase
         await update(ref(db), updates);
-
-        // 3. Limpa o cache local
         localStorage.removeItem('mocksAtivos');
-        
         addLog("🗑️ Casos RH e Histórico de Chats excluídos.");
     } catch (e) {
         addLog(`❌ Erro: ${e.message}`);
     }
   };
 
-  // --- RESET TOTAL ---
   const limparTudo = async () => {
     if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
     const updates = {};
@@ -224,7 +211,7 @@ export default function DevTools() {
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
     updates['chats/direto'] = null; 
     updates['chats/geral'] = null;  
-    updates['users'] = null; // Limpa usuários também
+    updates['users'] = null;
     
     await update(ref(db), updates);
     localStorage.removeItem('mocksAtivos'); 
@@ -266,8 +253,6 @@ export default function DevTools() {
             <p>Alterne cargos e setores em tempo real.</p>
             
             <div className="dev-actions" style={{ flexDirection: 'column', gap: '10px' }}>
-              
-              {/* Seletor de Cargo */}
               <div style={{ width: '100%' }}>
                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Cargo</label>
                 <select 
@@ -283,7 +268,6 @@ export default function DevTools() {
                 </select>
               </div>
 
-              {/* Seletor de Setor */}
               <div style={{ width: '100%' }}>
                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Setor</label>
                 <select 
@@ -314,7 +298,7 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD RH (Agora unificado com exclusão de chat) */}
+          {/* CARD RH */}
           <div className="dev-card destaque-rh">
             <div className="card-icon">👮</div>
             <h3>Gestão RH (Mocks)</h3>
@@ -325,7 +309,7 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD PONTO */}
+          {/* CARD PONTO (ATUALIZADO) */}
           <div className="dev-card">
             <div className="card-icon">⏰</div>
             <h3>Ponto Pessoal</h3>
@@ -334,10 +318,9 @@ export default function DevTools() {
               <button className="btn-gen" onClick={gerarPonto}>+ Gerar</button>
               <button className="btn-del" onClick={limparPonto}>🗑️ Pessoal</button>
               
-              {/* --- BOTÃO NOVO --- */}
+              {/* --- BOTÃO NOVO COM CLASSE CORRIGIDA --- */}
               <button 
-                className="btn-del" 
-                style={{background: '#ef4444', width: '100%', marginTop: '5px', fontSize: '0.8rem'}} 
+                className="btn-danger-solid" 
                 onClick={limparHistoricoPontoUnificado}
               >
                 🧨 Limpar Tudo (Ponto + RH)
@@ -345,7 +328,7 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD VIAGENS */}
+          {/* OUTROS CARDS... (Mantenha o resto igual) */}
           <div className="dev-card">
             <div className="card-icon">✈️</div>
             <h3>Viagens</h3>
@@ -356,7 +339,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD HELPDESK */}
           <div className="dev-card">
             <div className="card-icon">🎧</div>
             <h3>Helpdesk</h3>
@@ -366,7 +348,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD REEMBOLSOS */}
           <div className="dev-card">
             <div className="card-icon">💸</div>
             <h3>Reembolsos</h3>
@@ -376,7 +357,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD FÉRIAS */}
           <div className="dev-card">
             <div className="card-icon">🌴</div>
             <h3>Férias</h3>
@@ -386,7 +366,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD CONCILIAÇÃO */}
           <div className="dev-card" style={{borderTopColor: '#3b82f6'}}>
             <div className="card-icon" style={{background: '#3b82f6'}}>🏦</div>
             <h3>Conciliação (Caos)</h3>
@@ -397,7 +376,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD RESET TOTAL */}
           <div className="dev-card" style={{borderTop: '4px solid #ef4444'}}>
              <div className="card-icon" style={{background: '#ef4444'}}>☠️</div>
              <h3>Zona de Perigo</h3>

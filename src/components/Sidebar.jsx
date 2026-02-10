@@ -80,9 +80,9 @@ export default function Sidebar() {
         {/* === FINANCEIRO (Apenas Setor Financeiro) === */}
         {isFinanceiro && (
           <div className="nav-section" style={{ borderLeft: '3px solid #34d399', paddingLeft: '10px', background: 'rgba(52, 211, 153, 0.05)' }}>
-             <span className="nav-title" style={{color: '#34d399'}}>Dep. Financeiro</span>
-             <button className={`nav-item ${isActive('/conciliacao')}`} onClick={() => navigate('/conciliacao')}><span className="icon">🏦</span> Conciliação</button>
-             <button className={`nav-item ${isActive('/gerar-nota')}`} onClick={() => navigate('/gerar-nota')}><span className="icon">🧾</span> Notas Fiscais</button>
+              <span className="nav-title" style={{color: '#34d399'}}>Dep. Financeiro</span>
+              <button className={`nav-item ${isActive('/conciliacao')}`} onClick={() => navigate('/conciliacao')}><span className="icon">🏦</span> Conciliação</button>
+              <button className={`nav-item ${isActive('/gerar-nota')}`} onClick={() => navigate('/gerar-nota')}><span className="icon">🧾</span> Notas Fiscais</button>
           </div>
         )}
 
@@ -100,6 +100,13 @@ export default function Sidebar() {
           <button className={`nav-item ${isActive('/ferias')}`} onClick={() => navigate('/ferias')}><span className="icon">🌴</span> Férias</button>
           <button className={`nav-item ${isActive('/plano-saude')}`} onClick={() => navigate('/plano-saude')}><span className="icon">🏥</span> Plano de Saúde</button>
           <button className={`nav-item ${isActive('/Carreira')}`} onClick={() => navigate('/Carreira')}><span className="icon">🚀</span> Carreira</button>
+        </div>
+
+        {/* === COMUNICAÇÃO (Onde o Chat foi inserido) === */}
+        <div className="nav-section">
+          <span className="nav-title">Comunicação</span>
+          <button className={`nav-item ${isActive('/chat')}`} onClick={() => navigate('/chat')}><span className="icon">💬</span> Chat Interno</button>
+          <button className={`nav-item ${isActive('/comunicacao')}`} onClick={() => navigate('/comunicacao')}><span className="icon">📢</span> Mural & Avisos</button>
         </div>
 
         <div className="nav-section">
