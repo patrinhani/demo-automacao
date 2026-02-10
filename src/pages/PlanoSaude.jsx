@@ -1,16 +1,24 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getAuth } from "firebase/auth";
+import { ref, onValue, update, push } from "firebase/database";
+import { db } from '../firebase';
 import Logo from '../components/Logo';
 import './PlanoSaude.css';
 
 export default function PlanoSaude() {
   const navigate = useNavigate();
+  const auth = getAuth();
+
+  // --- ESTADOS DO FIREBASE (Integração) ---
+  const [user, setUser] = useState(null);
+  const [saldo, setSaldo] = useState(0);
+
+  // --- ESTADOS VISUAIS (Mantidos do seu código original) ---
   const [isFlipped, setIsFlipped] = useState(false);
   const [showCVV, setShowCVV] = useState(false);
-  
-  // Estados dos Modais
   const [modalOpen, setModalOpen] = useState(null); 
   
   // Estados Reembolso
@@ -31,16 +39,71 @@ export default function PlanoSaude() {
   // Estados Telemedicina & Extrato
   const [conectandoTele, setConectandoTele] = useState(false);
   const [baixandoExtrato, setBaixandoExtrato] = useState(false);
-  const extratoRef = useRef(); // Referência para imprimir o PDF
+  const extratoRef = useRef();
 
-  // ... (userPlan, baseMedicos, lógica de filtros e agendamento - MANTIDOS) ...
-  // COPIE AQUI A MESMA LÓGICA DO ARQUIVO ANTERIOR PARA userPlan, baseMedicos, etc.
-  // Vou colocar resumido apenas para mostrar onde encaixar o novo código.
+  // --- 1. INTEGRAÇÃO: CARREGAR DADOS DO USUÁRIO ---
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      navigate('/');
+      return;
+    }
 
+    const userRef = ref(db, `users/${currentUser.uid}`);
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setUser({ ...data, uid: currentUser.uid });
+        setSaldo(parseFloat(data.saldo || 0));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate, auth]);
+
+  // --- 2. INTEGRAÇÃO: PROCESSAR PAGAMENTO NO BANCO ---
+  const processarPagamento = async (valor, descricao) => {
+    if (!user) return false;
+    
+    if (saldo < valor) {
+      alert(`Saldo insuficiente no Banco TechCorp!\n\nSeu saldo: R$ ${saldo.toFixed(2)}\nValor necessário: R$ ${valor.toFixed(2)}`);
+      return false;
+    }
+
+    try {
+      const novoSaldo = saldo - valor;
+      const updates = {};
+      
+      // Atualiza saldo
+      updates[`users/${user.uid}/saldo`] = novoSaldo;
+      
+      // Adiciona transação no extrato bancário
+      const novaTransacaoKey = push(ref(db, `users/${user.uid}/extrato`)).key;
+      const transacao = {
+        id: novaTransacaoKey,
+        tipo: 'saida',
+        categoria: 'Saúde',
+        descricao: descricao,
+        valor: valor,
+        data: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      updates[`users/${user.uid}/extrato/${novaTransacaoKey}`] = transacao;
+
+      await update(ref(db), updates);
+      return true;
+    } catch (error) {
+      console.error("Erro no pagamento:", error);
+      alert("Erro ao processar pagamento. Tente novamente.");
+      return false;
+    }
+  };
+
+  // --- DADOS MOCKADOS (Mantidos) ---
   const userPlan = {
-    nome: "YAN RODRIGUES",
+    nome: user ? user.nome.toUpperCase() : "CARREGANDO...", // Pequeno ajuste para usar nome real
     plano: "PREMIUM NACIONAL",
-    carteirinha: "8922.0001.4590.0022",
+    carteirinha: user?.matricula ? `9000.0001.${user.matricula}.0021` : "8922.0001.4590.0022",
     validade: "12/2026",
     tipo: "Apartamento",
     rede: "Unimed & Parceiros",
@@ -56,7 +119,6 @@ export default function PlanoSaude() {
     { nome: 'Dr. Roberto Silva', esp: 'Cardiologista', loc: 'Hosp. Albert Einstein (SP)' },
     { nome: 'Dra. Ana Souza', esp: 'Dermatologista', loc: 'Clínica Dermato (SP)' },
     { nome: 'Hospital São Luiz', esp: 'Pronto Socorro', loc: 'Unidade Morumbi (SP)' },
-    // ... adicione mais médicos se quiser ...
   ];
 
   const extratoDados = [
@@ -75,6 +137,7 @@ export default function PlanoSaude() {
     return matchEsp && matchLoc;
   });
 
+  // --- FUNÇÕES AUXILIARES VISUAIS (Mantidas) ---
   const toggleCVV = (e) => { e.stopPropagation(); setShowCVV(!showCVV); };
   
   const closeModal = () => {
@@ -85,48 +148,44 @@ export default function PlanoSaude() {
     setConectandoTele(false);
   };
 
-  // --- DOWNLOAD PDF EXTRATO ---
   const handleDownloadExtrato = async () => {
     setBaixandoExtrato(true);
-    
     setTimeout(async () => {
       const element = extratoRef.current;
-      
       try {
         const canvas = await html2canvas(element, { 
-            scale: 1.5, // Qualidade boa e leve
+            scale: 1.5,
             backgroundColor: '#ffffff',
             logging: false,
             useCORS: true
         });
-        
         const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
         pdf.save('Extrato_Coparticipacao_TechCorp.pdf');
       } catch (error) {
         console.error("Erro PDF", error);
       }
-      
       setBaixandoExtrato(false);
     }, 500);
   };
 
-  // ... (Outras funções de Agendamento/Reembolso mantidas) ...
   const handleFileChange = (e) => { if (e.target.files && e.target.files[0]) setReembolsoFile(e.target.files[0]); };
+  
   const handleEnviarReembolso = () => {
     if (!reembolsoFile) return alert("Anexe o comprovante!");
     setLoading(true);
     setTimeout(() => { setLoading(false); setModalOpen(null); setShowSuccess(true); setReembolsoFile(null); }, 2000);
   };
+
   const abrirAgendamento = (medico) => {
     setMedicoSelecionado(medico);
     const hoje = new Date(); hoje.setDate(hoje.getDate() + 1); const dataIso = hoje.toISOString().split('T')[0];
     setDataSelecionada(dataIso); gerarHorariosDisponiveis(dataIso); setHorarioSelecionado(null); setModalOpen('agendar');
   };
+
   const gerarHorariosDisponiveis = (dateString) => {
     const date = new Date(dateString); const diaSemana = date.getUTCDay();
     if (diaSemana === 0 || diaSemana === 6) { setHorariosDisponiveis([]); return; }
@@ -135,13 +194,57 @@ export default function PlanoSaude() {
     const slotsDoDia = baseSlots.filter((_, index) => (index + seed) % 3 !== 0);
     setHorariosDisponiveis(slotsDoDia); setHorarioSelecionado(null);
   };
-  const handleDataChange = (e) => { const novaData = e.target.value; setDataSelecionada(novaData); gerarHorariosDisponiveis(novaData); };
-  const confirmarAgendamento = () => {
-    if (!horarioSelecionado) return alert("Selecione um horário!");
-    setLoading(true); setTimeout(() => { setLoading(false); setModalOpen('agendamento_concluido'); }, 1500);
-  };
-  const iniciarTelemedicina = () => { setConectandoTele(true); setTimeout(() => { setConectandoTele(false); alert("Sala aberta em nova aba."); setModalOpen(null); }, 2500); };
 
+  const handleDataChange = (e) => { const novaData = e.target.value; setDataSelecionada(novaData); gerarHorariosDisponiveis(novaData); };
+
+  // --- 3. INTEGRAÇÃO: CONFIRMAR AGENDAMENTO COM PAGAMENTO ---
+  const confirmarAgendamento = async () => {
+    if (!horarioSelecionado) return alert("Selecione um horário!");
+    
+    // Valor fixo de coparticipação para exemplo
+    const custoCopart = 60.00;
+    const confirmacao = window.confirm(`Confirmar agendamento?\n\nSerá debitada uma coparticipação de R$ ${custoCopart.toFixed(2)} da sua conta bancária.`);
+    
+    if (!confirmacao) return;
+
+    setLoading(true);
+    
+    // Chama a integração bancária
+    const pagou = await processarPagamento(custoCopart, `Agendamento Médico: ${medicoSelecionado.nome}`);
+
+    if (pagou) {
+      setTimeout(() => { 
+        setLoading(false); 
+        setModalOpen('agendamento_concluido'); 
+      }, 1500);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  // --- 4. INTEGRAÇÃO: TELEMEDICINA COM PAGAMENTO ---
+  const iniciarTelemedicina = async () => { 
+    const custoTele = 45.00;
+    const confirmacao = window.confirm(`Iniciar Telemedicina (Plantão)?\n\nCusto do atendimento: R$ ${custoTele.toFixed(2)}.`);
+
+    if (!confirmacao) return;
+
+    // Feedback visual imediato
+    setConectandoTele(true); 
+
+    // Chama a integração bancária
+    const pagou = await processarPagamento(custoTele, 'Consulta Telemedicina (Plantão)');
+
+    if (pagou) {
+      setTimeout(() => { 
+        setConectandoTele(false); 
+        alert("Sala aberta em nova aba."); 
+        setModalOpen(null); 
+      }, 2500); 
+    } else {
+      setConectandoTele(false);
+    }
+  };
 
   return (
     <div className="tech-layout-saude">
@@ -155,23 +258,28 @@ export default function PlanoSaude() {
            <span className="divider">|</span>
            <span className="page-title">Saúde & Bem-estar</span>
         </div>
+        
+        {/* Adicionei apenas um pequeno indicador de saldo para o usuário saber quanto tem */}
+        <div style={{marginRight: '20px', color: '#4ade80', fontSize: '0.9rem', fontWeight: 'bold'}}>
+             Saldo: R$ {saldo.toFixed(2)}
+        </div>
+
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Voltar ao Menu ↩</button>
       </header>
 
       <div className="saude-container-tech">
-        {/* ... (CONTEÚDO PRINCIPAL MANTIDO IGUAL) ... */}
         <div className="page-header-tech">
           <h2>Meu Plano de Saúde</h2>
           <p>Gestão completa do seu benefício médico e dependentes.</p>
         </div>
 
-        <div className="grid-saude">
-          <div className="left-col">
-            <div className="card-scene" onClick={() => setIsFlipped(!isFlipped)}>
-              <div className={`card-object ${isFlipped ? 'is-flipped' : ''}`}>
-                <div className="card-face front">
-                  <div className="card-header">
-                    <div className="chip-container">
+        <div className="saude-grid-layout">
+          <div className="saude-col-left">
+            <div className="health-card-scene" onClick={() => setIsFlipped(!isFlipped)}>
+              <div className={`health-card-object ${isFlipped ? 'is-flipped' : ''}`}>
+                <div className="health-card-face face-front">
+                  <div className="health-card-header">
+                    <div className="health-chip-container">
                       <svg viewBox="0 0 50 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs><linearGradient id="gold-shine" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#bf953f" /><stop offset="50%" stopColor="#fcf6ba" /><stop offset="100%" stopColor="#aa771c" /></linearGradient></defs>
                         <rect width="50" height="40" rx="6" fill="url(#gold-shine)" />
@@ -181,26 +289,26 @@ export default function PlanoSaude() {
                     </div>
                     <div style={{opacity: 0.95}}><Logo size={0.7} /></div>
                   </div>
-                  <div className="card-body">
-                    <div className="card-number">{userPlan.carteirinha}</div>
-                    <span className="card-label">Titular</span>
-                    <div className="card-value">{userPlan.nome}</div>
+                  <div className="health-card-body">
+                    <div className="health-card-number">{userPlan.carteirinha}</div>
+                    <span className="health-card-label">Titular</span>
+                    <div className="health-card-value">{userPlan.nome}</div>
                   </div>
-                  <div className="card-footer">
-                    <div><span className="card-label">Validade</span><div className="card-value" style={{fontSize: '0.9rem'}}>{userPlan.validade}</div></div>
-                    <div className="plan-badge">{userPlan.plano}</div>
+                  <div className="health-card-footer">
+                    <div><span className="health-card-label">Validade</span><div className="health-card-value" style={{fontSize: '0.9rem'}}>{userPlan.validade}</div></div>
+                    <div className="health-plan-badge">{userPlan.plano}</div>
                   </div>
                 </div>
-                <div className="card-face back">
-                  <div className="magnetic-strip"></div>
-                  <div className="signature-area">
-                    <div className="signature-box"></div>
-                    <div className="cvv-group">
-                      <div className="cvv-box">CVC {showCVV ? userPlan.cvv : '***'}</div>
-                      <button className="cvv-toggle" onClick={toggleCVV}>{showCVV ? '👁️' : '🔒'}</button>
+                <div className="health-card-face face-back">
+                  <div className="health-magnetic-strip"></div>
+                  <div className="health-signature-area">
+                    <div className="health-signature-box"></div>
+                    <div className="health-cvv-group">
+                      <div className="health-cvv-box">CVC {showCVV ? userPlan.cvv : '***'}</div>
+                      <button className="health-cvv-toggle" onClick={toggleCVV}>{showCVV ? '👁️' : '🔒'}</button>
                     </div>
                   </div>
-                  <div className="back-details">
+                  <div className="health-back-details">
                     <p className="legal-text">Pessoal e intransferível. Obrigatória apresentação de documento.</p>
                     <div className="emergency-contact">
                       <span className="emergency-title">CENTRAL 24H</span>
@@ -211,18 +319,18 @@ export default function PlanoSaude() {
                 </div>
               </div>
             </div>
-            <div className="click-hint">👆 Clique no cartão para virar</div>
+            <div className="health-click-hint">👆 Clique no cartão para virar</div>
 
-            <div className="actions-grid">
-              <button className="action-btn" onClick={() => setModalOpen('reembolso')}><span>💸</span><strong>Solicitar Reembolso</strong></button>
-              <button className="action-btn" onClick={() => setModalOpen('rede')}><span>🏥</span><strong>Rede Credenciada</strong></button>
-              <button className="action-btn" onClick={() => setModalOpen('extrato')}><span>📄</span><strong>Extrato de Uso</strong></button>
-              <button className="action-btn" onClick={() => setModalOpen('telemedicina')}><span>📞</span><strong>Telemedicina</strong></button>
+            <div className="saude-actions-grid">
+              <button className="saude-action-btn" onClick={() => setModalOpen('reembolso')}><span>💸</span><strong>Solicitar Reembolso</strong></button>
+              <button className="saude-action-btn" onClick={() => setModalOpen('rede')}><span>🏥</span><strong>Rede Credenciada</strong></button>
+              <button className="saude-action-btn" onClick={() => setModalOpen('extrato')}><span>📄</span><strong>Extrato de Uso</strong></button>
+              <button className="saude-action-btn" onClick={() => setModalOpen('telemedicina')}><span>📞</span><strong>Telemedicina</strong></button>
             </div>
           </div>
 
-          <div className="right-col">
-            <div className="info-card-glass" style={{marginBottom: '30px'}}>
+          <div className="saude-col-right">
+            <div className="saude-info-card" style={{marginBottom: '30px'}}>
               <h4 className="section-title"><span className="icon-neon">📋</span> Detalhes do Plano</h4>
               <ul className="details-list">
                 <li className="details-item"><span>Modalidade</span> <strong>{userPlan.plano}</strong></li>
@@ -232,7 +340,7 @@ export default function PlanoSaude() {
                 <li className="details-item"><span>Operadora</span> <strong>{userPlan.rede}</strong></li>
               </ul>
             </div>
-            <div className="info-card-glass">
+            <div className="saude-info-card">
               <h4 className="section-title"><span className="icon-neon">👨‍👩‍👧</span> Dependentes</h4>
               <div className="dependents-list">
                 {userPlan.dependentes.map((dep, index) => (
@@ -282,11 +390,12 @@ export default function PlanoSaude() {
           </div>
         </div>
       )}
-      {/* AGENDAMENTO E SUCESSO (Mantidos) */}
-      {modalOpen === 'agendar' && medicoSelecionado && (<div className="modal-overlay-tech" onClick={closeModal}><div className="modal-content-tech" onClick={e=>e.stopPropagation()}><div className="modal-header-tech"><h3>Agendar Consulta</h3><button className="close-btn-tech" onClick={closeModal}>×</button></div><div className="modal-body-tech"><div className="medico-summary-box"><h4 style={{color:'var(--neon-cyan)',margin:'0 0 5px 0'}}>{medicoSelecionado.nome}</h4><p style={{color:'#fff',fontSize:'0.9rem',margin:0}}>{medicoSelecionado.esp}</p><p style={{color:'#94a3b8',fontSize:'0.8rem',marginTop:'5px'}}>📍 {medicoSelecionado.loc}</p></div><div className="form-group-tech" style={{marginTop:'20px'}}><label>Selecione a Data:</label><input type="date" className="input-tech" value={dataSelecionada} onChange={handleDataChange} min={new Date().toISOString().split('T')[0]}/></div><div style={{marginTop:'20px'}}><label style={{color:'#94a3b8',fontSize:'0.85rem',fontWeight:'600',marginBottom:'10px',display:'block'}}>Horários:</label>{horariosDisponiveis.length>0?(<div className="slots-grid">{horariosDisponiveis.map((hora)=>(<button key={hora} className={`slot-btn ${horarioSelecionado===hora?'selected':''}`} onClick={()=>setHorarioSelecionado(hora)}>{hora}</button>))}</div>):<div className="no-slots-box">🚫 Sem agenda.</div>}</div><div style={{display:'flex',gap:'10px',marginTop:'30px'}}><button className="btn-secondary-tech" onClick={()=>setModalOpen('rede')} style={{flex:1}}>Voltar</button><button className="btn-primary-tech" onClick={confirmarAgendamento} disabled={loading||!horarioSelecionado} style={{flex:1}}>{loading?'Agendando...':'Confirmar'}</button></div></div></div></div>)}
+
+      {/* AGENDAMENTO E SUCESSO */}
+      {modalOpen === 'agendar' && medicoSelecionado && (<div className="modal-overlay-tech" onClick={closeModal}><div className="modal-content-tech" onClick={e=>e.stopPropagation()}><div className="modal-header-tech"><h3>Agendar Consulta</h3><button className="close-btn-tech" onClick={closeModal}>×</button></div><div className="modal-body-tech"><div className="medico-summary-box"><h4 style={{color:'var(--neon-cyan)',margin:'0 0 5px 0'}}>{medicoSelecionado.nome}</h4><p style={{color:'#fff',fontSize:'0.9rem',margin:0}}>{medicoSelecionado.esp}</p><p style={{color:'#94a3b8',fontSize:'0.8rem',marginTop:'5px'}}>📍 {medicoSelecionado.loc}</p></div><div className="form-group-tech" style={{marginTop:'20px'}}><label>Selecione a Data:</label><input type="date" className="input-tech" value={dataSelecionada} onChange={handleDataChange} min={new Date().toISOString().split('T')[0]}/></div><div style={{marginTop:'20px'}}><label style={{color:'#94a3b8',fontSize:'0.85rem',fontWeight:'600',marginBottom:'10px',display:'block'}}>Horários:</label>{horariosDisponiveis.length>0?(<div className="slots-grid">{horariosDisponiveis.map((hora)=>(<button key={hora} className={`slot-btn ${horarioSelecionado===hora?'selected':''}`} onClick={()=>setHorarioSelecionado(hora)}>{hora}</button>))}</div>):<div className="no-slots-box">🚫 Sem agenda.</div>}</div><div style={{display:'flex',gap:'10px',marginTop:'30px'}}><button className="btn-secondary-tech" onClick={()=>setModalOpen('rede')} style={{flex:1}}>Voltar</button><button className="btn-primary-tech" onClick={confirmarAgendamento} disabled={loading||!horarioSelecionado} style={{flex:1}}>{loading?'Processando Pagamento...':'Confirmar e Pagar'}</button></div></div></div></div>)}
       {modalOpen === 'agendamento_concluido' && (<div className="modal-overlay-tech"><div className="modal-content-tech success-modal" style={{textAlign:'center',maxWidth:'400px'}}><div className="success-pulse-icon">✓</div><h3 style={{color:'#4ade80',marginBottom:'10px'}}>Agendado!</h3><p style={{color:'#fff',marginBottom:'20px'}}>Consulta confirmada.</p><button className="btn-primary-tech" onClick={closeModal} style={{width:'100%',marginTop:'20px'}}>Fechar</button></div></div>)}
 
-      {/* 3. EXTRATO (ATUALIZADO E COMPACTO) */}
+      {/* 3. EXTRATO (MANTIDO) */}
       {modalOpen === 'extrato' && (
         <div className="modal-overlay-tech" onClick={closeModal}>
           <div className="modal-content-tech" onClick={e => e.stopPropagation()} style={{maxWidth: '650px'}}>
@@ -296,7 +405,6 @@ export default function PlanoSaude() {
             </div>
             
             <div className="modal-body-tech">
-              {/* TABELA COMPACTA */}
               <div className="table-wrapper-tech">
                 <table style={{width:'100%', color:'#fff', fontSize:'0.8rem', borderCollapse:'collapse'}}>
                   <thead>
@@ -335,7 +443,7 @@ export default function PlanoSaude() {
         </div>
       )}
 
-      {/* 4. TELEMEDICINA (MANTIDO) */}
+      {/* 4. TELEMEDICINA (ATUALIZADO COM CUSTO) */}
       {modalOpen === 'telemedicina' && (
         <div className="modal-overlay-tech" onClick={closeModal}>
           <div className="modal-content-tech" style={{textAlign: 'center', maxWidth: '400px'}} onClick={e => e.stopPropagation()}>
@@ -360,7 +468,7 @@ export default function PlanoSaude() {
 
                   <div style={{display:'flex', gap:'10px', marginTop:'20px'}}>
                     <button className="btn-secondary-tech" onClick={closeModal} style={{flex:1}}>Voltar</button>
-                    <button className="btn-primary-tech" onClick={iniciarTelemedicina} style={{flex:1}}>Entrar na Fila</button>
+                    <button className="btn-primary-tech" onClick={iniciarTelemedicina} style={{flex:1}}>Entrar (R$ 45,00)</button>
                   </div>
                 </>
               ) : (
@@ -402,8 +510,8 @@ export default function PlanoSaude() {
                <tbody>
                   {extratoDados.map((item, idx) => (
                       <tr key={idx}>
-                         <td>{item.data}</td><td>{item.prestador}</td><td>{item.proc}</td>
-                         <td style={{textAlign: 'right'}}>R$ {item.valor}</td><td style={{textAlign: 'right'}}>R$ {item.copart}</td>
+                          <td>{item.data}</td><td>{item.prestador}</td><td>{item.proc}</td>
+                          <td style={{textAlign: 'right'}}>R$ {item.valor}</td><td style={{textAlign: 'right'}}>R$ {item.copart}</td>
                       </tr>
                   ))}
                   <tr style={{background: '#f0f0f0'}}>

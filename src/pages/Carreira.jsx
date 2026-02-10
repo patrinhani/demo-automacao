@@ -1,14 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // <--- Adicionado useEffect
 import { useNavigate } from 'react-router-dom';
+import { getAuth } from "firebase/auth"; // <--- Import do Auth
+import { ref, onValue } from "firebase/database"; // <--- Imports do Database
+import { db } from '../firebase'; // <--- Import da conexão
 import Logo from '../components/Logo';
 import './Carreira.css';
 
 export default function Carreira() {
   const navigate = useNavigate();
-  const [abaAtiva, setAbaAtiva] = useState('vagas'); // 'vagas' | 'cursos'
+  const auth = getAuth(); // <--- Inicializa Auth
+
+  // --- 1. INTEGRAÇÃO: ESTADO DO USUÁRIO ---
+  const [user, setUser] = useState(null);
+
+  // --- 2. INTEGRAÇÃO: BUSCAR DADOS NO BANCO ---
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      // Se não estiver logado, o ideal seria redirecionar, 
+      // mas vamos manter na página para não quebrar o fluxo se for teste
+      return; 
+    }
+
+    // Busca os dados na pasta 'users/UID' igual ao Plano de Saúde
+    const userRef = ref(db, `users/${currentUser.uid}`);
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setUser({ ...data, uid: currentUser.uid });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth]);
+
+  const [abaAtiva, setAbaAtiva] = useState('vagas'); 
   
   // Controle de Modais
-  const [modalAberto, setModalAberto] = useState(null); // 'tracking' | 'certificado' | null
+  const [modalAberto, setModalAberto] = useState(null); 
   const [itemSelecionado, setItemSelecionado] = useState(null);
 
   // --- DADOS DE VAGAS ---
@@ -39,7 +68,7 @@ export default function Carreira() {
       requisitos: ['Certificação CSPO', 'Jira', 'Metodologias Ágeis'],
       aplicado: true,
       status: {
-        faseAtual: 2, // 0: Enviado, 1: RH, 2: Gestor, 3: Oferta
+        faseAtual: 2, 
         historico: [
           { data: '10/01/2026', msg: 'Candidatura recebida com sucesso.' },
           { data: '12/01/2026', msg: 'Currículo aprovado pelo RH.' },
@@ -274,7 +303,12 @@ export default function Carreira() {
                   
                   <div className="cert-body">
                     <p>A TechCorp University certifica que</p>
-                    <h2>Guilherme Silva</h2>
+                    
+                    {/* --- 3. INTEGRAÇÃO: NOME DO BANCO --- */}
+                    <h2 style={{textTransform: 'uppercase'}}>
+                      {user ? user.nome : 'Carregando...'}
+                    </h2>
+                    
                     <p>concluiu com êxito o curso de atualização profissional:</p>
                     <h3>{itemSelecionado.titulo}</h3>
                     <p>realizado em {itemSelecionado.conclusao}, com carga horária total de <strong>{itemSelecionado.cargaHoraria}</strong>.</p>

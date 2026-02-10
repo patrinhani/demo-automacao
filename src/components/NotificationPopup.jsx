@@ -7,7 +7,7 @@ import './NotificationPopup.css';
 
 // CAMINHO DO ARQUIVO DE SOM NA PASTA PUBLIC
 // Certifique-se de que o arquivo "notificacao.mp3" existe dentro da pasta "public"
-const CAMINHO_SOM = "/notificacao.mp3";
+const CAMINHO_SOM = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 export default function NotificationPopup() {
   const [notification, setNotification] = useState(null); 
@@ -15,7 +15,7 @@ export default function NotificationPopup() {
   const navigate = useNavigate();
   
   // Cria a referência de áudio apontando para o arquivo real
-  const audioRef = useRef(new Audio(CAMINHO_SOM));
+  const audioRef = useRef(new Audio(`${CAMINHO_SOM}?v=${Date.now()}`));
   const timestampsRef = useRef({}); 
 
   // --- 1. CONFIGURAÇÃO E DESBLOQUEIO ---

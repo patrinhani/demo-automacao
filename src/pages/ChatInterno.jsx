@@ -376,7 +376,22 @@ export default function ChatInterno() {
   };
 
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
-  const formatarNome = (n) => n ? n.split(' ')[0] : 'User';
+  
+  // --- ATUALIZAÇÃO AQUI ---
+  const formatarNome = (n) => {
+    if (!n) return 'User';
+    // Remove o ícone se existir para limpar a string
+    const nomeLimpo = n.replace('👤 ', '').trim();
+    const partes = nomeLimpo.split(' ');
+    
+    // Se tiver sobrenome, pega o primeiro e o último
+    if (partes.length > 1) {
+        return `${partes[0]} ${partes[partes.length - 1]}`;
+    }
+    // Se for nome único, retorna ele mesmo
+    return partes[0];
+  };
+  
   const getAvatar = (n) => n ? n[0].toUpperCase() : 'U';
 
   return (

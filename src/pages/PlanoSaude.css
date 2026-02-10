@@ -1,7 +1,7 @@
 /* src/pages/PlanoSaude.css */
 
 /* =========================================
-   PLANO DE SAÚDE - TECHCORP STYLE (FINAL)
+   PLANO DE SAÚDE - TECHCORP STYLE (ISOLADO & CORRIGIDO)
    ========================================= */
 
 .tech-layout-saude {
@@ -22,10 +22,21 @@
   
   display: flex;
   flex-direction: column;
-  min-height: 100vh; 
+  
+  /* CORREÇÃO 1: Scroll e Altura */
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  
   width: 100%;
   position: relative;
 }
+
+/* Scrollbar Personalizada */
+.tech-layout-saude::-webkit-scrollbar { width: 8px; }
+.tech-layout-saude::-webkit-scrollbar-track { background: var(--bg-dark); }
+.tech-layout-saude::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 4px; border: 2px solid var(--bg-dark); }
+.tech-layout-saude::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
 
 /* --- AMBIENT --- */
 .ambient-light {
@@ -54,33 +65,69 @@
 .page-header-tech { margin-bottom: 40px; }
 .page-header-tech h2 { font-size: 2rem; margin: 0 0 5px 0; background: linear-gradient(to right, #fff, #94a3b8); background-clip: text; -webkit-text-fill-color: transparent; }
 .page-header-tech p { color: var(--text-secondary); }
-.grid-saude { display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; }
 
-/* --- CARD FLIP --- */
-.card-scene { width: 100%; height: 240px; perspective: 1000px; margin-bottom: 20px; cursor: pointer; }
-.card-object { width: 100%; height: 100%; position: relative; transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-.card-object.is-flipped { transform: rotateY(180deg); }
-.card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; padding: 25px; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
-.card-face.front { background: var(--card-front-bg); z-index: 2; }
-.chip-container { width: 50px; height: 40px; position: relative; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)); }
-.card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.card-body { margin-top: 10px; }
-.card-label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; display: block; margin-bottom: 4px; }
-.card-value { font-size: 1.15rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
-.card-number { font-family: 'Courier New', monospace; font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-.card-footer { display: flex; justify-content: space-between; align-items: flex-end; }
-.plan-badge { background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+/* Renomeado para evitar conflito */
+.saude-grid-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; }
+.saude-col-left { display: flex; flex-direction: column; }
+.saude-col-right { display: flex; flex-direction: column; }
 
-/* Back Card */
-.card-face.back { background: var(--card-back-bg); transform: rotateY(180deg); padding: 0; z-index: 1; }
-.magnetic-strip { height: 40px; background: #000; width: 100%; margin-top: 20px; opacity: 0.9; }
-.signature-area { display: flex; align-items: center; gap: 10px; padding: 0 25px; margin-top: 15px; }
-.signature-box { height: 30px; background: #fff; width: 60%; opacity: 0.9; border-radius: 4px; background-image: repeating-linear-gradient(45deg, #eee 0, #eee 1px, #fff 0, #fff 10px); }
-.cvv-group { display: flex; align-items: center; gap: 8px; }
-.cvv-box { color: #fff; font-family: 'Courier New', monospace; font-size: 1rem; letter-spacing: 1px; }
-.cvv-toggle { background: none; border: none; cursor: pointer; color: var(--neon-cyan); font-size: 1rem; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.cvv-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.back-details { padding: 15px 25px; color: var(--text-secondary); display: flex; flex-direction: column; justify-content: space-between; flex: 1; text-align: left; }
+/* --- CARD FLIP (Renomeado & Ajustado) --- */
+.health-card-scene { width: 100%; height: 240px; perspective: 1000px; margin-bottom: 20px; cursor: pointer; }
+
+.health-card-object { 
+  width: 100%; height: 100%; position: relative; 
+  transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1); 
+  transform-style: preserve-3d; border-radius: 16px; 
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+}
+
+.health-card-object.is-flipped { transform: rotateY(180deg); }
+
+.health-card-face { 
+  position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+  border-radius: 16px; 
+  /* CORREÇÃO 2: Padding inferior aumentado para 35px para subir o footer */
+  padding: 15px 20px 35px 20px; 
+  box-sizing: border-box; 
+  border: 1px solid rgba(255,255,255,0.1); 
+  display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; 
+}
+
+.health-card-face.face-front { background: var(--card-front-bg); z-index: 2; }
+.health-card-face.face-back { background: var(--card-back-bg); transform: rotateY(180deg); padding: 0; z-index: 1; }
+
+.health-card-body { margin-top: 0px; }
+
+.health-chip-container { width: 50px; height: 40px;margin-top:3px; position: relative; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)); }
+.health-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+
+.health-card-label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; display: block; margin-bottom: 2px;margin-top: 6px; }
+.health-card-value { font-size: 1.15rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
+
+/* Fonte levemente reduzida para garantir espaço */
+.health-card-number { 
+  font-family: 'Courier New', monospace; 
+  font-size: 1.25rem; 
+  letter-spacing: 2px;
+  margin-top:20px; 
+  margin-bottom: 0px; 
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
+}
+
+/* Padding removido daqui e controlado no .health-card-face */
+.health-card-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 0px; margin-top: 10px; }
+.health-plan-badge { background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+/* Elementos do Verso */
+.health-magnetic-strip { height: 40px; background: #000; width: 100%; margin-top: 20px; opacity: 0.9; }
+.health-signature-area { display: flex; align-items: center; gap: 10px; padding: 0 25px; margin-top: 15px; }
+.health-signature-box { height: 30px; background: #fff; width: 60%; opacity: 0.9; border-radius: 4px; background-image: repeating-linear-gradient(45deg, #eee 0, #eee 1px, #fff 0, #fff 10px); }
+.health-cvv-group { display: flex; align-items: center; gap: 8px; }
+.health-cvv-box { color: #fff; font-family: 'Courier New', monospace; font-size: 1rem; letter-spacing: 1px; }
+.health-cvv-toggle { background: none; border: none; cursor: pointer; color: var(--neon-cyan); font-size: 1rem; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.health-cvv-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.health-back-details { padding: 15px 25px; color: var(--text-secondary); display: flex; flex-direction: column; justify-content: space-between; flex: 1; text-align: left; }
+
 .legal-text { font-size: 0.65rem; line-height: 1.3; opacity: 0.8; text-align: justify; margin-bottom: 5px; }
 .emergency-contact { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-bottom: 2px; }
 .emergency-title { color: var(--neon-cyan); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 2px; }
@@ -88,11 +135,11 @@
 .ans-info { font-size: 0.6rem; color: #64748b; margin-top: auto; }
 
 /* Hint */
-.click-hint { text-align: center; font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px; opacity: 0.7; animation: pulse 2s infinite; }
+.health-click-hint { text-align: center; font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px; opacity: 0.7; animation: pulse 2s infinite; }
 @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-/* --- INFO COMPONENTS --- */
-.info-card-glass { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); height: fit-content; }
+/* --- INFO COMPONENTS (Renomeado) --- */
+.saude-info-card { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); height: fit-content; }
 .section-title { font-size: 1.2rem; color: #fff; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
 .icon-neon { color: var(--neon-cyan); }
 .details-list { list-style: none; padding: 0; margin: 0; }
@@ -100,11 +147,11 @@
 .details-item span { color: var(--text-secondary); font-size: 0.9rem; }
 .details-item strong { color: #fff; font-size: 0.95rem; }
 
-.actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-.action-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.action-btn:hover { background: rgba(6, 182, 212, 0.1); border-color: var(--neon-cyan); transform: translateY(-3px); }
-.action-btn span { font-size: 1.5rem; }
-.action-btn strong { font-size: 0.9rem; }
+.saude-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+.saude-action-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.saude-action-btn:hover { background: rgba(6, 182, 212, 0.1); border-color: var(--neon-cyan); transform: translateY(-3px); }
+.saude-action-btn span { font-size: 1.5rem; }
+.saude-action-btn strong { font-size: 0.9rem; }
 
 .dependent-item { display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 10px; border: 1px solid transparent; transition: 0.3s; }
 .dependent-item:hover { border-color: var(--glass-border); background: rgba(255,255,255,0.03); }
@@ -147,158 +194,41 @@
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@media (max-width: 900px) { .grid-saude { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .saude-grid-layout { grid-template-columns: 1fr; } }
 
 /* --- ESTILO PARA O BOX DE DATA/HORA --- */
-.schedule-box {
-  display: flex;
-  justify-content: space-between;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px dashed var(--glass-border);
-}
-
-.schedule-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.schedule-item span {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  font-weight: bold;
-  margin-bottom: 5px;
-  letter-spacing: 1px;
-}
-
-.schedule-item strong {
-  color: #fff;
-  font-size: 1.1rem;
-}
-
-.schedule-item:first-child {
-  border-right: 1px solid rgba(255,255,255,0.1);
-}
+.schedule-box { display: flex; justify-content: space-between; background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 10px; border: 1px dashed var(--glass-border); }
+.schedule-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.schedule-item span { font-size: 0.7rem; color: var(--text-secondary); font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+.schedule-item strong { color: #fff; font-size: 1.1rem; }
+.schedule-item:first-child { border-right: 1px solid rgba(255,255,255,0.1); }
 
 /* --- ESTILOS DO MODAL DE AGENDAMENTO --- */
-
-.medico-summary-box {
-  background: rgba(255, 255, 255, 0.05);
-  border-left: 4px solid var(--neon-cyan);
-  padding: 15px;
-  border-radius: 0 8px 8px 0;
-}
-
-/* Grid de Horários */
-.slots-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.slot-btn {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: #fff;
-  padding: 8px 5px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.slot-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--neon-blue);
-}
-
-.slot-btn.selected {
-  background: var(--neon-blue);
-  border-color: var(--neon-blue);
-  color: #fff;
-  font-weight: bold;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
-}
-
-/* Mensagem de Sem Horário */
-.no-slots-box {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px dashed #ef4444;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 0.9rem;
-  margin-top: 10px;
-}
-
-/* Ajuste no Input de Data para ficar Dark */
-input[type="date"] {
-  color-scheme: dark; /* Força o ícone de calendário a ser branco */
-}
+.medico-summary-box { background: rgba(255, 255, 255, 0.05); border-left: 4px solid var(--neon-cyan); padding: 15px; border-radius: 0 8px 8px 0; }
+.slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+.slot-btn { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 8px 5px; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; text-align: center; }
+.slot-btn:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--neon-blue); }
+.slot-btn.selected { background: var(--neon-blue); border-color: var(--neon-blue); color: #fff; font-weight: bold; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+.no-slots-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444; padding: 15px; border-radius: 8px; text-align: center; font-size: 0.9rem; margin-top: 10px; }
+input[type="date"] { color-scheme: dark; }
 
 /* --- Estilos Extras para Modais Novos --- */
-
-/* Scroll na Tabela do Extrato */
-.table-wrapper-tech {
-  max-height: 300px;
-  margin-bottom: 15px;
-}
-
+.table-wrapper-tech { max-height: 300px; margin-bottom: 15px; }
 .table-wrapper-tech::-webkit-scrollbar { width: 6px; }
 .table-wrapper-tech::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
 .table-wrapper-tech::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; }
 
 /* Estilo Telemedicina */
-.tele-icon-circle {
-  width: 80px; height: 80px;
-  background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 3rem;
-  margin: 0 auto;
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
-}
-
-.wait-time-box {
-  background: rgba(6, 182, 212, 0.1);
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  padding: 15px;
-  border-radius: 10px;
-  color: var(--neon-cyan);
-}
+.tele-icon-circle { width: 80px; height: 80px; background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto; box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); }
+.wait-time-box { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 15px; border-radius: 10px; color: var(--neon-cyan); }
 .wait-time-box strong { display: block; font-size: 1.2rem; margin-top: 5px; }
 
 /* Spinner Telemedicina */
-.loading-spinner-tele {
-  width: 50px; height: 50px;
-  border: 4px solid rgba(255,255,255,0.1);
-  border-top: 4px solid var(--neon-blue);
-  border-radius: 50%;
-  margin: 0 auto;
-  animation: spin 1s linear infinite;
-}
+.loading-spinner-tele { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--neon-blue); border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* --- PDF TEMPLATE --- */
-.pdf-hidden-template {
-  position: fixed;
-  left: -10000px; /* Esconde fora da tela */
-  top: 0;
-  z-index: -9999;
-  width: 210mm;
-  min-height: 297mm;
-  background: white;
-  color: black;
-  visibility: visible;
-  pointer-events: none;
-}
-
+.pdf-hidden-template { position: fixed; left: -10000px; top: 0; z-index: -9999; width: 210mm; min-height: 297mm; background: white; color: black; visibility: visible; pointer-events: none; }
 .print-page { padding: 20mm; font-family: Arial, sans-serif; }
 .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; }
 .print-box { background: #f0f0f0; padding: 15px; border: 1px solid #ccc; margin-bottom: 20px; border-radius: 4px; }

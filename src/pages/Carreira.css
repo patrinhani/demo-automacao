@@ -15,6 +15,7 @@
   --neon-green: #10b981;
   --neon-purple: #8b5cf6;
   --neon-orange: #f59e0b;
+  --error-red: #ef4444;
 
   background-color: var(--bg-dark);
   min-height: 100vh;
@@ -80,7 +81,7 @@
   z-index: 1;
   width: 100%;
   box-sizing: border-box;
-  padding-top: 120px; /* Espaço para o header fixo */
+  padding-top: 120px;
   padding-bottom: 60px;
 }
 
@@ -201,6 +202,7 @@
 .certificate-modal-wrapper { display: flex; justify-content: center; padding: 20px; background: #333; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
 .certificate-paper { background: white; width: 100%; aspect-ratio: 1.414; padding: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; color: #000; }
 .certificate-border { border: 8px double #daa520; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
 /* O conteúdo do certificado mantém cores escuras (tinta) pois é papel branco */
 .cert-header h1 { color: #1a237e; border-bottom: 2px solid #daa520; margin: 15px 0; font-size: 1.8rem; }
 .cert-body h2 { font-family: serif; font-size: 2.5rem; margin: 10px 0; color: #000; }
@@ -222,4 +224,109 @@
   .progress-wrapper { width: 100%; }
   .timeline-step { width: auto; }
   .step-label { font-size: 0.6rem; }
+}
+
+/* =========================================
+   ESTILOS DE IMPRESSÃO (CERTIFICADO CORRIGIDO)
+   ========================================= */
+@media print {
+  /* 1. Esconde TUDO na página por padrão */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. Mantém o Modal e seus filhos visíveis */
+  .modal-overlay-tech,
+  .modal-overlay-tech * {
+    visibility: visible;
+  }
+
+  /* 3. Posiciona o modal para ocupar a folha inteira */
+  .modal-overlay-tech {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  /* 4. Limpa estilos de janela do modal */
+  .modal-content-tech {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* 5. Esconde botões */
+  .modal-header-tech,
+  .modal-actions-tech,
+  .close-btn-tech {
+    display: none !important;
+  }
+
+  /* 6. Wrapper do certificado */
+  .certificate-modal-wrapper {
+    width: 100% !important;
+    height: 100vh !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* 7. PAPEL E BORDA (Ocupar a página toda) */
+  .certificate-paper {
+    transform: scale(1) !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    height: 98vh !important; /* Altura da folha menos um pouquinho */
+    display: flex !important;
+    flex-direction: column !important;
+    page-break-inside: avoid;
+  }
+
+  .certificate-border {
+    height: 100% !important; /* Borda acompanha a altura do papel */
+    justify-content: center !important; /* CENTRALIZA TUDO VERTICALMENTE */
+    border: 6px double #daa520 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 8. CORREÇÃO PRINCIPAL: RODAPÉ */
+  /* Removemos o margin-top: auto que jogava ele pro fundo */
+  .cert-footer {
+    margin-top: 60px !important; /* Distância fixa e próxima do texto */
+    padding-top: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 9. Força impressão de cores */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 10. Página */
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
 }

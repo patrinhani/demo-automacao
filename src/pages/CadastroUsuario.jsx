@@ -30,9 +30,9 @@ export default function CadastroUsuario() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [progresso, setProgresso] = useState(""); // Feedback visual do lote
+  const [progresso, setProgresso] = useState(""); 
 
-  // Estado modificado para aceitar múltiplos nomes
+  // Estado para múltiplos nomes
   const [listaNomes, setListaNomes] = useState('');
   
   const [commonData, setCommonData] = useState({
@@ -55,7 +55,6 @@ export default function CadastroUsuario() {
 
   // --- LÓGICA DE SORTEIO PONDERADO ---
   const sortearCargoPorSetor = (setorAlvo) => {
-    // Filtra apenas os cargos do setor desejado
     const cargosDoSetor = TABELA_CARGOS.filter(c => c.setor === setorAlvo);
     
     // Soma total dos pesos
@@ -125,10 +124,10 @@ export default function CadastroUsuario() {
   const handleCriarUsuariosEmLote = async (e) => {
     e.preventDefault();
     
-    // Processar a lista de nomes (quebra por linha e remove vazios)
-    const nomesArray = listaNomes.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+    // Quebra por linha e remove vazios
+    const linhasBrutas = listaNomes.split('\n').filter(n => n.trim().length > 0);
     
-    if (nomesArray.length === 0) {
+    if (linhasBrutas.length === 0) {
       alert("Por favor, insira pelo menos um nome.");
       return;
     }
@@ -142,21 +141,41 @@ export default function CadastroUsuario() {
       secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
       const secondaryAuth = getAuth(secondaryApp);
 
-      for (let i = 0; i < nomesArray.length; i++) {
-        const nomeAtual = nomesArray[i];
-        setProgresso(`Processando ${i + 1} de ${nomesArray.length}: ${nomeAtual}...`);
-
-        // --- LÓGICA DE DISTRIBUIÇÃO IGUALITÁRIA ---
-        // Se o índice for par vai para RH, ímpar vai para Financeiro
-        const setorAlvo = (i % 2 === 0) ? "Recursos Humanos" : "Financeiro";
+      for (let i = 0; i < linhasBrutas.length; i++) {
+        const linhaOriginal = linhasBrutas[i];
         
-        // Sorteia cargo dentro do setor específico respeitando probabilidades
+        // --- NOVA LÓGICA DE PARSEAMENTO (Nome ; Setor) ---
+        // Aceita separadores: ponto e vírgula (;) ou traço (-)
+        const partes = linhaOriginal.split(/[;-]/);
+        
+        const nomeLimpo = partes[0].trim();
+        let setorAlvo = "";
+        
+        // Verifica se o usuário especificou um setor
+        if (partes.length > 1) {
+          const comando = partes[1].toLowerCase().trim();
+          
+          if (comando.includes('rh') || comando.includes('recursos') || comando.includes('humanos')) {
+            setorAlvo = "Recursos Humanos";
+          } else if (comando.includes('fin') || comando.includes('banco') || comando.includes('contas')) {
+            setorAlvo = "Financeiro";
+          }
+        }
+
+        // Se não especificou (ou não entendeu o comando), sorteia 50/50
+        if (!setorAlvo) {
+          setorAlvo = Math.random() < 0.5 ? "Recursos Humanos" : "Financeiro";
+        }
+
+        setProgresso(`Processando ${i + 1} de ${linhasBrutas.length}: ${nomeLimpo} -> ${setorAlvo}...`);
+        
+        // Sorteia cargo dentro do setor definido (respeitando os pesos)
         const cargoSorteado = sortearCargoPorSetor(setorAlvo);
 
-        const emailGerado = gerarEmail(nomeAtual);
+        const emailGerado = gerarEmail(nomeLimpo);
         const matriculaGerada = gerarMatricula();
 
-        // Criar Auth
+        // Criar Auth no Firebase
         const userCredential = await createUserWithEmailAndPassword(
           secondaryAuth, 
           emailGerado, 
@@ -166,7 +185,7 @@ export default function CadastroUsuario() {
 
         // Salvar no Realtime Database
         await set(ref(db, `users/${novoUid}`), {
-          nome: nomeAtual,
+          nome: nomeLimpo,
           email: emailGerado,
           matricula: matriculaGerada,
           unidade: commonData.unidade,
@@ -182,14 +201,14 @@ export default function CadastroUsuario() {
 
         // Gerar PDF individual
         gerarPDFBoasVindas({
-          nome: nomeAtual,
+          nome: nomeLimpo,
           email: emailGerado,
           senha: commonData.senhaPadrao,
           matricula: matriculaGerada
         }, cargoSorteado);
 
         sucessos++;
-        // Pequena pausa para garantir downloads sequenciais se forem muitos
+        // Pausa para evitar bloqueios ou sobreposição de download
         await new Promise(r => setTimeout(r, 500));
       }
 
@@ -214,7 +233,7 @@ export default function CadastroUsuario() {
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
            <span className="divider">|</span>
-           <span className="page-title">Gestão de Acessos (Lote)</span>
+           <span className="page-title">Gestão de Acessos (Lote Inteligente)</span>
         </div>
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Cancelar ✖</button>
       </header>
@@ -223,7 +242,9 @@ export default function CadastroUsuario() {
         <div className="form-card-glass">
           <div className="form-header">
             <h2>Cadastrar Usuários em Lote</h2>
-            <p>Insira os nomes abaixo (um por linha). O sistema distribuirá automaticamente entre RH e Financeiro.</p>
+            <p style={{fontSize: '0.9rem', opacity: 0.8}}>
+              <strong>Dica:</strong> Digite apenas o nome para setor aleatório, ou use "Nome ; Setor" para forçar.
+            </p>
           </div>
 
           <form onSubmit={handleCriarUsuariosEmLote} className="cadastro-form">
@@ -236,16 +257,17 @@ export default function CadastroUsuario() {
                   onChange={(e) => setListaNomes(e.target.value)} 
                   required 
                   autoFocus 
-                  placeholder="Ex:\nJoão Silva\nMaria Souza\nPedro Santos"
-                  rows={6}
+                  placeholder={"Exemplos:\nJoão Silva  (Aleatório)\nMaria Souza ; RH  (Forçar RH)\nCarlos Lima ; Fin  (Forçar Financeiro)"}
+                  rows={8}
                   style={{
                     width: '100%',
                     background: 'rgba(15, 23, 42, 0.8)',
                     border: '1px solid #334155',
                     padding: '0.8rem',
                     borderRadius: '8px',
-                    color: 'white',
+                    color: '#e2e8f0',
                     fontSize: '1rem',
+                    fontFamily: 'monospace', // Ajuda a visualizar melhor a lista
                     resize: 'vertical'
                   }}
                 />
@@ -276,14 +298,22 @@ export default function CadastroUsuario() {
             <hr className="divider-neon" />
 
             {loading && (
-              <div style={{textAlign: 'center', color: '#0ea5e9', marginBottom: '1rem', fontWeight: 'bold'}}>
+              <div style={{
+                textAlign: 'center', 
+                color: '#0ea5e9', 
+                marginBottom: '1rem', 
+                fontWeight: 'bold',
+                padding: '10px',
+                background: 'rgba(14, 165, 233, 0.1)',
+                borderRadius: '8px'
+              }}>
                 {progresso}
               </div>
             )}
 
             <div className="form-actions">
               <button type="submit" className="btn-create-user" disabled={loading || !listaNomes.trim()}>
-                {loading ? 'Processando Lote...' : 'Gerar Todos os Usuários e PDFs'}
+                {loading ? 'Processando...' : 'Gerar Todos os Usuários e PDFs'}
               </button>
             </div>
           </form>
