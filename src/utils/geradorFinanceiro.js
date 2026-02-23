@@ -22,7 +22,7 @@ export const gerarCenarioFinanceiro = () => {
     "TechSolutions Ltda", "Padaria do João", "Mercado Preço Bom", 
     "Posto Ipiranga Centro", "Farmácia Saúde Total", "Restaurante Sabor Mineiro",
     "Papelaria Escolar", "Oficina Mecânica Veloz", "Consultoria Alpha",
-    "Condomínio Jardins", "Academia FitLife", "Uber do Brasil",
+    "Condomínio Jardins", "Academia FitLife", "Uber Brasil",
     "Netflix Servicos", "Amazon BR", "Spotify Premium",
     "Vivo Telecom", "Claro Net", "Enel Energia", "Sabesp Agua",
     "Lanchonete da Esquina", "Gráfica Rápida", "Petshop Amigo",
