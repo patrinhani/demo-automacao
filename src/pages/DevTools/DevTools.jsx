@@ -50,6 +50,11 @@ export default function DevTools() {
   const [log, setLog] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
 
+  // Estados do Modal de Limpeza Seletiva
+  const [showModalLimpeza, setShowModalLimpeza] = useState(false);
+  const [usuariosComDados, setUsuariosComDados] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   useEffect(() => {
     const fetchUser = async () => {
       const user = auth.currentUser;
@@ -78,6 +83,7 @@ export default function DevTools() {
     push(viagensRef, { ...mock, id: `TRIP-${Math.floor(Math.random()*10000)}`, createdAt: Date.now() });
     addLog(`✈️ Viagem gerada.`);
   };
+  
   const limparViagens = () => { set(ref(db, `viagens/${userProfile.uid}`), null); addLog("🗑️ Viagens limpas."); };
 
   const gerarPonto = async () => {
@@ -105,19 +111,14 @@ export default function DevTools() {
     addLog("⏰ Ponto gerado (Mês Completo).");
   };
 
-  // --- FUNÇÃO ORIGINAL (Limpa apenas ponto do usuário) ---
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
 
-  // --- NOVA FUNÇÃO UNIFICADA (Ponto Pessoal + RH) ---
   const limparHistoricoPontoUnificado = async () => {
     if (!window.confirm("⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?")) return;
     
     try {
         const updates = {};
-        // 1. Apaga histórico de ponto batido do usuário atual
         updates[`ponto/${userProfile.uid}`] = null;
-        
-        // 2. Apaga histórico de ponto indevido (Mocks do RH)
         updates['rh/erros_ponto'] = null;
 
         await update(ref(db), updates);
@@ -146,29 +147,85 @@ export default function DevTools() {
     addLog("🌴 Férias solicitadas.");
   };
 
+  // --- FUNÇÕES GLOBAIS DE CONCILIAÇÃO ---
   const gerarConciliacaoCaos = async () => {
-    if (!userProfile) return addLog("❌ Erro: Usuário não identificado.");
     const faturas = [
       { id: 1, cliente: "Padaria do João (Filial Norte)", valor: 1250.00, vencimento: "2025-10-10", status: "Pendente" },
       { id: 2, cliente: "Tech Solutions - Serv. Manutenção", valor: 250.00, vencimento: "2025-10-10", status: "Pendente" },
       { id: 3, cliente: "Tech Solutions - Hospedagem", valor: 250.00, vencimento: "2025-10-10", status: "Pendente" },
       { id: 4, cliente: "Papelaria Corporativa Ltda", valor: 890.00, vencimento: "2025-10-10", status: "Pendente" }
     ];
+    
     try {
-      await set(ref(db, `users/${userProfile.uid}/financeiro/faturas`), faturas);
-      addLog("🏦 Faturas de teste geradas (Modo Caos).");
+      const snap = await get(ref(db, 'users'));
+      if (snap.exists()) {
+        const updates = {};
+        const usuarios = snap.val();
+        
+        Object.keys(usuarios).forEach(uid => {
+          updates[`users/${uid}/financeiro/faturas`] = faturas;
+        });
+        
+        await update(ref(db), updates);
+        addLog("🏦 Faturas de teste geradas para TODOS os usuários (Modo Caos).");
+      }
     } catch (e) {
       addLog(`❌ Erro ao gerar conciliação: ${e.message}`);
     }
   };
 
-  const limparConciliacao = async () => {
-    if (!userProfile) return;
+  const abrirModalLimpeza = async () => {
+    setShowModalLimpeza(true);
+    setLoadingUsers(true);
     try {
-      await set(ref(db, `users/${userProfile.uid}/financeiro/faturas`), null);
-      addLog("🗑️ Módulo de Conciliação limpo.");
+      const snap = await get(ref(db, 'users'));
+      if (snap.exists()) {
+        const usuarios = snap.val();
+        const lista = [];
+        
+        Object.keys(usuarios).forEach(uid => {
+          const user = usuarios[uid];
+          if (user.financeiro && user.financeiro.faturas) {
+            lista.push({
+              uid: uid,
+              email: user.email,
+              nome: user.nome || 'Sem Nome',
+              qtd: Object.keys(user.financeiro.faturas).length
+            });
+          }
+        });
+        
+        setUsuariosComDados(lista);
+      }
     } catch (e) {
-      addLog(`❌ Erro ao limpar conciliação: ${e.message}`);
+      addLog(`❌ Erro ao buscar usuários: ${e.message}`);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const limparUsuarioEspecifico = async (uidAlvo, nomeAlvo) => {
+    try {
+      await set(ref(db, `users/${uidAlvo}/financeiro/faturas`), null);
+      addLog(`🗑️ Faturas limpas para a conta: ${nomeAlvo}`);
+      setUsuariosComDados(prev => prev.filter(u => u.uid !== uidAlvo));
+    } catch (e) {
+      addLog(`❌ Erro ao limpar conta ${nomeAlvo}: ${e.message}`);
+    }
+  };
+
+  const limparTodos = async () => {
+    if (!window.confirm("Apagar faturas de TODOS os usuários listados?")) return;
+    try {
+      const updates = {};
+      usuariosComDados.forEach(u => {
+        updates[`users/${u.uid}/financeiro/faturas`] = null;
+      });
+      await update(ref(db), updates);
+      addLog("🗑️ Faturas limpas para TODOS os usuários.");
+      setUsuariosComDados([]);
+    } catch (e) {
+      addLog(`❌ Erro ao limpar todos: ${e.message}`);
     }
   };
 
@@ -309,7 +366,7 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD PONTO (ATUALIZADO) */}
+          {/* CARD PONTO */}
           <div className="dev-card">
             <div className="card-icon">⏰</div>
             <h3>Ponto Pessoal</h3>
@@ -318,7 +375,6 @@ export default function DevTools() {
               <button className="btn-gen" onClick={gerarPonto}>+ Gerar</button>
               <button className="btn-del" onClick={limparPonto}>🗑️ Pessoal</button>
               
-              {/* --- BOTÃO NOVO COM CLASSE CORRIGIDA --- */}
               <button 
                 className="btn-danger-solid" 
                 onClick={limparHistoricoPontoUnificado}
@@ -328,7 +384,6 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* OUTROS CARDS... (Mantenha o resto igual) */}
           <div className="dev-card">
             <div className="card-icon">✈️</div>
             <h3>Viagens</h3>
@@ -366,13 +421,14 @@ export default function DevTools() {
             </div>
           </div>
 
+          {/* CARD CONCILIAÇÃO ATUALIZADO */}
           <div className="dev-card" style={{borderTopColor: '#3b82f6'}}>
             <div className="card-icon" style={{background: '#3b82f6'}}>🏦</div>
             <h3>Conciliação (Caos)</h3>
             <p>Gera faturas conflitantes.</p>
             <div className="dev-actions">
-              <button className="btn-gen" onClick={gerarConciliacaoCaos}>+ Gerar Caos</button>
-              <button className="btn-del" onClick={limparConciliacao}>🗑️ Limpar</button>
+              <button className="btn-gen" onClick={gerarConciliacaoCaos}>+ Gerar Caos (Todos)</button>
+              <button className="btn-del" onClick={abrirModalLimpeza}>🗑️ Escolher quem Limpar</button>
             </div>
           </div>
 
@@ -393,6 +449,50 @@ export default function DevTools() {
             </div>
         </div>
       </div>
+
+      {/* --- MODAL DE LIMPEZA SELETIVA --- */}
+      {showModalLimpeza && (
+        <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+          <div style={{background: '#1e1e2e', padding: '25px', borderRadius: '12px', width: '450px', border: '1px solid #3b82f6', color: 'white', boxShadow: '0 10px 25px rgba(0,0,0,0.5)'}}>
+            <h3 style={{marginTop: 0, color: '#60a5fa', display: 'flex', justifyContent: 'space-between'}}>
+              <span>Escolher Conta para Limpar</span>
+              <button onClick={() => setShowModalLimpeza(false)} style={{background:'transparent', border:'none', color:'white', cursor:'pointer', fontSize:'1.2rem'}}>×</button>
+            </h3>
+            
+            {loadingUsers ? (
+              <div style={{textAlign: 'center', padding: '20px', color: '#94a3b8'}}>A procurar contas com faturas...</div>
+            ) : usuariosComDados.length === 0 ? (
+              <div style={{textAlign: 'center', padding: '20px', color: '#10b981'}}>Nenhuma conta possui faturas pendentes no momento! 🎉</div>
+            ) : (
+              <>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto', paddingRight: '5px'}}>
+                  {usuariosComDados.map(u => (
+                    <div key={u.uid} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+                      <div>
+                        <strong style={{display: 'block', fontSize: '1rem'}}>{u.nome}</strong>
+                        <small style={{color: '#94a3b8'}}>{u.email}</small>
+                      </div>
+                      <button 
+                        onClick={() => limparUsuarioEspecifico(u.uid, u.nome)}
+                        className="btn-del"
+                        style={{padding: '6px 12px', fontSize: '0.85rem', width: 'auto', margin: 0}}
+                      >
+                        🗑️ Limpar ({u.qtd})
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                <div style={{marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #333', display: 'flex', gap: '10px'}}>
+                   <button onClick={limparTodos} style={{flex: 1, background: '#ef4444', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'}}>
+                     🧨 Limpar Todos
+                   </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

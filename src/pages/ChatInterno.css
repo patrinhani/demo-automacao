@@ -474,6 +474,30 @@ html, body {
   background: #475569;
   box-shadow: none;
 }
+.chat-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px 15px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.95rem;
+    font-family: inherit; /* Garante que a fonte seja igual a do sistema */
+    resize: none; /* Impede o usuário de esticar a caixa manualmente com o mouse */
+    min-height: 45px;
+    max-height: 120px; /* Impede que a caixa ocupe a tela toda se o texto for gigante */
+    overflow-y: auto; /* Cria barra de rolagem se passar da max-height */
+    line-height: 1.4;
+
+    scrollbar-width: none; /* Oculta no Firefox */
+    -ms-overflow-style: none;
+}
+
+/* 👇 Adicione este bloco inteiro: */
+.chat-input::-webkit-scrollbar {
+    display: none;
+}
 
 /* --- MOBILE --- */
 @media (max-width: 800px) {

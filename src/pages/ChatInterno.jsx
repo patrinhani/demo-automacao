@@ -11,60 +11,6 @@ const TEAM_FIXO = [
   { id: "user_teste_demo", nome: "Cadastro Teste", cargo: "Usuário de Testes", email: "teste@techcorp.com.br" },
 ];
 
-// --- 🧠 INTELIGÊNCIA DO ROBÔ: RESPOSTAS DINÂMICAS ---
-const RESPOSTAS_CONTEXTUAIS = {
-    "Falta Injustificada": [
-        "Oi! Mil desculpas, eu passei muito mal ontem e acabei não conseguindo avisar. Tenho atestado.",
-        "Bom dia! Tive um problema urgente com meu filho na escola e precisei sair correndo. Vou enviar o comprovante no ponto.",
-        "Olá, tive um imprevisto pessoal grave ontem. Vou ver com minha gestora para abonar...",
-        "Oi RH, meu carro quebrou no meio da estrada e fiquei sem sinal. Desculpa o sumiço!"
-    ],
-    "MI_Saida": [
-        "Opa! Esqueci de bater a saída ontem, sai na correria para pegar o ônibus.",
-        "Oi! Bati o ponto, mas acho que a digital não leu direito na saída. Saí às {saida}.",
-        "Desculpa, esqueci totalmente de registrar a saída. Fiquei focado no deploy e passou.",
-        "Vixi, fui embora e esqueci de bater o ponto na saída. Pode ajustar pra {saida} por favor."
-    ],
-    "MI_Almoco": [
-        "Bom dia! Esqueci de bater o ponto na hora do almoço. Fui e voltei no horário normal.",
-        "Oi, acabei esquecendo de registrar a ida para o almoço. Pode corrigir por favor.",
-        "Olá! O sistema não pegou minha batida de volta do almoço, mas eu voltei às {almoco_volta}.",
-        "Putz, passei direto na catraca do almoço e esqueci de registrar. Foi mal!"
-    ],
-    "MI_Geral": [
-        "Oi! Tive uma emergência e precisei sair logo depois de chegar. Esqueci de bater.",
-        "Bom dia. O sistema travou depois da minha entrada e não consegui marcar mais nada.",
-        "Oi, marquei a entrada, mas precisei ir ao médico de urgência e não bati a saída."
-    ],
-    "Atraso Excessivo": [
-        "Oi! O trânsito estava caótico hoje por causa da chuva. Desculpa o atraso.",
-        "Bom dia! Tive um problema no metrô e demorou muito pra chegar. Cheguei só {entrada}.",
-        "Olá, acabei dormindo demais porque o despertador não tocou. Vou compensar hoje!",
-        "Tive que passar na farmácia antes de vir e acabei atrasando. Foi mal!"
-    ],
-    "Batida Duplicada": [
-        "Oi! Acho que bati o dedo duas vezes sem querer na entrada. Pode desconsiderar uma por favor.",
-        "O sistema travou e acho que registrou duplicado. Fui olhar agora e vi dois registros.",
-        "Bom dia, apareceu duplicado pra mim. Foi erro meu na hora de passar o crachá."
-    ],
-    "Ponto Britânico": [
-        "Oi! Eu tenho o costume de bater certinho no horário, mas vou variar os minutos como pediram.",
-        "Não sabia que não podia bater exatamente no mesmo horário todo dia. Vou me atentar!",
-        "É mania minha de esperar dar 17:00:00 pra bater. Vou mudar isso."
-    ],
-    "Hora Extra N/A": [
-        "Oi! Tive que ficar até mais tarde ontem pra fechar aquele relatório urgente.",
-        "O gestor pediu pra eu ficar um pouco mais pra ajudar no suporte. Esqueci de avisar.",
-        "Fiquei finalizando a task do projeto novo. Não vai se repetir sem autorização."
-    ],
-    "default": [ 
-        "Oi! Pode verificar meu ponto? Acho que tem algo errado.",
-        "Olá, pode me ajudar com essa pendência no meu espelho de ponto? Obrigado.",
-        "Opa, preciso justificar esse dia. Obrigado por avisar.",
-        "Oi RH, desculpa a falha. Pode ajustar pra mim? por favor."
-    ]
-};
-
 export default function ChatInterno() {
   const navigate = useNavigate();
   const location = useLocation(); 
@@ -249,7 +195,7 @@ export default function ChatInterno() {
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
 
-  // --- 6. AUTO-REPLY DO ROBÔ ---
+  // --- 6. AUTO-REPLY DO ROBÔ (COM IA GEMINI) ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
@@ -265,66 +211,80 @@ export default function ChatInterno() {
           if (lastProcessedMsgRef.current === ultimaMsg.id) return;
           lastProcessedMsgRef.current = ultimaMsg.id;
 
-          const jaRespondeuNoPassado = mensagens.some(msg => msg.uid === mockId);
-          if (jaRespondeuNoPassado) return;
-
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
           
-          const tempoEspera = Math.floor(Math.random() * (7000 - 3000 + 1) + 3000);
-          console.log(`🤖 Robô ${mockNome} vai responder em ${tempoEspera}ms`);
+          const tempoEspera = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
 
           const timer = setTimeout(async () => {
-              let listaRespostas = RESPOSTAS_CONTEXTUAIS['default'];
+              let erroTipo = "Dúvida sobre o ponto";
               let pontosReais = {}; 
 
               try {
                   const snapshot = await get(ref(db, `rh/erros_ponto/${mockId}`));
                   if (snapshot.exists()) {
                       const dadosMock = snapshot.val();
-                      const erroTipo = dadosMock.erro; 
+                      erroTipo = dadosMock.erro || erroTipo; 
                       pontosReais = dadosMock.pontos || {}; 
-                      
-                      if (erroTipo) {
-                          if (erroTipo === 'Marcação Ímpar') {
-                              const faltaEntrada = !pontosReais.e || pontosReais.e === '---';
-                              const faltaSaida = !pontosReais.s || pontosReais.s === '---';
-                              const faltaAlmoco = (!pontosReais.si || pontosReais.si === '---') || (!pontosReais.vi || pontosReais.vi === '---');
-
-                              if (faltaAlmoco && !faltaSaida) {
-                                  listaRespostas = RESPOSTAS_CONTEXTUAIS['MI_Almoco'];
-                              } else if (faltaSaida) {
-                                  listaRespostas = RESPOSTAS_CONTEXTUAIS['MI_Saida'];
-                              } else if (faltaEntrada) {
-                                  listaRespostas = RESPOSTAS_CONTEXTUAIS['default'];
-                              } else {
-                                  listaRespostas = RESPOSTAS_CONTEXTUAIS['MI_Geral'];
-                              }
-                          } 
-                          else if (RESPOSTAS_CONTEXTUAIS[erroTipo]) {
-                              listaRespostas = RESPOSTAS_CONTEXTUAIS[erroTipo];
-                          }
-                      }
-                      
                       await update(ref(db, `rh/erros_ponto/${mockId}`), { status: 'Respondido' });
                   }
               } catch(e) { console.error("Erro ao buscar contexto:", e); }
 
-              let textoFinal = listaRespostas[Math.floor(Math.random() * listaRespostas.length)];
+              const historicoIA = [];
+              mensagens.forEach(m => {
+                  const role = m.uid === mockId ? "model" : "user";
+                  if (historicoIA.length > 0 && historicoIA[historicoIA.length - 1].role === role) {
+                      historicoIA[historicoIA.length - 1].parts[0].text += " | " + m.texto;
+                  } else {
+                      historicoIA.push({ role: role, parts: [{ text: m.texto }] });
+                  }
+              });
 
-              const h_entrada = pontosReais.e && pontosReais.e !== '---' ? pontosReais.e : '08:00';
-              const h_almoco_ida = pontosReais.si && pontosReais.si !== '---' ? pontosReais.si : '12:00';
-              const h_almoco_volta = pontosReais.vi && pontosReais.vi !== '---' ? pontosReais.vi : '13:00';
-              const h_saida = pontosReais.s && pontosReais.s !== '---' ? pontosReais.s : '17:30';
+              const instrucaoSistema = `Você é ${mockNome}, um funcionário brasileiro da empresa TechCorp. 
+O RH está falando com você no chat interno da empresa. O problema sinalizado com o seu ponto é: ${erroTipo}.
+Seus horários registrados nesse dia foram: Entrada: ${pontosReais.e || '---'}, Ida Almoço: ${pontosReais.si || '---'}, Volta Almoço: ${pontosReais.vi || '---'}, Saída: ${pontosReais.s || '---'}.
+Regras inquebráveis:
+1. Fale com naturalidade, use português do Brasil coloquial de escritório (ex: "putz", "foi mal", "beleza", "vou ajustar").
+2. Tente dar uma desculpa realista, ou assumir o erro, dialogando com a mensagem do RH. Mantenha o contexto.
+3. Nunca diga que é uma IA ou um modelo de linguagem. Você é um funcionário real.
+4. IMPORTANTE: Conclua sempre os seus pensamentos e termine as frases. NUNCA deixe uma frase pela metade.`;
 
-              textoFinal = textoFinal
-                  .replace('{entrada}', h_entrada)
-                  .replace('{saida}', h_saida)
-                  .replace('{almoco_ida}', h_almoco_ida)
-                  .replace('{almoco_volta}', h_almoco_volta);
+              let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
+
+              try {
+                  const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
+                  
+                  if (!API_KEY) {
+                      textoFinal = "🤖 [ERRO DE DEBUG]: Minha VITE_GEMINI_API_KEY sumiu!";
+                  } else {
+                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                              systemInstruction: { parts: [{ text: instrucaoSistema }] },
+                              contents: historicoIA,
+                              generationConfig: { 
+                                  temperature: 0.7,
+                                  maxOutputTokens: 1000 // Limite altíssimo para garantir que a frase não seja cortada
+                              }
+                          })
+                      });
+                      
+                      const data = await response.json();
+                      
+                      if (!response.ok) {
+                          console.error("Erro retornado pelo Google:", data);
+                          textoFinal = `🤖 [ERRO DE DEBUG - GOOGLE REJEITOU]: ${data.error?.message || 'Erro desconhecido'}`;
+                      } else if (data.candidates && data.candidates[0].content) {
+                          textoFinal = data.candidates[0].content.parts[0].text;
+                      }
+                  }
+              } catch (e) {
+                  console.error("Erro na requisição da API:", e);
+                  textoFinal = `🤖 [ERRO DE DEBUG - REDE]: Falha na requisição. Detalhe: ${e.message}`;
+              }
 
               const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
-
               try {
                   await set(push(ref(db, path)), {
                       usuario: mockNome,
@@ -333,7 +293,7 @@ export default function ChatInterno() {
                       timestamp: Date.now(),
                       avatar: mockNome[0]
                   });
-              } catch (e) { console.error("Erro envio Robô:", e); }
+              } catch (e) { console.error("Erro ao salvar msg do Robô:", e); }
 
           }, tempoEspera);
 
@@ -341,9 +301,9 @@ export default function ChatInterno() {
       }
   }, [mensagens, canalAtivo, user, todosUsuarios]);
 
-  // 7. ENVIAR
+  // 7. ENVIAR (Agora aceita evento ou string para lidar com Enter do teclado)
   const enviarMensagem = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!novaMensagem.trim() || !user) return;
 
     let path = canalAtivo.id === 'geral' 
@@ -445,7 +405,6 @@ export default function ChatInterno() {
                 className={`channel-btn ${canalAtivo.id === u.id ? 'active' : ''}`}
                 onClick={() => handleSelectChat(u)}
               >
-                {/* NOVA ESTRUTURA VISUAL DO PERFIL */}
                 <div className="user-profile-chat">
                     <div className={`avatar-glow-chat ${u.isMock ? 'mock' : ''}`}>
                         {getAvatar(u.nome)}
@@ -482,19 +441,33 @@ export default function ChatInterno() {
                     <span className="msg-user">{formatarNome(msg.usuario)}</span>
                     <span className="msg-time">{formatarHora(msg.timestamp)}</span>
                   </div>
-                  <p className="msg-text">{msg.texto}</p>
+                  {/* Preserva quebras de linha nas mensagens antigas também */}
+                  <p className="msg-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.texto}</p>
                 </div>
               </div>
             ))}
           </div>
 
           <form className="chat-input-area" onSubmit={enviarMensagem}>
-            <input 
-              type="text" 
+            <textarea 
               placeholder={`Mensagem para ${canalAtivo.nome}...`}
               value={novaMensagem}
-              onChange={(e) => setNovaMensagem(e.target.value)}
+              onChange={(e) => {
+                  setNovaMensagem(e.target.value);
+                  // Cresce a caixa automaticamente com o texto
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              onKeyDown={(e) => {
+                  // Manda com Enter (sem segurar Shift)
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      enviarMensagem(e);
+                      e.target.style.height = 'auto'; // Reseta a altura após o envio
+                  }
+              }}
               className="chat-input"
+              rows={1}
             />
             <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
           </form>

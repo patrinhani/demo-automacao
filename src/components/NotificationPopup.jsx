@@ -1,53 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
 import './NotificationPopup.css';
 
 // CAMINHO DO ARQUIVO DE SOM NA PASTA PUBLIC
-// Certifique-se de que o arquivo "notificacao.mp3" existe dentro da pasta "public"
 const CAMINHO_SOM = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 export default function NotificationPopup() {
   const [notification, setNotification] = useState(null); 
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
   
-  // Cria a referência de áudio apontando para o arquivo real
+  const navigate = useNavigate();
+  const location = useLocation(); // Pega a rota atual
+  
   const audioRef = useRef(new Audio(`${CAMINHO_SOM}?v=${Date.now()}`));
   const timestampsRef = useRef({}); 
+  const pathnameRef = useRef(location.pathname); // Guarda a rota sem re-renderizar o useEffect do Firebase
+
+  // Mantém a ref da rota sempre atualizada
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+  }, [location.pathname]);
 
   // --- 1. CONFIGURAÇÃO E DESBLOQUEIO ---
   useEffect(() => {
-    // Tenta carregar o áudio para garantir que está pronto
     audioRef.current.load();
-    audioRef.current.volume = 1.0;
+    // 👇 VOLUME REDUZIDO PARA 30% PARA FICAR MAIS SUAVE E HARMONIOSO
+    audioRef.current.volume = 0.3; 
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
 
-    // Função que tenta destravar o áudio (Autoplay Policy)
     const unlockAudio = () => {
       if(audioRef.current) {
-        // Tenta tocar e pausar imediatamente só para desbloquear
         audioRef.current.play().then(() => {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
           
-          // Remove os listeners pois já conseguimos destravar
           document.removeEventListener('click', unlockAudio);
           document.removeEventListener('keydown', unlockAudio);
           console.log("🔊 Áudio desbloqueado com sucesso!");
         }).catch((e) => {
-          // Se falhar (ex: usuário ainda não interagiu o suficiente), mantém os listeners
-          // Não imprimimos erro aqui para não sujar o console, pois é esperado falhar no início
+          // Mantém silencioso se falhar no início
         });
       }
     };
 
-    // Adiciona os ouvintes globais para destravar o som na primeira interação
     document.addEventListener('click', unlockAudio);
     document.addEventListener('keydown', unlockAudio);
 
@@ -58,7 +59,6 @@ export default function NotificationPopup() {
     };
   }, []);
 
-  // Formata Nome: "joao.silva" -> "Joao Silva"
   const formatarNome = (nomeSujo) => {
     if (!nomeSujo) return 'Usuário';
     return nomeSujo
@@ -68,7 +68,11 @@ export default function NotificationPopup() {
   };
 
   const dispararNotificacao = (titulo, texto) => {
-    // Tenta tocar o som
+    // 👇 BLOQUEIO DE TELA: Não toca som nem exibe popup se estiver no Login
+    if (pathnameRef.current === '/' || pathnameRef.current === '/login') {
+      return; 
+    }
+
     if(audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.warn("Som não pôde ser tocado:", e));
@@ -76,9 +80,7 @@ export default function NotificationPopup() {
 
     setNotification({ title: titulo, msg: texto });
     
-    // Limpa notificação anterior se houver timer rodando
-    const timer = setTimeout(() => setNotification(null), 5000);
-    return () => clearTimeout(timer);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // --- 2. MONITORAMENTO GLOBAL ---
@@ -97,11 +99,9 @@ export default function NotificationPopup() {
         const msgs = Object.values(data.geral);
         const ultima = msgs[msgs.length - 1];
         
-        // Se timestamp da última msg > timestamp salvo localmente
         if (ultima && ultima.timestamp > (timestampsRef.current['geral'] || 0)) {
           timestampsRef.current['geral'] = ultima.timestamp;
 
-          // Se não fui eu e não é histórico inicial
           if (ultima.uid !== user.uid && !primeiraCarga) {
              const nome = formatarNome(ultima.usuario);
              dispararNotificacao(`📢 Geral: ${nome}`, ultima.texto);
@@ -115,7 +115,6 @@ export default function NotificationPopup() {
           if (chatId.includes(user.uid)) {
             const msgs = Object.values(data.direto[chatId]);
             const ultima = msgs[msgs.length - 1];
-            // Remove meu ID para achar o ID do outro
             const outroId = chatId.replace(user.uid, '').replace('_', '');
             
             if (ultima && ultima.timestamp > (timestampsRef.current[outroId] || 0)) {

@@ -153,7 +153,7 @@ export default function Dashboard() {
                         timestamp: Date.now()
                     });
                 }
-            }, 600000);
+            }, 6000);
             return () => clearTimeout(timer);
         }
     };

@@ -457,6 +457,23 @@
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
 }
 
+/* Badge para bloqueio de auto-gestão */
+.badge-bloqueado {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px dashed rgba(239, 68, 68, 0.3);
+    white-space: nowrap;
+    cursor: not-allowed;
+}
+
 /* RESPONSIVIDADE */
 @media (max-width: 850px) {
   .registers-grid {

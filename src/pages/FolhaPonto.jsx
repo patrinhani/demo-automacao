@@ -156,9 +156,10 @@ export default function FolhaPonto() {
   };
 
   const renderAcao = (item) => {
-      if (item.id === user.uid && !isCEO) {
+      // Bloqueia a auto-gestão estritamente pelo ID
+      if (item.id === user.uid) {
           return (
-              <span style={{color: '#ef4444', fontSize:'0.7rem', fontWeight:'bold', display:'block', maxWidth:'80px', textAlign:'center'}}>
+              <span className="badge-bloqueado">
                   🚫 Auto-gestão Bloqueada
               </span>
           );
