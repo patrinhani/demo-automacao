@@ -499,6 +499,42 @@ html, body {
     display: none;
 }
 
+/* --- ANIMAÇÃO DE DIGITANDO DA IA --- */
+.typing-indicator-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px !important;
+  height: 40px;
+  min-width: 60px;
+  justify-content: center;
+}
+
+.typing-indicator-bubble .dot {
+  width: 6px;
+  height: 6px;
+  background-color: #a0aec0; /* Cor da bolinha (pode ajustar pro tom do seu tema) */
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator-bubble .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator-bubble .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
 /* --- MOBILE --- */
 @media (max-width: 800px) {
   .mobile-menu-btn {

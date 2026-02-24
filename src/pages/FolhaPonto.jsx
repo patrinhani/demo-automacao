@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { ref, onValue, update, get } from 'firebase/database';
+import { ref, onValue, update, get, push } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo';
 import './FolhaPonto.css';
@@ -10,14 +10,26 @@ export default function FolhaPonto() {
   const navigate = useNavigate();
   
   const [user, setUser] = useState(null);
+  const [userName, setUserName] = useState('');
   const [registros, setRegistros] = useState({}); 
   const [horaAtual, setHoraAtual] = useState(new Date());
   const [dataHoje, setDataHoje] = useState(new Date());
-  const [modoGestao, setModoGestao] = useState(false);
+  
+  // Controle de Abas
+  const [abaAtiva, setAbaAtiva] = useState('meu_ponto'); // 'meu_ponto', 'ajustes', 'gestao_rh'
+  const [subAbaGestao, setSubAbaGestao] = useState('auditoria'); // 'auditoria', 'aprovacoes'
   
   const [isRH, setIsRH] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
+
+  // Estados do Formulário de Ajuste
+  const [dataAjuste, setDataAjuste] = useState('');
+  const [tipoMarcacao, setTipoMarcacao] = useState('entrada');
+  const [horarioCorreto, setHorarioCorreto] = useState('');
+  const [justificativa, setJustificativa] = useState('');
+  const [minhasSolicitacoes, setMinhasSolicitacoes] = useState([]);
+  const [pendenciasAjuste, setPendenciasAjuste] = useState([]);
 
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
@@ -46,6 +58,7 @@ export default function FolhaPonto() {
       get(userRef).then((snapshot) => {
           const userData = snapshot.val();
           if(userData) {
+              setUserName(userData.nome || currentUser.email);
               const setor = (userData.setor || '').toLowerCase();
               const cargo = (userData.cargo || '').toLowerCase();
               const role = userData.role || '';
@@ -60,6 +73,7 @@ export default function FolhaPonto() {
           }
       });
 
+      // Listener do Ponto do Dia
       const dateKey = getDataKey(new Date());
       const pontoRef = ref(db, `ponto/${currentUser.uid}/${dateKey}`);
       onValue(pontoRef, (snapshot) => {
@@ -71,10 +85,29 @@ export default function FolhaPonto() {
             saida: data.saida || null
         } : {});
       });
+
+      // Listener dos Ajustes de Ponto
+      const ajustesRef = ref(db, 'ajustes_ponto');
+      onValue(ajustesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const listaFormatada = Object.entries(data).map(([key, val]) => ({
+            id: key, ...val
+          })).sort((a, b) => b.timestamp - a.timestamp);
+
+          setMinhasSolicitacoes(listaFormatada.filter(item => item.userId === currentUser.uid));
+          setPendenciasAjuste(listaFormatada.filter(item => item.status === 'Pendente'));
+        } else {
+          setMinhasSolicitacoes([]);
+          setPendenciasAjuste([]);
+        }
+      });
+
     });
     return () => { clearInterval(timer); unsubscribeAuth(); };
   }, [navigate]);
 
+  // Listener Auditoria RH
   useEffect(() => {
       if (!isRH) return;
       const rhRef = ref(db, 'rh/erros_ponto');
@@ -82,8 +115,7 @@ export default function FolhaPonto() {
           const data = snapshot.val();
           if (data) {
               const lista = Object.entries(data).map(([key, val]) => ({
-                  id: key, 
-                  ...val
+                  id: key, ...val
               })).filter(item => {
                   if (item.status === 'Concluido') return false;
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
@@ -97,15 +129,7 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
-  const formatarNomeErro = (erroOriginal) => {
-      const mapa = {
-          'Esquecimento Real': 'Ausência de Registro',
-          'Atraso Excessivo': 'Atraso Crítico',
-          'Falta Injustificada': 'Falta Não Justificada'
-      };
-      return mapa[erroOriginal] || erroOriginal;
-  };
-
+  // Funções Ponto Normal
   const registrarPonto = async (tipo) => {
     if (!user) return;
     if (tipo === 'almoco_ida' && !registros.entrada) { alert("🚫 Ação Negada: Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
@@ -132,49 +156,61 @@ export default function FolhaPonto() {
     } catch (error) { alert("Erro ao registrar ponto."); }
   };
 
+  // Funções Ajuste de Ponto
+  const handleSubmitAjuste = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      const novoAjuste = {
+        userId: user.uid, userName, dataAjuste, tipoMarcacao, horarioCorreto, justificativa, status: 'Pendente', timestamp: Date.now()
+      };
+      await push(ref(db, 'ajustes_ponto'), novoAjuste);
+      alert('✅ Solicitação de ajuste enviada para o Gestor!');
+      setDataAjuste(''); setHorarioCorreto(''); setJustificativa('');
+    } catch (error) { alert("Erro ao solicitar ajuste."); }
+  };
+
+  const aprovarAjuste = async (ajuste) => {
+    try {
+      await update(ref(db, `ponto/${ajuste.userId}/${ajuste.dataAjuste}`), { [ajuste.tipoMarcacao]: ajuste.horarioCorreto });
+      await update(ref(db, `ajustes_ponto/${ajuste.id}`), { status: 'Aprovado' });
+      alert('✅ Ajuste aprovado e banco de horas corrigido automaticamente!');
+    } catch (error) { alert('Erro ao aprovar o ajuste.'); }
+  };
+
+  const reprovarAjuste = async (id) => {
+    const motivo = prompt('Motivo da reprovação:');
+    if (motivo !== null) {
+      await update(ref(db, `ajustes_ponto/${id}`), { status: 'Reprovado', motivoReprovacao: motivo });
+    }
+  };
+
+  // Funções Auxiliares UI
+  const formatarDataExtenso = (date) => date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  const formatarNomeErro = (erro) => ({ 'Esquecimento Real': 'Ausência de Registro', 'Atraso Excessivo': 'Atraso Crítico', 'Falta Injustificada': 'Falta Não Justificada' }[erro] || erro);
+  const formatarTipoAjuste = (tipo) => ({ 'entrada': 'Entrada', 'almoco_ida': 'Saída Almoço', 'almoco_volta': 'Retorno Almoço', 'saida': 'Saída' }[tipo] || tipo);
+
   const irParaChatComUsuario = (usuarioFicticio) => {
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
       if (!mocksAtivos.find(u => u.id === usuarioFicticio.id)) {
-          mocksAtivos.push({
-              id: usuarioFicticio.id,
-              nome: usuarioFicticio.nome,
-              cargo: usuarioFicticio.cargo,
-              email: usuarioFicticio.nome ? `${usuarioFicticio.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com'
-          });
+          mocksAtivos.push({ id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo, email: usuarioFicticio.nome ? `${usuarioFicticio.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com' });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
       update(ref(db, `rh/erros_ponto/${usuarioFicticio.id}`), { status: 'Notificado' });
       navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
   };
 
-  const handleResolver = (id) => {
-      update(ref(db, `rh/erros_ponto/${id}`), { status: 'Concluido' });
-  };
-
-  const formatarDataExtenso = (date) => {
-    return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-  };
+  const handleResolver = (id) => update(ref(db, `rh/erros_ponto/${id}`), { status: 'Concluido' });
 
   const renderAcao = (item) => {
-      // Bloqueia a auto-gestão estritamente pelo ID
-      if (item.id === user.uid) {
-          return (
-              <span className="badge-bloqueado">
-                  🚫 Auto-gestão Bloqueada
-              </span>
-          );
-      }
-      if (item.status === 'Respondido') {
-          return (
-              <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
-                  <span style={{color: '#4ade80', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>✨ Ajustado</span>
-                  <button className="btn-resolve-rh" onClick={() => handleResolver(item.id)}>✅ Baixar</button>
-              </div>
-          );
-      }
-      if (item.status === 'Notificado') {
-          return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
-      }
+      if (item.id === user?.uid) return <span className="badge-bloqueado">🚫 Auto-gestão Bloqueada</span>;
+      if (item.status === 'Respondido') return (
+          <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
+              <span style={{color: '#4ade80', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>✨ Ajustado</span>
+              <button className="btn-resolve-rh" onClick={() => handleResolver(item.id)}>✅ Baixar</button>
+          </div>
+      );
+      if (item.status === 'Notificado') return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
       return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
 
@@ -190,31 +226,34 @@ export default function FolhaPonto() {
            <span className="page-title">Controle de Ponto</span>
         </div>
         
-        {isRH && (
-            <div className="toggle-rh-container">
-                <button className={`toggle-btn ${!modoGestao ? 'active' : ''}`} onClick={() => setModoGestao(false)}>
-                    👤 Meu Ponto
-                </button>
-                <button className={`toggle-btn ${modoGestao ? 'active' : ''}`} onClick={() => setModoGestao(true)}>
+        <div className="toggle-rh-container">
+            <button className={`toggle-btn ${abaAtiva === 'meu_ponto' ? 'active' : ''}`} onClick={() => setAbaAtiva('meu_ponto')}>
+                👤 Meu Ponto
+            </button>
+            <button className={`toggle-btn ${abaAtiva === 'ajustes' ? 'active' : ''}`} onClick={() => setAbaAtiva('ajustes')}>
+                📝 Ajustes
+            </button>
+            {isRH && (
+                <button className={`toggle-btn ${abaAtiva === 'gestao_rh' ? 'active' : ''}`} onClick={() => setAbaAtiva('gestao_rh')}>
                     👮 Gestão RH 
-                    {listaPendencias.length > 0 && <span className="badge-alert">{listaPendencias.length}</span>}
+                    {(listaPendencias.length + pendenciasAjuste.length) > 0 && <span className="badge-alert">{listaPendencias.length + pendenciasAjuste.length}</span>}
                 </button>
-            </div>
-        )}
+            )}
+        </div>
         
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>Voltar ↩</button>
       </header>
 
-      {/* Container Principal Full Width (para a scrollbar ficar na borda) */}
       <div className="ponto-container">
-        {/* Wrapper Centralizado (para o conteúdo não esticar demais) */}
         <div className="ponto-content">
-            {!modoGestao && (
+            
+            {/* ABA: MEU PONTO */}
+            {abaAtiva === 'meu_ponto' && (
                 <>
                     <div className="clock-card glass-effect">
-                    <h2 className="time-display">{horaAtual.toLocaleTimeString('pt-BR')}</h2>
-                    <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
-                    <div className="status-badge-ponto">Online • Sincronizado</div>
+                        <h2 className="time-display">{horaAtual.toLocaleTimeString('pt-BR')}</h2>
+                        <p className="date-display">{formatarDataExtenso(dataHoje)}</p>
+                        <div className="status-badge-ponto">Online • Sincronizado</div>
                     </div>
                     <div className="registers-grid">
                     {['entrada', 'almoco_ida', 'almoco_volta', 'saida'].map(tipo => {
@@ -234,8 +273,7 @@ export default function FolhaPonto() {
                                 <span className="card-label">{tipo.replace('_', ' ')}</span>
                                 <div className="time-value">{registros[tipo] || '--:--'}</div>
                                 <button 
-                                    className="btn-register" 
-                                    onClick={() => registrarPonto(tipo)} 
+                                    className="btn-register" onClick={() => registrarPonto(tipo)} 
                                     disabled={!!registros[tipo] || locked}
                                     style={locked ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
                                 >
@@ -248,73 +286,161 @@ export default function FolhaPonto() {
                 </>
             )}
 
-            {modoGestao && isRH && (
-                <div className="gestao-rh-container">
-                    <div className="rh-header-section">
-                        <h3>🔍 Auditoria de Inconsistências</h3>
-                        <p>Pendências encontradas: <strong>{listaPendencias.length}</strong></p>
-                    </div>
-                    <div className="tabela-rh-wrapper">
-                        <table className="tech-table">
-                            <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
-                            <tbody>
-                                {listaPendencias.map(item => {
-                                    const dataVisual = gerarDataInconsistencia(item);
-                                    item._visualDate = dataVisual;
+            {/* ABA: AJUSTES (COLABORADOR) */}
+            {abaAtiva === 'ajustes' && (
+                <div className="ajustes-wrapper glass-effect" style={{padding: '25px', borderRadius: '12px', textAlign: 'left', maxWidth: '800px', margin: '0 auto'}}>
+                    <form onSubmit={handleSubmitAjuste} className="ajuste-form">
+                        <h3>📝 Solicitar Correção de Batida</h3>
+                        <div className="form-group-row">
+                            <div className="form-group">
+                                <label>Data da Ocorrência:</label>
+                                <input type="date" required value={dataAjuste} onChange={(e) => setDataAjuste(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label>Qual marcação deseja corrigir?</label>
+                                <select required value={tipoMarcacao} onChange={(e) => setTipoMarcacao(e.target.value)}>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="almoco_ida">Saída para Almoço</option>
+                                    <option value="almoco_volta">Retorno do Almoço</option>
+                                    <option value="saida">Saída</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Horário Correto:</label>
+                                <input type="time" required value={horarioCorreto} onChange={(e) => setHorarioCorreto(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="form-group" style={{marginBottom: '15px'}}>
+                            <label>Justificativa:</label>
+                            <textarea rows="3" placeholder="Ex: Esqueci de bater o ponto pois entrei direto em reunião com o cliente..." required value={justificativa} onChange={(e) => setJustificativa(e.target.value)}></textarea>
+                        </div>
+                        <button type="submit" className="btn-submit-ajuste">Enviar para Aprovação</button>
+                    </form>
 
-                                    let pontosVisuais = item.pontos || {};
-                                    if (item.status === 'Respondido') {
-                                        if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
-                                            pontosVisuais = item.pontos;
-                                        } else {
-                                            pontosVisuais = {
-                                                e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
-                                                si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
-                                                vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
-                                                s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
-                                            };
-                                        }
-                                    }
-                                    if (item.erro === 'Esquecimento Real') {
-                                    pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
-                                    }
-                                    return (
-                                        <tr key={item.id}>
-                                            <td>
-                                                <div className="user-profile-container">
-                                                    <div className="avatar-glow">
-                                                        {item.nome && item.nome[0] ? item.nome[0] : '?'}
-                                                    </div>
-                                                    <div className="user-info-modern">
-                                                        <strong>{item.nome}</strong>
-                                                        <small>{item.cargo}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="date-badge">
-                                                    {dataVisual}
-                                                </div>
-                                            </td>
-                                            <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
-                                            <td>
-                                                <div className="timeline-ponto">
-                                                    <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
-                                                    <div className="arrow">›</div>
-                                                    <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
-                                                    <div className="arrow">›</div>
-                                                    <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
-                                                    <div className="arrow">›</div>
-                                                    <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
-                                                </div>
-                                            </td>
-                                            <td>{renderAcao(item)}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                    <div className="ajustes-lista" style={{marginTop: '30px'}}>
+                        <h3>Minhas Solicitações</h3>
+                        {minhasSolicitacoes.length === 0 ? <p style={{color: '#94a3b8'}}>Nenhuma solicitação encontrada.</p> : (
+                            <table className="tech-table">
+                                <thead><tr><th>Data</th><th>Marcação</th><th>Correção</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    {minhasSolicitacoes.map(item => (
+                                    <tr key={item.id}>
+                                        <td>{item.dataAjuste.split('-').reverse().join('/')}</td>
+                                        <td>{formatarTipoAjuste(item.tipoMarcacao)}</td>
+                                        <td>{item.horarioCorreto}</td>
+                                        <td>
+                                            <span className={`badge-status ${item.status.toLowerCase()}`}>{item.status}</span>
+                                            {item.status === 'Reprovado' && <div style={{fontSize:'10px', color:'#ef4444', marginTop:'5px'}}>Motivo: {item.motivoReprovacao}</div>}
+                                        </td>
+                                    </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
+                </div>
+            )}
+
+            {/* ABA: GESTÃO RH */}
+            {abaAtiva === 'gestao_rh' && isRH && (
+                <div className="gestao-rh-container">
+                    <div className="ajuste-tabs">
+                        <button className={`tab-btn ${subAbaGestao === 'auditoria' ? 'active' : ''}`} onClick={() => setSubAbaGestao('auditoria')}>
+                            🔍 Auditoria Ponto {listaPendencias.length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{listaPendencias.length}</span>}
+                        </button>
+                        <button className={`tab-btn ${subAbaGestao === 'aprovacoes' ? 'active' : ''}`} onClick={() => setSubAbaGestao('aprovacoes')}>
+                            📝 Aprovações de Ajuste {pendenciasAjuste.length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{pendenciasAjuste.length}</span>}
+                        </button>
+                    </div>
+
+                    {/* Sub-aba: Auditoria */}
+                    {subAbaGestao === 'auditoria' && (
+                        <div className="tabela-rh-wrapper">
+                            <table className="tech-table">
+                                <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
+                                <tbody>
+                                    {listaPendencias.map(item => {
+                                        const dataVisual = gerarDataInconsistencia(item);
+                                        item._visualDate = dataVisual;
+
+                                        let pontosVisuais = item.pontos || {};
+                                        if (item.status === 'Respondido') {
+                                            if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
+                                                pontosVisuais = item.pontos;
+                                            } else {
+                                                pontosVisuais = {
+                                                    e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
+                                                    si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
+                                                    vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
+                                                    s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
+                                                };
+                                            }
+                                        }
+                                        if (item.erro === 'Esquecimento Real') pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
+                                        
+                                        return (
+                                            <tr key={item.id}>
+                                                <td>
+                                                    <div className="user-profile-container">
+                                                        <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
+                                                        <div className="user-info-modern">
+                                                            <strong>{item.nome}</strong>
+                                                            <small>{item.cargo}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><div className="date-badge">{dataVisual}</div></td>
+                                                <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
+                                                <td>
+                                                    <div className="timeline-ponto">
+                                                        <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
+                                                        <div className="arrow">›</div>
+                                                        <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
+                                                        <div className="arrow">›</div>
+                                                        <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
+                                                        <div className="arrow">›</div>
+                                                        <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
+                                                    </div>
+                                                </td>
+                                                <td>{renderAcao(item)}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Sub-aba: Aprovações de Ajuste */}
+                    {subAbaGestao === 'aprovacoes' && (
+                        <div className="tabela-rh-wrapper">
+                            {pendenciasAjuste.length === 0 ? <p style={{color: '#94a3b8', padding: '20px'}}>Tudo certo! Nenhuma pendência de ajuste.</p> : (
+                            <table className="tech-table">
+                                <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Justificativa</th><th>Ações</th></tr></thead>
+                                <tbody>
+                                {pendenciasAjuste.map(item => (
+                                    <tr key={item.id}>
+                                    <td><strong>{item.userName}</strong></td>
+                                    <td>
+                                        <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
+                                            <span>📅 {item.dataAjuste.split('-').reverse().join('/')}</span>
+                                            <span style={{color: '#a855f7'}}>⏱️ {formatarTipoAjuste(item.tipoMarcacao)} ➜ {item.horarioCorreto}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{maxWidth: '200px', fontSize: '12px'}}>{item.justificativa}</td>
+                                    <td>
+                                        <div className="actions-flex">
+                                        <button className="btn-approve" onClick={() => aprovarAjuste(item)}>✔️ Aprovar</button>
+                                        <button className="btn-reject" onClick={() => reprovarAjuste(item)}>✖️ Reprovar</button>
+                                        </div>
+                                    </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

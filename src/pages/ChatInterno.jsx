@@ -11,6 +11,21 @@ const TEAM_FIXO = [
   { id: "user_teste_demo", nome: "Cadastro Teste", cargo: "Usuário de Testes", email: "teste@techcorp.com.br" },
 ];
 
+// --- FUNÇÃO DE EXPONENTIAL BACKOFF (FILA DE ESPERA) ---
+const fetchComRetry = async (url, options, maxTentativas = 3) => {
+    let tempoEspera = 2000; 
+    
+    for (let i = 0; i < maxTentativas; i++) {
+        const response = await fetch(url, options);
+        if (response.status !== 429) return response; 
+        
+        console.warn(`Limite da IA atingido. Tentativa ${i + 1}. A aguardar ${tempoEspera / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, tempoEspera));
+        tempoEspera *= 2; 
+    }
+    return fetch(url, options); 
+};
+
 export default function ChatInterno() {
   const navigate = useNavigate();
   const location = useLocation(); 
@@ -28,6 +43,9 @@ export default function ChatInterno() {
   const [naoLidas, setNaoLidas] = useState({});
   const [ultimasInteracoes, setUltimasInteracoes] = useState({}); 
   const [termoBusca, setTermoBusca] = useState('');
+  
+  // NOVO ESTADO: Controla se a IA está digitando para travar o input e mostrar a animação
+  const [iaDigitando, setIaDigitando] = useState(false); 
 
   const processedInitialState = useRef(false);
   const lastProcessedMsgRef = useRef(null);
@@ -193,7 +211,10 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [canalAtivo, user]); 
 
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [mensagens]);
+  // Rola para baixo sempre que chegar mensagem OU quando a IA começar a digitar
+  useEffect(() => { 
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
+  }, [mensagens, iaDigitando]);
 
   // --- 6. AUTO-REPLY DO ROBÔ (COM IA GEMINI) ---
   useEffect(() => {
@@ -214,33 +235,38 @@ export default function ChatInterno() {
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
           
-          const tempoEspera = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
+          // ATIVA A TRAVA E A ANIMAÇÃO
+          setIaDigitando(true);
+
+          // AUMENTADO O TEMPO: Simula de 3 a 6 segundos lendo/digitando
+          const tempoEspera = Math.floor(Math.random() * (3000) + 3000);
 
           const timer = setTimeout(async () => {
-              let erroTipo = "Dúvida sobre o ponto";
-              let pontosReais = {}; 
-
               try {
-                  const snapshot = await get(ref(db, `rh/erros_ponto/${mockId}`));
-                  if (snapshot.exists()) {
-                      const dadosMock = snapshot.val();
-                      erroTipo = dadosMock.erro || erroTipo; 
-                      pontosReais = dadosMock.pontos || {}; 
-                      await update(ref(db, `rh/erros_ponto/${mockId}`), { status: 'Respondido' });
-                  }
-              } catch(e) { console.error("Erro ao buscar contexto:", e); }
+                  let erroTipo = "Dúvida sobre o ponto";
+                  let pontosReais = {}; 
 
-              const historicoIA = [];
-              mensagens.forEach(m => {
-                  const role = m.uid === mockId ? "model" : "user";
-                  if (historicoIA.length > 0 && historicoIA[historicoIA.length - 1].role === role) {
-                      historicoIA[historicoIA.length - 1].parts[0].text += " | " + m.texto;
-                  } else {
-                      historicoIA.push({ role: role, parts: [{ text: m.texto }] });
-                  }
-              });
+                  try {
+                      const snapshot = await get(ref(db, `rh/erros_ponto/${mockId}`));
+                      if (snapshot.exists()) {
+                          const dadosMock = snapshot.val();
+                          erroTipo = dadosMock.erro || erroTipo; 
+                          pontosReais = dadosMock.pontos || {}; 
+                          await update(ref(db, `rh/erros_ponto/${mockId}`), { status: 'Respondido' });
+                      }
+                  } catch(e) { console.error("Erro ao buscar contexto:", e); }
 
-              const instrucaoSistema = `Você é ${mockNome}, um funcionário brasileiro da empresa TechCorp. 
+                  const historicoIA = [];
+                  mensagens.forEach(m => {
+                      const role = m.uid === mockId ? "model" : "user";
+                      if (historicoIA.length > 0 && historicoIA[historicoIA.length - 1].role === role) {
+                          historicoIA[historicoIA.length - 1].parts[0].text += " | " + m.texto;
+                      } else {
+                          historicoIA.push({ role: role, parts: [{ text: m.texto }] });
+                      }
+                  });
+
+                  const instrucaoSistema = `Você é ${mockNome}, um funcionário brasileiro da empresa TechCorp. 
 O RH está falando com você no chat interno da empresa. O problema sinalizado com o seu ponto é: ${erroTipo}.
 Seus horários registrados nesse dia foram: Entrada: ${pontosReais.e || '---'}, Ida Almoço: ${pontosReais.si || '---'}, Volta Almoço: ${pontosReais.vi || '---'}, Saída: ${pontosReais.s || '---'}.
 Regras inquebráveis:
@@ -249,15 +275,15 @@ Regras inquebráveis:
 3. Nunca diga que é uma IA ou um modelo de linguagem. Você é um funcionário real.
 4. IMPORTANTE: Conclua sempre os seus pensamentos e termine as frases. NUNCA deixe uma frase pela metade.`;
 
-              let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
+                  let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
 
-              try {
                   const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
                   
                   if (!API_KEY) {
                       textoFinal = "🤖 [ERRO DE DEBUG]: Minha VITE_GEMINI_API_KEY sumiu!";
                   } else {
-                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                      // USANDO A NOVA FUNÇÃO COM FILA/RETRY
+                      const response = await fetchComRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
@@ -265,7 +291,7 @@ Regras inquebráveis:
                               contents: historicoIA,
                               generationConfig: { 
                                   temperature: 0.7,
-                                  maxOutputTokens: 1000 // Limite altíssimo para garantir que a frase não seja cortada
+                                  maxOutputTokens: 1000 
                               }
                           })
                       });
@@ -279,13 +305,8 @@ Regras inquebráveis:
                           textoFinal = data.candidates[0].content.parts[0].text;
                       }
                   }
-              } catch (e) {
-                  console.error("Erro na requisição da API:", e);
-                  textoFinal = `🤖 [ERRO DE DEBUG - REDE]: Falha na requisição. Detalhe: ${e.message}`;
-              }
 
-              const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
-              try {
+                  const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
                   await set(push(ref(db, path)), {
                       usuario: mockNome,
                       uid: mockId,
@@ -293,7 +314,12 @@ Regras inquebráveis:
                       timestamp: Date.now(),
                       avatar: mockNome[0]
                   });
-              } catch (e) { console.error("Erro ao salvar msg do Robô:", e); }
+              } catch (e) {
+                  console.error("Erro na requisição/salvamento do Robô:", e);
+              } finally {
+                  // DESATIVA A TRAVA MESMO SE DER ERRO, PARA NÃO BLOQUEAR O USUÁRIO PRA SEMPRE
+                  setIaDigitando(false);
+              }
 
           }, tempoEspera);
 
@@ -301,10 +327,10 @@ Regras inquebráveis:
       }
   }, [mensagens, canalAtivo, user, todosUsuarios]);
 
-  // 7. ENVIAR (Agora aceita evento ou string para lidar com Enter do teclado)
+  // 7. ENVIAR 
   const enviarMensagem = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!novaMensagem.trim() || !user) return;
+    if (!novaMensagem.trim() || !user || iaDigitando) return; // Segurança extra aqui
 
     let path = canalAtivo.id === 'geral' 
         ? 'chats/geral' 
@@ -338,6 +364,9 @@ Regras inquebráveis:
       localStorage.setItem(`last_read_${u.id}`, agora);
 
       setMenuAberto(false);
+      
+      // LIBERA O INPUT CASO TROQUE DE CHAT ENQUANTO A IA PENSAVA
+      setIaDigitando(false); 
   };
 
   const formatarHora = (t) => t ? new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
@@ -441,35 +470,51 @@ Regras inquebráveis:
                     <span className="msg-user">{formatarNome(msg.usuario)}</span>
                     <span className="msg-time">{formatarHora(msg.timestamp)}</span>
                   </div>
-                  {/* Preserva quebras de linha nas mensagens antigas também */}
                   <p className="msg-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.texto}</p>
                 </div>
               </div>
             ))}
+
+            {/* ANIMAÇÃO DE DIGITANDO RENDERIZADA CONDICIONALMENTE */}
+            {iaDigitando && canalAtivo.isMock && (
+              <div className="message-bubble other">
+                <div className="msg-content typing-indicator-bubble">
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                </div>
+              </div>
+            )}
+
           </div>
 
           <form className="chat-input-area" onSubmit={enviarMensagem}>
             <textarea 
-              placeholder={`Mensagem para ${canalAtivo.nome}...`}
+              placeholder={iaDigitando ? `${formatarNome(canalAtivo.nome)} está digitando...` : `Mensagem para ${canalAtivo.nome}...`}
               value={novaMensagem}
+              disabled={iaDigitando}
               onChange={(e) => {
                   setNovaMensagem(e.target.value);
-                  // Cresce a caixa automaticamente com o texto
                   e.target.style.height = 'auto';
                   e.target.style.height = `${e.target.scrollHeight}px`;
               }}
               onKeyDown={(e) => {
-                  // Manda com Enter (sem segurar Shift)
                   if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       enviarMensagem(e);
-                      e.target.style.height = 'auto'; // Reseta a altura após o envio
+                      e.target.style.height = 'auto'; 
                   }
               }}
               className="chat-input"
               rows={1}
             />
-            <button type="submit" className="btn-send" disabled={!novaMensagem.trim()}>➤</button>
+            <button 
+              type="submit" 
+              className="btn-send" 
+              disabled={!novaMensagem.trim() || iaDigitando}
+            >
+              ➤
+            </button>
           </form>
         </main>
       </div>
