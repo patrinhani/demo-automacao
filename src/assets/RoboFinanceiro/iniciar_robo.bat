@@ -1,49 +1,42 @@
 @echo off
 :: Garante que o terminal roda na mesma pasta do .bat
 cd /d "%~dp0"
-
 title Assistente Financeiro RPA
+
 echo ==========================================
-echo A preparar o ambiente do Robo...
+echo A preparar o Assistente Financeiro...
 echo ==========================================
 
-:: 1. LIMPEZA INICIAL (Garante que nao ha lixo de execucoes anteriores)
-if exist "venv\" (
-    echo [0/4] A limpar ficheiros temporarios da ultima sessao...
-    rmdir /s /q venv
+:: Verifica se a pasta do Python Portatil ja existe.
+if not exist "python_portatil\" (
+    echo [1/5] A baixar o motor do Python Portatil...
+    curl -# -o python_zip.zip https://www.python.org/ftp/python/3.11.8/python-3.11.8-embed-amd64.zip
+    mkdir python_portatil
+    tar -xf python_zip.zip -C python_portatil
+    del python_zip.zip
+
+    echo [2/5] A configurar o ambiente isolado...
+    echo import site>> python_portatil\python311._pth
+
+    echo [3/5] A instalar o gestor de pacotes pip...
+    curl -# -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+    python_portatil\python.exe get-pip.py >nul
+    del get-pip.py
+
+    echo [4/5] A baixar as bibliotecas... isso pode demorar um pouco...
+    python_portatil\python.exe -m pip install -q requests playwright PyMuPDF
+
+    echo [5/5] A baixar o navegador invisivel do Playwright...
+    python_portatil\python.exe -m playwright install chromium
+    
+    echo.
+    echo Instalacao do ambiente concluida com sucesso!
 )
 
-:: 2. Verifica se o Python esta instalado
-python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERRO] Python nao encontrado neste computador!
-    echo Por favor, instale o Python a partir do site oficial: python.org
-    echo IMPORTANTE: Lembre-se de marcar a caixa "Add Python.exe to PATH" durante a instalacao.
-    pause
-    exit
-)
-
-:: 3. Cria o ambiente virtual novo
-echo [1/4] A criar ambiente virtual isolado, aguarde um momento...
-python -m venv venv
-
-:: 4. Ativa o ambiente virtual
-echo [2/4] A ativar ambiente...
-call venv\Scripts\activate
-
-:: 5. Instala as dependencias
-echo [3/4] A transferir dependencias: requests, playwright, PyMuPDF...
-pip install -q requests playwright PyMuPDF
-
-:: 6. Verifica os motores de navegacao
-echo [4/4] A verificar motores de navegacao do Playwright...
-playwright install chromium
-
-:: 7. Roda a automacao
 echo ==========================================
-echo Tudo pronto! A iniciar o sistema...
+echo INICIAR O ROBO...
 echo ==========================================
-python automacao_banco.py
+:: Executa o script usando o Python Portatil que acabamos de baixar
+python_portatil\python.exe automacao_banco.py
 
-:: Quando a pessoa fizer Ctrl+C ou fechar, nao faz mal, porque na proxima vez ele limpa!
 pause
