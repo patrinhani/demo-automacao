@@ -6,6 +6,7 @@ import BancoLogin from './BancoLogin';
 import BancoDashboard from './BancoDashboard';
 import BancoExtrato from './BancoExtrato';
 import BancoCartoes from './BancoCartoes'; 
+import BancoInvestimentos from './BancoInvestimentos'; // <-- NOVA IMPORTAÇÃO
 import './Banco.css'; 
 
 export default function Banco() {
@@ -174,9 +175,9 @@ export default function Banco() {
             <span className="icon">💳</span> Extrato
           </button>
           
-          {/* Gestores de qualquer área podem ver Investimentos Pessoais Premium, Financeiro vê Investimentos da Empresa */}
+          {/* --- BOTÃO ATUALIZADO: Abre a nova aba de Investimentos --- */}
           {(isCorporateView || contaUser.role === 'gestor') && (
-            <button className={activeTab === 'invest' ? 'active' : ''} onClick={() => alert(isCorporateView ? "Investimentos Corporativos" : "Investimentos Premium (Pessoa Física)")}>
+            <button className={activeTab === 'invest' ? 'active' : ''} onClick={() => setActiveTab('invest')}>
               <span className="icon">📈</span> Investimentos
             </button>
           )}
@@ -232,6 +233,11 @@ export default function Banco() {
                accessLevel={isCorporateView ? 'financeiro' : 'colaborador'}
                isCorporate={isCorporateView} 
              />
+          )}
+
+          {/* --- NOVA ABA DE INVESTIMENTOS ADICIONADA --- */}
+          {activeTab === 'invest' && (
+             <BancoInvestimentos isCorporate={isCorporateView} />
           )}
         </div>
       </main>

@@ -28,7 +28,7 @@ export default function NotificationPopup() {
   useEffect(() => {
     audioRef.current.load();
     // 👇 VOLUME REDUZIDO PARA 30% PARA FICAR MAIS SUAVE E HARMONIOSO
-    audioRef.current.volume = 0.3; 
+    audioRef.current.volume = 0.1; 
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);

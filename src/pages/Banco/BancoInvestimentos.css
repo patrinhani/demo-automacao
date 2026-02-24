@@ -1,0 +1,216 @@
+/* --- LAYOUT GERAL DO BANCO --- */
+.horizon-invest-layout {
+  min-height: 100vh;
+  background-color: #020617;
+  color: #f8fafc;
+  font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Luzes de Fundo */
+.banco-ambient-light {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.15;
+}
+.banco-ambient-light.light-blue {
+  top: -10%; left: -10%;
+  width: 50vw; height: 50vw;
+  background: #3b82f6;
+}
+.banco-ambient-light.light-purple {
+  bottom: 10%; right: -10%;
+  width: 40vw; height: 40vw;
+  background: #8b5cf6;
+}
+
+/* --- HEADER DO BANCO --- */
+.horizon-header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.horizon-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.horizon-logo h2 { margin: 0; font-size: 1.2rem; color: #fff; font-weight: 400; }
+.horizon-logo strong { font-weight: 700; color: #3b82f6; }
+
+.horizon-nav {
+  display: flex;
+  gap: 1rem;
+}
+.horizon-nav button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.horizon-nav button:hover { background: rgba(255,255,255,0.05); color: #fff; }
+.horizon-nav button.active {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  font-weight: 600;
+}
+
+.btn-voltar-portal {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-voltar-portal:hover { background: rgba(239, 68, 68, 0.2); color: #fff; }
+
+/* --- CONTEÚDO PRINCIPAL --- */
+.horizon-invest-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.glass-panel {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+/* --- SEÇÃO PATRIMÔNIO --- */
+.patrimonio-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2.5rem;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.patrimonio-info p { color: #94a3b8; margin: 0 0 0.5rem 0; font-size: 1rem; }
+.saldo-container { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
+.saldo-container h1 { font-size: 2.5rem; margin: 0; color: #fff; }
+.btn-eye { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+.btn-eye:hover { opacity: 1; }
+
+.rendimento-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.acoes-rapidas { display: flex; gap: 1rem; flex-wrap: wrap; }
+.btn-invest-action {
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  border: none; transition: transform 0.2s, opacity 0.2s;
+}
+.btn-invest-action:hover { transform: translateY(-2px); opacity: 0.9; }
+.btn-invest-action.primary { background: #3b82f6; color: white; }
+.btn-invest-action.secondary { background: #8b5cf6; color: white; }
+.btn-invest-action.outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
+
+/* --- CARTEIRA GRID --- */
+.section-title { font-size: 1.3rem; margin-bottom: 1.5rem; color: #e2e8f0; }
+
+.carteira-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.invest-card {
+  padding: 1.5rem;
+  border-top-width: 4px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.invest-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+.invest-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.invest-tipo { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.invest-rentabilidade { font-size: 0.85rem; font-weight: 600; }
+.invest-rentabilidade.positiva { color: #34d399; }
+.invest-rentabilidade.negativa { color: #f87171; }
+
+.invest-nome { font-size: 1.1rem; margin: 0 0 1.5rem 0; color: #f8fafc; }
+
+.invest-valores { display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem; }
+.valor-box small { color: #64748b; font-size: 0.75rem; display: block; margin-bottom: 4px; }
+.valor-box p { margin: 0; font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+.valor-box.rendimento p.text-green { color: #34d399; }
+.valor-box.rendimento p.text-red { color: #f87171; }
+
+/* --- RECOMENDAÇÕES --- */
+.recomendacoes-section { padding: 1.5rem 2rem; }
+.recomendacoes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;}
+.recomendacoes-header h3 { margin: 0; font-size: 1.1rem; }
+.btn-ver-todas { background: transparent; border: none; color: #3b82f6; cursor: pointer; font-weight: 600; }
+
+.oportunidades-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.oportunidade-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; cursor: pointer;}
+.oportunidade-item:hover { background: rgba(255,255,255,0.05); }
+.op-icone { width: 45px; height: 45px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.8rem; }
+.op-info h4 { margin: 0 0 4px 0; font-size: 1rem; }
+.op-info p { margin: 0; font-size: 0.8rem; color: #64748b; }
+.op-taxa { margin-left: auto; font-weight: 700; color: #34d399; }
+
+/* =========================================
+   --- RESPONSIVIDADE (MOBILE / ZOOM) --- 
+   ========================================= */
+
+@media (max-width: 1024px) {
+  .horizon-nav { display: none; } /* Esconde navegação em tablets, precisa criar menu hambúrguer para o banco depois */
+}
+
+@media (max-width: 768px) {
+  .horizon-header { padding: 0 1rem; }
+  .horizon-invest-main { padding: 1rem; gap: 1.5rem; }
+  
+  .patrimonio-section { flex-direction: column; align-items: flex-start; padding: 1.5rem; gap: 1.5rem; }
+  .saldo-container h1 { font-size: 2rem; }
+  
+  .acoes-rapidas { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-invest-action { justify-content: center; padding: 0.8rem; font-size: 0.9rem; }
+  .btn-invest-action.outline { grid-column: span 2; }
+  
+  .carteira-grid { grid-template-columns: 1fr; }
+  .oportunidades-list { grid-template-columns: 1fr; }
+}

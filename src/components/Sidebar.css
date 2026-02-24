@@ -12,16 +12,16 @@
   top: 0;
   z-index: 100;
   box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease-in-out;
 }
 
 /* --- HEADER (LOGO) --- */
-/* CORREÇÃO: Usamos padding-left igual ao do menu para alinhar */
 .sidebar-header {
   min-height: 80px; 
   display: flex;
   align-items: center;
-  /* Alinha à esquerda, mas com o mesmo recuo do menu */
   padding-left: 1.8rem; 
+  padding-right: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -30,29 +30,19 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Padding lateral ajustado para centralizar visualmente os itens */
   padding: 1.5rem 1rem; 
 }
 
-/* Custom Scrollbar */
-.custom-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+.custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
 /* --- SEÇÕES E TÍTULOS --- */
-.nav-section {
-  margin-bottom: 1.5rem;
-}
+.nav-section { margin-bottom: 1.5rem; }
 
 .nav-title {
   display: block;
@@ -61,13 +51,11 @@
   color: #64748b;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  padding-left: 0.8rem; /* Alinha o título com o texto dos botões */
+  padding-left: 0.8rem;
   letter-spacing: 0.5px;
 }
 
-.admin-section .nav-title {
-  color: #3b82f6;
-}
+.admin-section .nav-title { color: #3b82f6; }
 .admin-section .nav-item {
   background: rgba(59, 130, 246, 0.05);
   border: 1px dashed rgba(59, 130, 246, 0.2);
@@ -102,7 +90,7 @@
   background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
   color: #60a5fa;
   border-left: 3px solid #3b82f6;
-  padding-left: calc(0.8rem - 3px); /* Compensa a borda */
+  padding-left: calc(0.8rem - 3px);
   font-weight: 600;
 }
 
@@ -141,4 +129,88 @@
   background: rgba(239, 68, 68, 0.2);
   color: #fff;
   border-color: #ef4444;
+}
+
+/* =========================================
+   --- COMPONENTES MOBILE (INVISÍVEIS NO PC) --- 
+   ========================================= */
+
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 90;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1.5rem;
+  border-radius: 8px;
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.close-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 95;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* =========================================
+   --- RESPONSIVIDADE (MOBILE) --- 
+   ========================================= */
+
+@media (max-width: 768px) {
+  /* Oculta a sidebar fora da tela */
+  .tech-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  /* Classe adicionada via React quando clicada para abrir */
+  .tech-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Mostra o botão hamburguer no ecrã */
+  .mobile-menu-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Mostra o botão de fechar (X) dentro da sidebar */
+  .close-menu-btn {
+    display: block;
+  }
+
+  /* Mostra o overlay quando a sidebar estiver aberta */
+  .sidebar-overlay.show {
+    display: block;
+    opacity: 1;
+  }
 }

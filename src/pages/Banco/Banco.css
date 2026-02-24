@@ -670,3 +670,133 @@ td { padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   color: #94a3b8;
   line-height: 1.5;
 }
+
+/* =========================================
+   --- RESPONSIVIDADE (MOBILE E ZOOM) ---
+   ========================================= */
+
+/* 1. Telas Médias, Notebooks com Zoom 150% ou Tablets */
+@media (max-width: 1024px) {
+  /* Os grids de 3 colunas caem para 2 colunas para não espremer */
+  .infinite-grid, .assets-grid {
+    grid-template-columns: repeat(2, 1fr); 
+  }
+  
+  /* O card grande que ocupava 3, agora ocupa 2 */
+  .full-width {
+    grid-column: span 2;
+  }
+
+  /* A tela de cartões quebra o cartão para cima e fatura para baixo */
+  .cartoes-container {
+    grid-template-columns: 1fr; 
+  }
+  
+  .cards-layout {
+    flex-direction: column;
+  }
+}
+
+/* 2. Telas Pequenas (Celulares) */
+@media (max-width: 768px) {
+  /* O layout deixa de ser lado a lado e empilha (Sidebar no topo, Main embaixo) */
+  .infinite-layout {
+    flex-direction: column;
+    overflow-y: auto; /* Permite rolar a página inteira no celular */
+  }
+
+  /* A Sidebar vira um cabeçalho fixo no topo no mobile */
+  .infinite-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    position: relative;
+  }
+
+  .brand-box {
+    margin-bottom: 20px;
+  }
+
+  /* Os botões do menu viram uma linha rolável no celular para economizar espaço */
+  .infinite-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    gap: 5px;
+  }
+  
+  .infinite-nav button {
+    white-space: nowrap; /* Não deixa o texto do botão quebrar de linha */
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  /* Reduz os respiros da tela principal */
+  .infinite-main {
+    padding: 20px;
+    overflow-y: visible; /* A rolagem agora é no infinite-layout */
+  }
+
+  /* Grids caem para 1 coluna apenas */
+  .infinite-grid, .assets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .full-width {
+    grid-column: span 1;
+  }
+
+  /* Ajuste do Header da página (Título e botões) */
+  .main-header-infinite {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Ajuste dos inputs de filtro no Extrato */
+  .filters-bar {
+    flex-direction: column;
+  }
+  
+  .btn-export {
+    width: 100%;
+    padding: 12px;
+  }
+
+  /* Responsividade da Tabela de Extrato */
+  .table-container {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  
+  th, td {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Tela de Investimentos - Header */
+  .invest-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .btn-new-invest {
+    width: 100%;
+  }
+
+  /* Ajuste do Widget flutuante de DEV para não cobrir a tela do celular */
+  .bank-dev-widget {
+    bottom: 10px;
+    right: 10px;
+    left: 10px; /* Ocupa a largura quase toda embaixo */
+    min-width: unset;
+  }
+}
