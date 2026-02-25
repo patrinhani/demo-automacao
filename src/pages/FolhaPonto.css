@@ -640,8 +640,24 @@
 .ajustes-wrapper {
     width: 100%;
     box-sizing: border-box;
-    /* Adiciona um espaçamento interno mais simétrico */
     padding: 30px !important; 
+    /* Aumenta o limite para a tabela caber inteira sem estourar */
+    max-width: 1000px !important; 
+    /* Evita que qualquer filho vaze do fundo de vidro */
+    overflow: hidden; 
+}
+
+.ajustes-lista {
+    width: 100%;
+    /* Adiciona rolagem horizontal apenas na área da tabela se a tela for pequena */
+    overflow-x: auto; 
+    /* Espaço para a barra de rolagem não cortar o final da tabela */
+    padding-bottom: 15px; 
+}
+
+/* Garante que o texto da tabela não quebre de forma feia nas colunas de ajuste */
+.ajustes-lista .tech-table td {
+    white-space: nowrap;
 }
 
 /* Garante que os botões dentro das tabelas fiquem alinhados */
@@ -651,3 +667,72 @@
     justify-content: center;
     align-items: center;
 }
+
+
+/* =========================================
+   BANNER AUTOMAÇÃO RPA (RH)
+   ========================================= */
+.banner-automacao-rh {
+  background: linear-gradient(90deg, #3b0764 0%, #4c1d95 100%);
+  padding: 25px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #7c3aed;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner-automacao-rh-noise {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/noise.png');
+  opacity: 0.05;
+}
+
+.banner-automacao-rh-content {
+  z-index: 1;
+}
+
+.banner-automacao-rh-title {
+  margin: 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.banner-automacao-rh-desc {
+  margin: 8px 0 0 0;
+  opacity: 0.8;
+  font-size: 0.95rem;
+  max-width: 500px;
+}
+
+.btn-magic-rh {
+  z-index: 1;
+  background: white;
+  color: #4c1d95;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.btn-magic-rh:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+}
+

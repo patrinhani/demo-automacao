@@ -22,6 +22,9 @@ export default function FolhaPonto() {
   const [isRH, setIsRH] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
+  
+  // Estado para o Modo Apresentação do Robô
+  const [modoApresentacaoAtivo, setModoApresentacaoAtivo] = useState(false);
 
   // Estados do Formulário de Ajuste
   const [dataAjuste, setDataAjuste] = useState('');
@@ -47,6 +50,15 @@ export default function FolhaPonto() {
       const dataAleatoria = new Date(hoje.setDate(hoje.getDate() - diasAtras));
       return dataAleatoria.toLocaleDateString('pt-BR');
   };
+
+  // Listener para Flag Global de Apresentação
+  useEffect(() => {
+    const demoRef = ref(db, 'configuracoes_globais/modo_apresentacao');
+    const unsubscribeDemo = onValue(demoRef, (snapshot) => {
+      setModoApresentacaoAtivo(!!snapshot.val());
+    });
+    return () => unsubscribeDemo();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setHoraAtual(new Date()), 1000);
@@ -130,6 +142,31 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH]);
 
+  // Função para Disparar Automação RPA (RH)
+  const executarAutomacaoRH = async () => {
+    if (!user) return;
+    const pendentes = listaPendencias.filter(p => p.status !== 'Respondido');
+    console.log("🚀 Botão acionado! Enviando sinal para o robô de RH...");
+    
+    try {
+        await update(ref(db, `fila_automacao_rh/${user.uid}`), { 
+            nome: userName || "Operador RH",
+            timestamp: Date.now(),
+            acao: "ANALISAR_INCONSISTENCIAS_PONTO",
+            qtd_pendencias: pendentes.length 
+        });
+        
+        if (pendentes.length === 0) {
+            alert("⚠️ Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
+        } else {
+            alert(`🤖 Robô de RH acionado com sucesso! Processando ${pendentes.length} itens.`);
+        }
+    } catch (error) {
+        console.error("Erro ao acionar automação:", error);
+        alert("Erro ao conectar com o Robô.");
+    }
+  };
+
   // Funções Ponto Normal
   const registrarPonto = async (tipo) => {
     if (!user) return;
@@ -174,13 +211,9 @@ export default function FolhaPonto() {
   // Aprovar ajuste de usuário REAL
   const aprovarAjuste = async (ajuste) => {
     try {
-      // 1. Corrige no banco de horas
       await update(ref(db, `ponto/${ajuste.userId}/${ajuste.dataAjuste}`), { [ajuste.tipoMarcacao]: ajuste.horarioCorreto });
-      
-      // 2. Muda o status do ajuste para Aprovado
       await update(ref(db, `ajustes_ponto/${ajuste.id}`), { status: 'Aprovado' });
       
-      // 3. SE esse usuário real estava com pendência na Auditoria do RH, nós concluímos ela para limpar a tela
       const erroRef = ref(db, `rh/erros_ponto/${ajuste.userId}`);
       const snap = await get(erroRef);
       if (snap.exists()) {
@@ -193,11 +226,8 @@ export default function FolhaPonto() {
 
   const reprovarAjuste = async (ajuste) => {
     const motivo = prompt('Motivo da reprovação:');
-    
-    // Trava de segurança: só reprova se a pessoa digitou um motivo e não apenas cancelou a janela
     if (motivo && motivo.trim() !== '') {
       try {
-        // A mágica está aqui: usamos ajuste.id em vez do objeto inteiro
         await update(ref(db, `ajustes_ponto/${ajuste.id}`), { 
             status: 'Reprovado', 
             motivoReprovacao: motivo 
@@ -230,14 +260,12 @@ export default function FolhaPonto() {
   const formatarTipoAjuste = (tipo) => ({ 'entrada': 'Entrada', 'almoco_ida': 'Saída Almoço', 'almoco_volta': 'Retorno Almoço', 'saida': 'Saída' }[tipo] || tipo);
 
   const irParaChatComUsuario = (usuario) => {
-      // Funciona tanto para reais quanto para mocks
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
       if (!mocksAtivos.find(u => u.id === usuario.id)) {
           mocksAtivos.push({ id: usuario.id, nome: usuario.nome, cargo: usuario.cargo, email: usuario.nome ? `${usuario.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com' });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
       
-      // Marca na auditoria que o RH já notificou essa pessoa
       update(ref(db, `rh/erros_ponto/${usuario.id}`), { status: 'Notificado' });
       
       navigate('/chat', { state: { chatTarget: { id: usuario.id, nome: usuario.nome, cargo: usuario.cargo } } });
@@ -247,7 +275,6 @@ export default function FolhaPonto() {
   const renderAcao = (item, pontosPropostos) => {
       if (item.id === user?.uid) return <span className="badge-bloqueado">🚫 Auto-gestão Bloqueada</span>;
       
-      // Se for Mock e o robô respondeu, vai pra aba de aprovações
       if (item.status === 'Respondido') return (
           <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
               <span style={{color: '#facc15', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>⏳ Avaliar Correção</span>
@@ -255,10 +282,8 @@ export default function FolhaPonto() {
           </div>
       );
 
-      // Se o RH já chamou no chat, fica aguardando a pessoa responder (ou o robô)
       if (item.status === 'Notificado') return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
       
-      // Botão inicial para o RH chamar a pessoa que está com o ponto zoado
       return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
 
@@ -392,6 +417,28 @@ export default function FolhaPonto() {
             {/* ABA: GESTÃO RH */}
             {abaAtiva === 'gestao_rh' && isRH && (
                 <div className="gestao-rh-container">
+                    
+                    {/* --- PAINEL DE AUTOMAÇÃO RPA (SÓ APARECE SE MODO APRESENTAÇÃO = TRUE) --- */}
+                    {modoApresentacaoAtivo && (
+                         <div className="banner-automacao-rh">
+                           <div className="banner-automacao-rh-noise"></div>
+                           
+                           <div className="banner-automacao-rh-content">
+                             <h2 className="banner-automacao-rh-title">
+                               🤖 Automação RPA Disponível
+                             </h2>
+                             <p className="banner-automacao-rh-desc">
+                               O Robô de RH está online e pronto para auditar. Existem <strong>{listaPendencias.filter(p => p.status !== 'Respondido').length} divergências</strong> na folha.
+                             </p>
+                           </div>
+                           
+                           <button onClick={executarAutomacaoRH} className="btn-magic-rh">
+                             ⚡ Iniciar Auditoria
+                           </button>
+                         </div>
+                    )}
+                    {/* --- FIM DO PAINEL DE AUTOMAÇÃO --- */}
+
                     <div className="ajuste-tabs">
                         <button className={`tab-btn ${subAbaGestao === 'auditoria' ? 'active' : ''}`} onClick={() => setSubAbaGestao('auditoria')}>
                             🔍 Auditoria Ponto {listaPendencias.filter(p => p.status !== 'Respondido').length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{listaPendencias.filter(p => p.status !== 'Respondido').length}</span>}
@@ -401,7 +448,7 @@ export default function FolhaPonto() {
                         </button>
                     </div>
 
-                    {/* Sub-aba: Auditoria (SOMENTE MOCKS NÃO RESPONDIDOS E REAIS AGUARDANDO) */}
+                    {/* Sub-aba: Auditoria */}
                     {subAbaGestao === 'auditoria' && (
                         <div className="tabela-rh-wrapper">
                             {listaPendencias.filter(item => item.status !== 'Respondido').length === 0 ? (
@@ -450,14 +497,14 @@ export default function FolhaPonto() {
                         </div>
                     )}
 
-                    {/* Sub-aba: Aprovações de Ajuste (PESSOAS REAIS SOLICITANTES + MOCKS RESPONDIDOS) */}
+                    {/* Sub-aba: Aprovações de Ajuste */}
                     {subAbaGestao === 'aprovacoes' && (
                         <div className="tabela-rh-wrapper">
                             {(pendenciasAjuste.length === 0 && listaPendencias.filter(item => item.status === 'Respondido').length === 0) ? (
                                 <p style={{color: '#94a3b8', padding: '20px'}}>Tudo certo! Nenhuma pendência de ajuste.</p>
                             ) : (
                                 <>
-                                    {/* TABELA 1: PESSOAS REAIS (Preencheram o Form de Ajuste) */}
+                                    {/* TABELA 1: PESSOAS REAIS */}
                                     {pendenciasAjuste.length > 0 && (
                                         <div style={{marginBottom: '30px'}}>
                                             <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Solicitações Manuais (Equipe Interna)</h4>
@@ -497,7 +544,6 @@ export default function FolhaPonto() {
                                                     {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
                                                         const dataVisual = gerarDataInconsistencia(item);
                                                         
-                                                        // Prepara os pontos propostos pelo Chatbot
                                                         let pontosVisuais = item.pontos || {};
                                                         if (item.erro !== 'Atraso Excessivo' && item.erro !== 'Falta Injustificada') {
                                                             pontosVisuais = {
