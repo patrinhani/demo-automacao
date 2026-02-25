@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import TeamsNotification from '../components/TeamsNotification'; 
 import { db } from '../firebase';
-import { ref, onValue, get, set } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { useUser } from '../contexts/UserContext'; 
 import './Dashboard.css';
-
-// 🔊 SOM DA NOTIFICAÇÃO (Mesmo do Chat/Popup)
-const CAMINHO_SOM = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -22,31 +18,13 @@ export default function Dashboard() {
   const [contagemViagens, setContagemViagens] = useState(0);
   const [contagemGeral, setContagemGeral] = useState(0);
   const [proxFerias, setProxFerias] = useState('---');
-
-  // Estado para notificação Teams
-  const [showTeams, setShowTeams] = useState(false);
   const [contagemReembolsos, setContagemReembolsos] = useState(0);
-
-  // 🔊 NOVO: Tocar som quando a notificação aparecer
-  useEffect(() => {
-    if (showTeams) {
-      // Cria o áudio usando a URL externa (Mixkit)
-      const audio = new Audio(CAMINHO_SOM); 
-      
-      // Volume ajustado para não assustar
-      audio.volume = 0.6; 
-      
-      audio.play().catch((erro) => {
-        console.warn("Autoplay bloqueado ou erro ao tocar som:", erro);
-      });
-    }
-  }, [showTeams]);
 
   // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Baseado no uidAtivo
   useEffect(() => {
     if (!uidAtivo) return; 
     const userRef = ref(db, `users/${uidAtivo}`);
-    onValue(userRef, (snapshot) => {
+    const unsubscribe = onValue(userRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         setUserProfile({
@@ -55,25 +33,27 @@ export default function Dashboard() {
         });
       }
     });
+    return () => unsubscribe();
   }, [uidAtivo]);
 
   // 2. TAREFAS
   useEffect(() => {
     if (!uidAtivo) return;
     const tarefasRef = ref(db, 'tarefas');
-    onValue(tarefasRef, (snapshot) => {
+    const unsubscribe = onValue(tarefasRef, (snapshot) => {
       if (snapshot.exists()) {
         setContagemTarefas(Object.values(snapshot.val()).filter(t => t.userId === uidAtivo && t.status !== 'done').length);
       } else {
         setContagemTarefas(0);
       }
     });
+    return () => unsubscribe();
   }, [uidAtivo]);
 
   // 3. FÉRIAS
   useEffect(() => {
     if (!uidAtivo) return;
-    onValue(ref(db, `ferias/${uidAtivo}`), (snapshot) => {
+    const unsubscribe = onValue(ref(db, `ferias/${uidAtivo}`), (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const lista = Object.values(data).sort((a, b) => new Date(b.dataInicio) - new Date(a.dataInicio));
@@ -84,6 +64,7 @@ export default function Dashboard() {
         setProxFerias('A definir');
       }
     });
+    return () => unsubscribe();
   }, [uidAtivo]);
 
   // 4. PENDÊNCIAS
@@ -123,42 +104,6 @@ export default function Dashboard() {
     
     return () => { unsubViagens(); unsubGerais(); unsubReembolsos(); };
   }, [uidAtivo, isAdmin]); 
-
-  // 5. MONITORAMENTO DE PONTO (TIMER 40s)
-  useEffect(() => {
-    if (!user) return;
-    const verificarPonto = async () => {
-        const hoje = new Date().toISOString().split('T')[0];
-        const pontoRef = ref(db, `ponto/${user.uid}/${hoje}`);
-        const snapshot = await get(pontoRef);
-
-        if (!snapshot.exists() || !snapshot.val().entrada) {
-            console.log("⏳ Timer 10min iniciado...");
-            const timer = setTimeout(async () => {
-                const checkAgain = await get(pontoRef);
-                if (!checkAgain.exists() || !checkAgain.val().entrada) {
-                    setShowTeams(true); // ATIVA O ALERTA (e toca o som)
-                    
-                    const userRef = ref(db, `users/${user.uid}`);
-                    const userSnap = await get(userRef);
-                    const userData = userSnap.val() || {};
-                    await set(ref(db, `rh/erros_ponto/${user.uid}`), {
-                        nome: userData.nome || user.email,
-                        cargo: userData.cargo || 'Colaborador',
-                        setor: userData.setor || 'Geral',
-                        data: 'Hoje',
-                        erro: 'Esquecimento Real',
-                        status: 'Pendente',
-                        pontos: { e: '---', si: '---', vi: '---', s: '---' },
-                        timestamp: Date.now()
-                    });
-                }
-            }, 6000);
-            return () => clearTimeout(timer);
-        }
-    };
-    verificarPonto();
-  }, [user]);
 
   const totalSolicitacoes = contagemReembolsos + contagemViagens + contagemGeral;
 
@@ -228,13 +173,6 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
-
-      <TeamsNotification 
-        show={showTeams} 
-        onClose={() => setShowTeams(false)}
-        title="RH - Monitoramento Automático"
-        message="Detectamos uma inconsistência no seu registro de ponto (Ausência de Entrada). Em breve o RH entrará em contato."
-      />
     </div>
   );
 }

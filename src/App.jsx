@@ -5,6 +5,7 @@ import { UserProvider } from './contexts/UserContext';
 
 // --- COMPONENTE GLOBAL DE NOTIFICAÇÃO ---
 import NotificationPopup from './components/NotificationPopup';
+import MonitorPontoGlobal from './components/MonitorPontoGlobal';
 
 // --- PÁGINAS DE ACESSO E CONTA ---
 import Login from './pages/Login';
@@ -61,6 +62,7 @@ function App() {
         
         {/* O NotificationPopup fica aqui para funcionar em todas as telas */}
         <NotificationPopup />
+        <MonitorPontoGlobal />
 
         <Routes>
           {/* =======================================================

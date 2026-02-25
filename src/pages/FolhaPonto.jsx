@@ -63,11 +63,12 @@ export default function FolhaPonto() {
               const cargo = (userData.cargo || '').toLowerCase();
               const role = userData.role || '';
               
-              if(setor.includes('recursos humanos') || setor.includes('rh') || cargo.includes('c.e.o') || role === 'admin') {
+              // Verifica se é RH ou CEO para liberar a aba de gestão
+              if(setor.includes('recursos humanos') || setor.includes('rh') || cargo.includes('c.e.o') || cargo.includes('ceo') || role === 'admin') {
                   setIsRH(true);
               }
 
-              if (cargo.includes('ceo') || cargo.includes('diretoria') || role === 'admin') {
+              if (cargo.includes('c.e.o') || cargo.includes('ceo') || cargo.includes('diretoria') || role === 'admin') {
                   setIsCEO(true);
               }
           }
@@ -156,7 +157,7 @@ export default function FolhaPonto() {
     } catch (error) { alert("Erro ao registrar ponto."); }
   };
 
-  // Funções Ajuste de Ponto
+  // Funções Ajuste de Ponto (Usuários Reais)
   const handleSubmitAjuste = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -170,19 +171,57 @@ export default function FolhaPonto() {
     } catch (error) { alert("Erro ao solicitar ajuste."); }
   };
 
+  // Aprovar ajuste de usuário REAL
   const aprovarAjuste = async (ajuste) => {
     try {
+      // 1. Corrige no banco de horas
       await update(ref(db, `ponto/${ajuste.userId}/${ajuste.dataAjuste}`), { [ajuste.tipoMarcacao]: ajuste.horarioCorreto });
+      
+      // 2. Muda o status do ajuste para Aprovado
       await update(ref(db, `ajustes_ponto/${ajuste.id}`), { status: 'Aprovado' });
+      
+      // 3. SE esse usuário real estava com pendência na Auditoria do RH, nós concluímos ela para limpar a tela
+      const erroRef = ref(db, `rh/erros_ponto/${ajuste.userId}`);
+      const snap = await get(erroRef);
+      if (snap.exists()) {
+          await update(erroRef, { status: 'Concluido' });
+      }
+
       alert('✅ Ajuste aprovado e banco de horas corrigido automaticamente!');
     } catch (error) { alert('Erro ao aprovar o ajuste.'); }
   };
 
-  const reprovarAjuste = async (id) => {
+  const reprovarAjuste = async (ajuste) => {
     const motivo = prompt('Motivo da reprovação:');
-    if (motivo !== null) {
-      await update(ref(db, `ajustes_ponto/${id}`), { status: 'Reprovado', motivoReprovacao: motivo });
+    
+    // Trava de segurança: só reprova se a pessoa digitou um motivo e não apenas cancelou a janela
+    if (motivo && motivo.trim() !== '') {
+      try {
+        // A mágica está aqui: usamos ajuste.id em vez do objeto inteiro
+        await update(ref(db, `ajustes_ponto/${ajuste.id}`), { 
+            status: 'Reprovado', 
+            motivoReprovacao: motivo 
+        });
+        alert('❌ Ajuste reprovado com sucesso!');
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao reprovar o ajuste.');
+      }
     }
+  };
+
+  // Aprovar ponto de MOCK (Preserva os que estão certos, altera os que faltam)
+  const aprovarPontoMock = async (item, pontosPropostos) => {
+      try {
+          await update(ref(db, `rh/erros_ponto/${item.id}`), { 
+              pontos: pontosPropostos, 
+              status: 'Concluido' 
+          });
+          alert('✅ Ajuste do colaborador fictício aprovado com sucesso!');
+      } catch (error) {
+          console.error(error);
+          alert('Erro ao aprovar o ajuste do colaborador.');
+      }
   };
 
   // Funções Auxiliares UI
@@ -190,27 +229,36 @@ export default function FolhaPonto() {
   const formatarNomeErro = (erro) => ({ 'Esquecimento Real': 'Ausência de Registro', 'Atraso Excessivo': 'Atraso Crítico', 'Falta Injustificada': 'Falta Não Justificada' }[erro] || erro);
   const formatarTipoAjuste = (tipo) => ({ 'entrada': 'Entrada', 'almoco_ida': 'Saída Almoço', 'almoco_volta': 'Retorno Almoço', 'saida': 'Saída' }[tipo] || tipo);
 
-  const irParaChatComUsuario = (usuarioFicticio) => {
+  const irParaChatComUsuario = (usuario) => {
+      // Funciona tanto para reais quanto para mocks
       const mocksAtivos = JSON.parse(localStorage.getItem('mocksAtivos') || '[]');
-      if (!mocksAtivos.find(u => u.id === usuarioFicticio.id)) {
-          mocksAtivos.push({ id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo, email: usuarioFicticio.nome ? `${usuarioFicticio.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com' });
+      if (!mocksAtivos.find(u => u.id === usuario.id)) {
+          mocksAtivos.push({ id: usuario.id, nome: usuario.nome, cargo: usuario.cargo, email: usuario.nome ? `${usuario.nome.split(' ')[0].toLowerCase()}@techcorp.com` : 'user@tech.com' });
           localStorage.setItem('mocksAtivos', JSON.stringify(mocksAtivos));
       }
-      update(ref(db, `rh/erros_ponto/${usuarioFicticio.id}`), { status: 'Notificado' });
-      navigate('/chat', { state: { chatTarget: { id: usuarioFicticio.id, nome: usuarioFicticio.nome, cargo: usuarioFicticio.cargo } } });
+      
+      // Marca na auditoria que o RH já notificou essa pessoa
+      update(ref(db, `rh/erros_ponto/${usuario.id}`), { status: 'Notificado' });
+      
+      navigate('/chat', { state: { chatTarget: { id: usuario.id, nome: usuario.nome, cargo: usuario.cargo } } });
   };
 
-  const handleResolver = (id) => update(ref(db, `rh/erros_ponto/${id}`), { status: 'Concluido' });
-
-  const renderAcao = (item) => {
+  // RENDERIZAÇÃO DA AÇÃO DA AUDITORIA
+  const renderAcao = (item, pontosPropostos) => {
       if (item.id === user?.uid) return <span className="badge-bloqueado">🚫 Auto-gestão Bloqueada</span>;
+      
+      // Se for Mock e o robô respondeu, vai pra aba de aprovações
       if (item.status === 'Respondido') return (
           <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'center'}}>
-              <span style={{color: '#4ade80', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>✨ Ajustado</span>
-              <button className="btn-resolve-rh" onClick={() => handleResolver(item.id)}>✅ Baixar</button>
+              <span style={{color: '#facc15', fontSize:'0.75rem', fontWeight:'bold', textTransform:'uppercase'}}>⏳ Avaliar Correção</span>
+              <button className="btn-approve" style={{padding: '6px 12px', fontSize: '12px'}} onClick={() => aprovarPontoMock(item, pontosPropostos)}>✔️ Aprovar</button>
           </div>
       );
+
+      // Se o RH já chamou no chat, fica aguardando a pessoa responder (ou o robô)
       if (item.status === 'Notificado') return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
+      
+      // Botão inicial para o RH chamar a pessoa que está com o ponto zoado
       return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
 
@@ -236,7 +284,7 @@ export default function FolhaPonto() {
             {isRH && (
                 <button className={`toggle-btn ${abaAtiva === 'gestao_rh' ? 'active' : ''}`} onClick={() => setAbaAtiva('gestao_rh')}>
                     👮 Gestão RH 
-                    {(listaPendencias.length + pendenciasAjuste.length) > 0 && <span className="badge-alert">{listaPendencias.length + pendenciasAjuste.length}</span>}
+                    {(listaPendencias.filter(p => p.status !== 'Respondido').length + pendenciasAjuste.length + listaPendencias.filter(p => p.status === 'Respondido').length) > 0 && <span className="badge-alert">!</span>}
                 </button>
             )}
         </div>
@@ -346,98 +394,153 @@ export default function FolhaPonto() {
                 <div className="gestao-rh-container">
                     <div className="ajuste-tabs">
                         <button className={`tab-btn ${subAbaGestao === 'auditoria' ? 'active' : ''}`} onClick={() => setSubAbaGestao('auditoria')}>
-                            🔍 Auditoria Ponto {listaPendencias.length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{listaPendencias.length}</span>}
+                            🔍 Auditoria Ponto {listaPendencias.filter(p => p.status !== 'Respondido').length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{listaPendencias.filter(p => p.status !== 'Respondido').length}</span>}
                         </button>
                         <button className={`tab-btn ${subAbaGestao === 'aprovacoes' ? 'active' : ''}`} onClick={() => setSubAbaGestao('aprovacoes')}>
-                            📝 Aprovações de Ajuste {pendenciasAjuste.length > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{pendenciasAjuste.length}</span>}
+                            📝 Aprovações de Ajuste {(pendenciasAjuste.length + listaPendencias.filter(p => p.status === 'Respondido').length) > 0 && <span className="badge-alert" style={{marginLeft:'5px'}}>{pendenciasAjuste.length + listaPendencias.filter(p => p.status === 'Respondido').length}</span>}
                         </button>
                     </div>
 
-                    {/* Sub-aba: Auditoria */}
+                    {/* Sub-aba: Auditoria (SOMENTE MOCKS NÃO RESPONDIDOS E REAIS AGUARDANDO) */}
                     {subAbaGestao === 'auditoria' && (
                         <div className="tabela-rh-wrapper">
-                            <table className="tech-table">
-                                <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
-                                <tbody>
-                                    {listaPendencias.map(item => {
-                                        const dataVisual = gerarDataInconsistencia(item);
-                                        item._visualDate = dataVisual;
+                            {listaPendencias.filter(item => item.status !== 'Respondido').length === 0 ? (
+                                <p style={{color: '#94a3b8', padding: '20px'}}>Nenhuma auditoria pendente no momento.</p>
+                            ) : (
+                                <table className="tech-table">
+                                    <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho</th><th>Ação</th></tr></thead>
+                                    <tbody>
+                                        {listaPendencias.filter(item => item.status !== 'Respondido').map(item => {
+                                            const dataVisual = gerarDataInconsistencia(item);
+                                            item._visualDate = dataVisual;
 
-                                        let pontosVisuais = item.pontos || {};
-                                        if (item.status === 'Respondido') {
-                                            if (item.erro === 'Atraso Excessivo' || item.erro === 'Falta Injustificada') {
-                                                pontosVisuais = item.pontos;
-                                            } else {
-                                                pontosVisuais = {
-                                                    e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
-                                                    si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
-                                                    vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
-                                                    s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
-                                                };
-                                            }
-                                        }
-                                        if (item.erro === 'Esquecimento Real') pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
-                                        
-                                        return (
-                                            <tr key={item.id}>
-                                                <td>
-                                                    <div className="user-profile-container">
-                                                        <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
-                                                        <div className="user-info-modern">
-                                                            <strong>{item.nome}</strong>
-                                                            <small>{item.cargo}</small>
+                                            let pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
+                                            
+                                            return (
+                                                <tr key={item.id}>
+                                                    <td>
+                                                        <div className="user-profile-container">
+                                                            <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
+                                                            <div className="user-info-modern">
+                                                                <strong>{item.nome}</strong>
+                                                                <small>{item.cargo}</small>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td><div className="date-badge">{dataVisual}</div></td>
-                                                <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
-                                                <td>
-                                                    <div className="timeline-ponto">
-                                                        <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
-                                                        <div className="arrow">›</div>
-                                                        <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
-                                                        <div className="arrow">›</div>
-                                                        <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
-                                                        <div className="arrow">›</div>
-                                                        <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
-                                                    </div>
-                                                </td>
-                                                <td>{renderAcao(item)}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                    </td>
+                                                    <td><div className="date-badge">{dataVisual}</div></td>
+                                                    <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
+                                                    <td>
+                                                        <div className="timeline-ponto">
+                                                            <div className={`time-pill ${!pontosVisuais.e || pontosVisuais.e === '---' ? 'miss' : ''}`}><span className="lbl">E</span>{pontosVisuais.e || '---'}</div>
+                                                            <div className="arrow">›</div>
+                                                            <div className={`time-pill ${!pontosVisuais.si || pontosVisuais.si === '---' ? 'miss' : ''}`}><span className="lbl">SI</span>{pontosVisuais.si || '---'}</div>
+                                                            <div className="arrow">›</div>
+                                                            <div className={`time-pill ${!pontosVisuais.vi || pontosVisuais.vi === '---' ? 'miss' : ''}`}><span className="lbl">VI</span>{pontosVisuais.vi || '---'}</div>
+                                                            <div className="arrow">›</div>
+                                                            <div className={`time-pill ${!pontosVisuais.s || pontosVisuais.s === '---' ? 'miss' : ''}`}><span className="lbl">S</span>{pontosVisuais.s || '---'}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{renderAcao(item, pontosVisuais)}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     )}
 
-                    {/* Sub-aba: Aprovações de Ajuste */}
+                    {/* Sub-aba: Aprovações de Ajuste (PESSOAS REAIS SOLICITANTES + MOCKS RESPONDIDOS) */}
                     {subAbaGestao === 'aprovacoes' && (
                         <div className="tabela-rh-wrapper">
-                            {pendenciasAjuste.length === 0 ? <p style={{color: '#94a3b8', padding: '20px'}}>Tudo certo! Nenhuma pendência de ajuste.</p> : (
-                            <table className="tech-table">
-                                <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Justificativa</th><th>Ações</th></tr></thead>
-                                <tbody>
-                                {pendenciasAjuste.map(item => (
-                                    <tr key={item.id}>
-                                    <td><strong>{item.userName}</strong></td>
-                                    <td>
-                                        <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
-                                            <span>📅 {item.dataAjuste.split('-').reverse().join('/')}</span>
-                                            <span style={{color: '#a855f7'}}>⏱️ {formatarTipoAjuste(item.tipoMarcacao)} ➜ {item.horarioCorreto}</span>
+                            {(pendenciasAjuste.length === 0 && listaPendencias.filter(item => item.status === 'Respondido').length === 0) ? (
+                                <p style={{color: '#94a3b8', padding: '20px'}}>Tudo certo! Nenhuma pendência de ajuste.</p>
+                            ) : (
+                                <>
+                                    {/* TABELA 1: PESSOAS REAIS (Preencheram o Form de Ajuste) */}
+                                    {pendenciasAjuste.length > 0 && (
+                                        <div style={{marginBottom: '30px'}}>
+                                            <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Solicitações Manuais (Equipe Interna)</h4>
+                                            <table className="tech-table">
+                                                <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Justificativa</th><th>Ações</th></tr></thead>
+                                                <tbody>
+                                                {pendenciasAjuste.map(item => (
+                                                    <tr key={item.id}>
+                                                    <td><strong>{item.userName}</strong></td>
+                                                    <td>
+                                                        <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
+                                                            <span>📅 {item.dataAjuste.split('-').reverse().join('/')}</span>
+                                                            <span style={{color: '#a855f7'}}>⏱️ {formatarTipoAjuste(item.tipoMarcacao)} ➜ {item.horarioCorreto}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{maxWidth: '200px', fontSize: '12px'}}>{item.justificativa}</td>
+                                                    <td>
+                                                        <div className="actions-flex">
+                                                        <button className="btn-approve" onClick={() => aprovarAjuste(item)}>✔️ Aprovar</button>
+                                                        <button className="btn-reject" onClick={() => reprovarAjuste(item)}>✖️ Reprovar</button>
+                                                        </div>
+                                                    </td>
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </td>
-                                    <td style={{maxWidth: '200px', fontSize: '12px'}}>{item.justificativa}</td>
-                                    <td>
-                                        <div className="actions-flex">
-                                        <button className="btn-approve" onClick={() => aprovarAjuste(item)}>✔️ Aprovar</button>
-                                        <button className="btn-reject" onClick={() => reprovarAjuste(item)}>✖️ Reprovar</button>
+                                    )}
+
+                                    {/* TABELA 2: MOCKS APROVADOS VIA CHAT */}
+                                    {listaPendencias.filter(item => item.status === 'Respondido').length > 0 && (
+                                        <div>
+                                            <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Correções via Chat (Robôs)</h4>
+                                            <table className="tech-table">
+                                                <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho Sugerido</th><th>Ação</th></tr></thead>
+                                                <tbody>
+                                                    {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
+                                                        const dataVisual = gerarDataInconsistencia(item);
+                                                        
+                                                        // Prepara os pontos propostos pelo Chatbot
+                                                        let pontosVisuais = item.pontos || {};
+                                                        if (item.erro !== 'Atraso Excessivo' && item.erro !== 'Falta Injustificada') {
+                                                            pontosVisuais = {
+                                                                e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
+                                                                si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
+                                                                vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
+                                                                s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
+                                                            };
+                                                        }
+
+                                                        return (
+                                                            <tr key={item.id}>
+                                                                <td>
+                                                                    <div className="user-profile-container">
+                                                                        <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
+                                                                        <div className="user-info-modern">
+                                                                            <strong>{item.nome}</strong>
+                                                                            <small>{item.cargo}</small>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td><div className="date-badge">{dataVisual}</div></td>
+                                                                <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
+                                                                <td>
+                                                                    <div className="timeline-ponto">
+                                                                        <div className="time-pill"><span className="lbl">E</span>{pontosVisuais.e}</div>
+                                                                        <div className="arrow">›</div>
+                                                                        <div className="time-pill"><span className="lbl">SI</span>{pontosVisuais.si}</div>
+                                                                        <div className="arrow">›</div>
+                                                                        <div className="time-pill"><span className="lbl">VI</span>{pontosVisuais.vi}</div>
+                                                                        <div className="arrow">›</div>
+                                                                        <div className="time-pill"><span className="lbl">S</span>{pontosVisuais.s}</div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>{renderAcao(item, pontosVisuais)}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
