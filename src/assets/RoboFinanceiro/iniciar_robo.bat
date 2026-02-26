@@ -27,7 +27,7 @@ if not exist "python_portatil\" (
     python_portatil\python.exe -m pip install -q requests playwright PyMuPDF
 
     echo [5/5] A baixar o navegador invisivel do Playwright...
-    python_portatil\python.exe -m playwright install chromium
+    python_portatil\python.exe -m playwright install chromium msedge
     
     echo.
     echo Instalacao do ambiente concluida com sucesso!
