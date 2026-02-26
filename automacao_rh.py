@@ -94,7 +94,7 @@ def executar_robo_rh(uid_usuario, dados_pedido, email_digitado, senha_digitada, 
             # PASSO 1: LOGIN NO SISTEMA
             # ==========================================
             print("🔐 A aceder ao Portal ERP...")
-            page_erp.goto("http://localhost:5173/") 
+            page_erp.goto("https://demo-automacao.vercel.app/") 
             
             page_erp.wait_for_selector("input[type='email']", timeout=15000)
             page_erp.locator("input[type='email']").click()
@@ -111,7 +111,7 @@ def executar_robo_rh(uid_usuario, dados_pedido, email_digitado, senha_digitada, 
             # PASSO 2: AUDITORIA NA FOLHA DE PONTO
             # ==========================================
             print("⏰ A navegar direto para o módulo de Folha de Ponto...")
-            page_erp.goto("http://localhost:5173/folha-ponto")
+            page_erp.goto("https://demo-automacao.vercel.app/folha-ponto")
             page_erp.wait_for_selector(".toggle-btn:has-text('Gestão RH')", timeout=10000)
             
             contador = 0
@@ -180,12 +180,12 @@ def executar_robo_rh(uid_usuario, dados_pedido, email_digitado, senha_digitada, 
                     time.sleep(1.5)
 
                     print("↩️ A regressar ao painel de Auditoria...")
-                    page_erp.goto("http://localhost:5173/folha-ponto")
+                    page_erp.goto("https://demo-automacao.vercel.app/folha-ponto")
                     time.sleep(2)
 
                 except Exception as loop_err:
                     print(f"⚠️ Erro ao processar colaborador: {loop_err}")
-                    page_erp.goto("http://localhost:5173/folha-ponto")
+                    page_erp.goto("https://demo-automacao.vercel.app/folha-ponto")
                     time.sleep(2)
                     continue
 
