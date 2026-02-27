@@ -216,7 +216,7 @@ export default function ChatInterno() {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
   }, [mensagens, iaDigitando]);
 
-  // --- 6. AUTO-REPLY DO ROBÔ (COM IA GEMINI) ---
+  // --- 6. AUTO-REPLY DO ROBÔ (COM IA GEMINI PROTEGIDA VIA BACKEND) ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
@@ -277,13 +277,9 @@ Regras inquebráveis:
 
                   let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
 
-                  const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
-                  
-                  if (!API_KEY) {
-                      textoFinal = "🤖 [ERRO DE DEBUG]: Minha VITE_GEMINI_API_KEY sumiu!";
-                  } else {
-                      // USANDO A NOVA FUNÇÃO COM FILA/RETRY
-                      const response = await fetchComRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                  try {
+                      // FAZ A CHAMADA PARA A NOSSA PRÓPRIA API (O Backend na Vercel)
+                      const response = await fetchComRetry('/api/chat', {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
@@ -299,11 +295,14 @@ Regras inquebráveis:
                       const data = await response.json();
                       
                       if (!response.ok) {
-                          console.error("Erro retornado pelo Google:", data);
-                          textoFinal = `🤖 [ERRO DE DEBUG - GOOGLE REJEITOU]: ${data.error?.message || 'Erro desconhecido'}`;
+                          console.error("Erro retornado pelo Backend/Google:", data);
+                          textoFinal = `🤖 [ERRO DE COMUNICAÇÃO]: ${data.error?.message || data.error || 'Erro desconhecido'}`;
                       } else if (data.candidates && data.candidates[0].content) {
                           textoFinal = data.candidates[0].content.parts[0].text;
                       }
+                  } catch (erroApi) {
+                      console.error("Erro ao chamar a nossa API:", erroApi);
+                      textoFinal = "🤖 [ERRO INTERNO]: Não foi possível contactar o servidor.";
                   }
 
                   const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
