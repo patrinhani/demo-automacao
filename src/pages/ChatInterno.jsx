@@ -241,7 +241,8 @@ export default function ChatInterno() {
           // AUMENTADO O TEMPO: Simula de 3 a 6 segundos lendo/digitando
           const tempoEspera = Math.floor(Math.random() * (3000) + 3000);
 
-          const timer = setTimeout(async () => {
+          // Dispara o robô no "plano de fundo" sem salvar a variável do timer
+          setTimeout(async () => {
               try {
                   let erroTipo = "Dúvida sobre o ponto";
                   let pontosReais = {}; 
@@ -316,13 +317,12 @@ Regras inquebráveis:
               } catch (e) {
                   console.error("Erro na requisição/salvamento do Robô:", e);
               } finally {
-                  // DESATIVA A TRAVA MESMO SE DER ERRO, PARA NÃO BLOQUEAR O USUÁRIO PRA SEMPRE
+                  // DESATIVA A TRAVA
                   setIaDigitando(false);
               }
 
           }, tempoEspera);
-
-          return () => clearTimeout(timer);
+          
       }
   }, [mensagens, canalAtivo, user, todosUsuarios]);
 
