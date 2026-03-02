@@ -172,7 +172,6 @@ export default function FolhaPonto() {
   const registrarPonto = async (tipo) => {
     if (!user) return;
     
-    // Substituídos os alerts bloqueantes
     if (tipo === 'almoco_ida' && !registros.entrada) { showAlert("Ação Negada", "Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
     if (tipo === 'almoco_volta' && !registros.almoco_ida) { showAlert("Ação Negada", "Você não registrou a SAÍDA para o almoço."); return; }
     if (tipo === 'saida' && !registros.almoco_volta) { showAlert("Ação Negada", "Você precisa registrar o RETORNO do almoço antes da saída final."); return; }
@@ -190,7 +189,8 @@ export default function FolhaPonto() {
           const casoData = casoSnap.val();
           if (casoData.status !== 'Concluido') {
              const novosPontos = { ...casoData.pontos, [tipo === 'entrada' ? 'e' : tipo === 'almoco_ida' ? 'si' : tipo === 'almoco_volta' ? 'vi' : 's']: horarioFormatado };
-             await update(casoRhRef, { pontos: novosPontos, status: 'Respondido' });
+             
+             await update(casoRhRef, { pontos: novosPontos, status: 'Concluido' });
           }
       }
       
@@ -221,7 +221,6 @@ export default function FolhaPonto() {
 
   // Aprovar ajuste de usuário REAL
   const aprovarAjuste = async (ajuste) => {
-    // Adicionado Confirmação antes de executar
     const confirmou = await showConfirm("Aprovar Ajuste", `Confirma a alteração do horário de ${ajuste.userName} para as ${ajuste.horarioCorreto}?`);
     if (!confirmou) return;
 
@@ -245,7 +244,6 @@ export default function FolhaPonto() {
     const confirmou = await showConfirm("Reprovar Ajuste", `Tem certeza que deseja reprovar o pedido de ${ajuste.userName}?`);
     if (!confirmou) return;
 
-    // Mantemos o prompt nativo aqui pois precisamos que o usuário digite o texto
     const motivo = prompt('Por favor, digite o motivo da reprovação:');
     
     if (motivo && motivo.trim() !== '') {
@@ -261,9 +259,9 @@ export default function FolhaPonto() {
     }
   };
 
-  // Aprovar ponto de MOCK (Auditoria Robô)
+  // Aprovar ponto de MOCK (Auditoria Chat)
   const aprovarPontoMock = async (item, pontosPropostos) => {
-      const confirmou = await showConfirm("Concluir Auditoria", `Validar e registrar este espelho de ponto para ${item.nome}?`);
+      const confirmou = await showConfirm("Aprovar Ajuste", `Confirma a regularização do espelho de ponto para ${item.nome}?`);
       if (!confirmou) return;
 
       try {
@@ -271,9 +269,25 @@ export default function FolhaPonto() {
               pontos: pontosPropostos, 
               status: 'Concluido' 
           });
-          showToast('Concluído', '✅ Espelho de ponto regularizado!');
+          // MELHORIA AQUI: Removida a palavra "fictício" e adicionado o Toast bonito
+          showToast('Aprovado', '✅ Ajuste de ponto aprovado com sucesso!');
       } catch (error) {
+          console.error(error);
           showAlert('Erro', 'Falha ao regularizar o ponto do colaborador.');
+      }
+  };
+
+  const reprovarPontoMock = async (id) => {
+      const motivo = prompt('Motivo da reprovação do ajuste sugerido pelo chat:');
+      if (motivo && motivo.trim() !== '') {
+          try {
+              await update(ref(db, `rh/erros_ponto/${id}`), { status: 'Notificado' });
+              showToast('Reprovado', '❌ Ajuste reprovado! Retornou para a Auditoria.');
+          } catch (error) {
+              showAlert('Erro', 'Erro ao reprovar o ajuste.');
+          }
+      } else {
+          showAlert('Aviso', 'É necessário preencher um motivo para reprovar.');
       }
   };
 
@@ -518,96 +532,104 @@ export default function FolhaPonto() {
                         </div>
                     )}
 
-                    {/* Sub-aba: Aprovações de Ajuste */}
+                    {/* Sub-aba: Aprovações de Ajuste (UNIFICADO) */}
                     {subAbaGestao === 'aprovacoes' && (
                         <div className="tabela-rh-wrapper">
                             {(pendenciasAjuste.length === 0 && listaPendencias.filter(item => item.status === 'Respondido').length === 0) ? (
                                 <p style={{color: '#94a3b8', padding: '20px'}}>Tudo certo! Nenhuma pendência de ajuste.</p>
                             ) : (
-                                <>
-                                    {/* TABELA 1: PESSOAS REAIS */}
-                                    {pendenciasAjuste.length > 0 && (
-                                        <div style={{marginBottom: '30px'}}>
-                                            <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Solicitações Manuais (Equipe Interna)</h4>
-                                            <table className="tech-table">
-                                                <thead><tr><th>Colaborador</th><th>Ocorrência</th><th>Justificativa</th><th>Ações</th></tr></thead>
-                                                <tbody>
-                                                {pendenciasAjuste.map(item => (
-                                                    <tr key={item.id}>
-                                                    <td><strong>{item.userName}</strong></td>
+                                <div>
+                                    <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Solicitações de Ajustes</h4>
+                                    <table className="tech-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Colaborador</th>
+                                                <th>Data</th>
+                                                <th>Detalhes da Correção</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* LINHAS: PESSOAS REAIS (Via Formulário) */}
+                                            {pendenciasAjuste.map(item => (
+                                                <tr key={item.id}>
                                                     <td>
-                                                        <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
-                                                            <span>📅 {item.dataAjuste.split('-').reverse().join('/')}</span>
-                                                            <span style={{color: '#a855f7'}}>⏱️ {formatarTipoAjuste(item.tipoMarcacao)} ➜ {item.horarioCorreto}</span>
+                                                        <div className="user-profile-container">
+                                                            <div className="avatar-glow">{item.userName && item.userName[0] ? item.userName[0].toUpperCase() : '?'}</div>
+                                                            <div className="user-info-modern">
+                                                                <strong>{item.userName}</strong>
+                                                                <small>Colaborador</small>
+                                                            </div>
                                                         </div>
                                                     </td>
-                                                    <td style={{maxWidth: '200px', fontSize: '12px'}}>{item.justificativa}</td>
+                                                    <td><div className="date-badge">{item.dataAjuste.split('-').reverse().join('/')}</div></td>
+                                                    <td>
+                                                        <div style={{display:'flex', flexDirection:'column', gap:'4px', textAlign:'left'}}>
+                                                            <span style={{color: '#a855f7', fontWeight:'bold', fontSize:'12px'}}>⏱️ {formatarTipoAjuste(item.tipoMarcacao)} ➜ {item.horarioCorreto}</span>
+                                                            <span style={{fontSize:'11px', color:'#94a3b8'}}>📝 {item.justificativa}</span>
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         <div className="actions-flex">
-                                                        <button className="btn-approve" onClick={() => aprovarAjuste(item)}>✔️ Aprovar</button>
-                                                        <button className="btn-reject" onClick={() => reprovarAjuste(item)}>✖️ Reprovar</button>
+                                                            <button className="btn-approve" onClick={() => aprovarAjuste(item)}>✔️ Aprovar</button>
+                                                            <button className="btn-reject" onClick={() => reprovarAjuste(item)}>✖️ Reprovar</button>
                                                         </div>
                                                     </td>
+                                                </tr>
+                                            ))}
+
+                                            {/* LINHAS: MOCKS (Via Chatbot) */}
+                                            {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
+                                                const dataVisual = gerarDataInconsistencia(item);
+                                                
+                                                let pontosVisuais = item.pontos || {};
+                                                if (item.erro !== 'Atraso Excessivo' && item.erro !== 'Falta Injustificada') {
+                                                    pontosVisuais = {
+                                                        e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
+                                                        si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
+                                                        vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
+                                                        s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
+                                                    };
+                                                }
+
+                                                return (
+                                                    <tr key={item.id}>
+                                                        <td>
+                                                            <div className="user-profile-container">
+                                                                <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
+                                                                <div className="user-info-modern">
+                                                                    <strong>{item.nome}</strong>
+                                                                    <small>{item.cargo}</small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td><div className="date-badge">{dataVisual}</div></td>
+                                                        <td>
+                                                            <div style={{display:'flex', flexDirection:'column', gap:'6px', alignItems:'center'}}>
+                                                                <span style={{fontSize:'11px', color:'#94a3b8', textTransform:'uppercase'}}>⚠️ {formatarNomeErro(item.erro)}</span>
+                                                                <div className="timeline-ponto">
+                                                                    <div className="time-pill"><span className="lbl">E</span>{pontosVisuais.e}</div>
+                                                                    <div className="arrow">›</div>
+                                                                    <div className="time-pill"><span className="lbl">SI</span>{pontosVisuais.si}</div>
+                                                                    <div className="arrow">›</div>
+                                                                    <div className="time-pill"><span className="lbl">VI</span>{pontosVisuais.vi}</div>
+                                                                    <div className="arrow">›</div>
+                                                                    <div className="time-pill"><span className="lbl">S</span>{pontosVisuais.s}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className="actions-flex">
+                                                                <button className="btn-approve" onClick={() => aprovarPontoMock(item, pontosVisuais)}>✔️ Aprovar</button>
+                                                                <button className="btn-reject" onClick={() => reprovarPontoMock(item.id)}>✖️ Reprovar</button>
+                                                            </div>
+                                                        </td>
                                                     </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-
-                                    {/* TABELA 2: MOCKS APROVADOS VIA CHAT */}
-                                    {listaPendencias.filter(item => item.status === 'Respondido').length > 0 && (
-                                        <div>
-                                            <h4 style={{textAlign: 'left', margin: '0 0 15px 10px', color: '#e2e8f0'}}>Correções via Chat (Robôs)</h4>
-                                            <table className="tech-table">
-                                                <thead><tr><th>Colaborador</th><th>Data</th><th>Ocorrência</th><th>Espelho Sugerido</th><th>Ação</th></tr></thead>
-                                                <tbody>
-                                                    {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
-                                                        const dataVisual = gerarDataInconsistencia(item);
-                                                        
-                                                        let pontosVisuais = item.pontos || {};
-                                                        if (item.erro !== 'Atraso Excessivo' && item.erro !== 'Falta Injustificada') {
-                                                            pontosVisuais = {
-                                                                e: (!item.pontos.e || item.pontos.e === '---') ? '08:00' : item.pontos.e,
-                                                                si: (!item.pontos.si || item.pontos.si === '---') ? '12:00' : item.pontos.si,
-                                                                vi: (!item.pontos.vi || item.pontos.vi === '---') ? '13:00' : item.pontos.vi,
-                                                                s: (!item.pontos.s || item.pontos.s === '---') ? '17:00' : item.pontos.s,
-                                                            };
-                                                        }
-
-                                                        return (
-                                                            <tr key={item.id}>
-                                                                <td>
-                                                                    <div className="user-profile-container">
-                                                                        <div className="avatar-glow">{item.nome && item.nome[0] ? item.nome[0] : '?'}</div>
-                                                                        <div className="user-info-modern">
-                                                                            <strong>{item.nome}</strong>
-                                                                            <small>{item.cargo}</small>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td><div className="date-badge">{dataVisual}</div></td>
-                                                                <td><div className="erro-badge">{formatarNomeErro(item.erro)}</div></td>
-                                                                <td>
-                                                                    <div className="timeline-ponto">
-                                                                        <div className="time-pill"><span className="lbl">E</span>{pontosVisuais.e}</div>
-                                                                        <div className="arrow">›</div>
-                                                                        <div className="time-pill"><span className="lbl">SI</span>{pontosVisuais.si}</div>
-                                                                        <div className="arrow">›</div>
-                                                                        <div className="time-pill"><span className="lbl">VI</span>{pontosVisuais.vi}</div>
-                                                                        <div className="arrow">›</div>
-                                                                        <div className="time-pill"><span className="lbl">S</span>{pontosVisuais.s}</div>
-                                                                    </div>
-                                                                </td>
-                                                                <td>{renderAcao(item, pontosVisuais)}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                </>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     )}

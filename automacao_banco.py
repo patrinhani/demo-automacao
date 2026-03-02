@@ -27,7 +27,7 @@ def executar_robo(uid_usuario, dados_pedido, email_digitado, senha_digitada, id_
 
         try:
             print("🔐 A aceder ao Portal ERP...")
-            page_erp.goto("http://localhost:5173/") 
+            page_erp.goto("http://localhost:3000/") 
             page_erp.wait_for_selector("input[type='email']", timeout=15000)
             
             page_erp.type("input[type='email']", email_digitado, delay=50)

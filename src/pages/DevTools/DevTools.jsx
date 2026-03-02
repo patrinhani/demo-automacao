@@ -6,36 +6,36 @@ import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
 import './DevTools.css';
 
-// --- MASSA DE DADOS PARA RH (28 CASOS) ---
+// --- MASSA DE DADOS PARA RH (28 CASOS REAIS) ---
 const MOCKS_RH = [
   { nome: "Lucas Mendes", cargo: "Dev. Júnior", setor: "TI", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
   { nome: "Mariana Costa", cargo: "Analista Fin. Jr", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
   { nome: "Roberto Almeida", cargo: "Suporte N2", setor: "TI", data: "28/01", erro: "Atraso Excessivo", pontos: { e: '10:45', si: '13:00', vi: '14:00', s: '19:00' } },
-  { nome: "Fernanda Lima", cargo: "Assistente RH", setor: "RH", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { nome: "Carlos Eduardo", cargo: "DevOps", setor: "TI", data: "28/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '22:15' } },
-  { nome: "Juliana Paes", cargo: "Controller", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
+  { nome: "Fernanda Oliveira", cargo: "Assistente RH", setor: "RH", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
+  { nome: "Carlos Eduardo Silva", cargo: "DevOps", setor: "TI", data: "28/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '22:15' } },
+  { nome: "Juliana Ribeiro", cargo: "Controller", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
   { nome: "Bruno Souza", cargo: "Segurança Info", setor: "TI", data: "27/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { nome: "Patrícia A.", cargo: "Gerente Cultura", setor: "RH", data: "27/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:02', vi: '12:00', s: '18:00' } },
-  { nome: "Ricardo O.", cargo: "Analista Fin. Sr", setor: "Financeiro", data: "27/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:35', s: '17:00' } },
+  { nome: "Patrícia Andrade", cargo: "Gerente Cultura", setor: "RH", data: "27/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:02', vi: '12:00', s: '18:00' } },
+  { nome: "Ricardo Martins", cargo: "Analista Fin. Sr", setor: "Financeiro", data: "27/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:35', s: '17:00' } },
   { nome: "Amanda Silva", cargo: "P.O.", setor: "TI", data: "26/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Felipe Neto", cargo: "Analista RH", setor: "RH", data: "26/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { nome: "Larissa M.", cargo: "Aux. Financeiro", setor: "Financeiro", data: "26/01", erro: "Atraso Excessivo", pontos: { e: '11:00', si: '13:00', vi: '14:00', s: '18:00' } },
-  { nome: "Whindersson", cargo: "Dev Fullstack", setor: "TI", data: "25/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Tatá Werneck", cargo: "BP RH", setor: "RH", data: "25/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Fausto Silva", cargo: "CFO", setor: "Financeiro", data: "25/01", erro: "Marcação Ímpar", pontos: { e: '09:00', si: '13:00', vi: '15:00', s: '---' } },
-  { nome: "João Kleber", cargo: "Estagiário TI", setor: "TI", data: "24/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { nome: "Ana Maria", cargo: "Analista Contábil", setor: "Financeiro", data: "24/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Luciano Huck", cargo: "Gerente Vendas", setor: "Comercial", data: "24/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Xuxa Meneghel", cargo: "Analista Mkt", setor: "Marketing", data: "23/01", erro: "Atraso Excessivo", pontos: { e: '10:30', si: '13:00', vi: '14:00', s: '18:00' } },
-  { nome: "Gugu Liberato", cargo: "Coord. Projetos", setor: "TI", data: "23/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { nome: "Ivete Sangalo", cargo: "Analista RH", setor: "RH", data: "23/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '21:00' } },
-  { nome: "Pelé Arantes", cargo: "Embaixador", setor: "Marketing", data: "22/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Silvio Santos", cargo: "Dono", setor: "Diretoria", data: "22/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Hebe Camargo", cargo: "Recepção", setor: "Adm", data: "22/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:15', s: '17:00' } },
-  { nome: "Ratinho", cargo: "Segurança", setor: "Infra", data: "21/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:01', vi: '---', s: '---' } },
-  { nome: "Eliana", cargo: "Secretária", setor: "Adm", data: "21/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { nome: "Celso Portiolli", cargo: "Trainee", setor: "TI", data: "21/01", erro: "Atraso Excessivo", pontos: { e: '09:45', si: '13:00', vi: '14:00', s: '17:00' } },
-  { nome: "Maisa Silva", cargo: "Jovem Aprendiz", setor: "RH", data: "20/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '18:30' } }
+  { nome: "Felipe Santos", cargo: "Analista RH", setor: "RH", data: "26/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
+  { nome: "Larissa Fernandes", cargo: "Aux. Financeiro", setor: "Financeiro", data: "26/01", erro: "Atraso Excessivo", pontos: { e: '11:00', si: '13:00', vi: '14:00', s: '18:00' } },
+  { nome: "Thiago Pereira", cargo: "Dev Fullstack", setor: "TI", data: "25/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
+  { nome: "Talita Barbosa", cargo: "BP RH", setor: "RH", data: "25/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
+  { nome: "Fernando Costa", cargo: "CFO", setor: "Financeiro", data: "25/01", erro: "Marcação Ímpar", pontos: { e: '09:00', si: '13:00', vi: '15:00', s: '---' } },
+  { nome: "João Pedro Alves", cargo: "Estagiário TI", setor: "TI", data: "24/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
+  { nome: "Ana Clara Pereira", cargo: "Analista Contábil", setor: "Financeiro", data: "24/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
+  { nome: "Luciano Moraes", cargo: "Gerente Vendas", setor: "Comercial", data: "24/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
+  { nome: "Beatriz Rocha", cargo: "Analista Mkt", setor: "Marketing", data: "23/01", erro: "Atraso Excessivo", pontos: { e: '10:30', si: '13:00', vi: '14:00', s: '18:00' } },
+  { nome: "Augusto Ferreira", cargo: "Coord. Projetos", setor: "TI", data: "23/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
+  { nome: "Isabela Carvalho", cargo: "Analista RH", setor: "RH", data: "23/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '21:00' } },
+  { nome: "Paulo Roberto Dias", cargo: "Especialista", setor: "Marketing", data: "22/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
+  { nome: "Sérgio Batista", cargo: "Diretor Comercial", setor: "Diretoria", data: "22/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
+  { nome: "Helena Castro", cargo: "Recepção", setor: "Adm", data: "22/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:15', s: '17:00' } },
+  { nome: "Rodrigo Nogueira", cargo: "Segurança", setor: "Infra", data: "21/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:01', vi: '---', s: '---' } },
+  { nome: "Eliana Farias", cargo: "Secretária Executiva", setor: "Adm", data: "21/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
+  { nome: "Celso Machado", cargo: "Trainee", setor: "TI", data: "21/01", erro: "Atraso Excessivo", pontos: { e: '09:45', si: '13:00', vi: '14:00', s: '17:00' } },
+  { nome: "Camila Gomes", cargo: "Jovem Aprendiz", setor: "RH", data: "20/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '18:30' } }
 ];
 
 export default function DevTools() {
