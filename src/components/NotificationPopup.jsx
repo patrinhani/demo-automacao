@@ -13,21 +13,20 @@ export default function NotificationPopup() {
   const [user, setUser] = useState(null);
   
   const navigate = useNavigate();
-  const location = useLocation(); // Pega a rota atual
+  const location = useLocation(); 
   
   const audioRef = useRef(new Audio(`${CAMINHO_SOM}?v=${Date.now()}`));
   const timestampsRef = useRef({}); 
-  const pathnameRef = useRef(location.pathname); // Guarda a rota sem re-renderizar o useEffect do Firebase
+  const pathnameRef = useRef(location.pathname); 
 
   // Mantém a ref da rota sempre atualizada
   useEffect(() => {
     pathnameRef.current = location.pathname;
   }, [location.pathname]);
 
-  // --- 1. CONFIGURAÇÃO E DESBLOQUEIO ---
+  // --- 1. CONFIGURAÇÃO E DESBLOQUEIO DE ÁUDIO ---
   useEffect(() => {
     audioRef.current.load();
-    // 👇 VOLUME REDUZIDO PARA 30% PARA FICAR MAIS SUAVE E HARMONIOSO
     audioRef.current.volume = 0.1; 
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -42,10 +41,7 @@ export default function NotificationPopup() {
           
           document.removeEventListener('click', unlockAudio);
           document.removeEventListener('keydown', unlockAudio);
-          console.log("🔊 Áudio desbloqueado com sucesso!");
-        }).catch((e) => {
-          // Mantém silencioso se falhar no início
-        });
+        }).catch(() => {});
       }
     };
 
@@ -61,29 +57,37 @@ export default function NotificationPopup() {
 
   const formatarNome = (nomeSujo) => {
     if (!nomeSujo) return 'Usuário';
-    return nomeSujo
-      .replace(/\./g, ' ') 
-      .replace(/_/g, ' ')  
-      .replace(/\b\w/g, l => l.toUpperCase()); 
+    return nomeSujo.replace(/\./g, ' ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); 
   };
 
-  const dispararNotificacao = (titulo, texto) => {
-    // 👇 BLOQUEIO DE TELA: Não toca som nem exibe popup se estiver no Login
-    if (pathnameRef.current === '/' || pathnameRef.current === '/login') {
-      return; 
-    }
+  // Função central para disparar as notificações na tela
+  const dispararNotificacao = (titulo, texto, tipo = 'chat') => {
+    // Não toca som nem exibe popup se estiver na tela de Login
+    if (pathnameRef.current === '/' || pathnameRef.current === '/login') return; 
 
     if(audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.warn("Som não pôde ser tocado:", e));
     }
 
-    setNotification({ title: titulo, msg: texto });
+    setNotification({ title: titulo, msg: texto, type: tipo });
     
+    // Auto-fechar após 5 segundos
     setTimeout(() => setNotification(null), 5000);
   };
 
-  // --- 2. MONITORAMENTO GLOBAL ---
+  // --- 2. OUVINTE PARA NOTIFICAÇÕES MANUAIS (AlertContext) ---
+  useEffect(() => {
+    const handleManualToast = (e) => {
+      // Recebe o evento disparado pelo AlertContext
+      dispararNotificacao(e.detail.title, e.detail.message, 'system');
+    };
+    
+    window.addEventListener('manual-toast', handleManualToast);
+    return () => window.removeEventListener('manual-toast', handleManualToast);
+  }, []);
+
+  // --- 3. MONITORAMENTO GLOBAL DE CHATS (Firebase) ---
   useEffect(() => {
     if (!user) return;
 
@@ -94,7 +98,7 @@ export default function NotificationPopup() {
       const data = snapshot.val();
       if (!data) return;
 
-      // --- Verifica GERAL ---
+      // Verifica Mensagens no GERAL
       if (data.geral) {
         const msgs = Object.values(data.geral);
         const ultima = msgs[msgs.length - 1];
@@ -104,12 +108,12 @@ export default function NotificationPopup() {
 
           if (ultima.uid !== user.uid && !primeiraCarga) {
              const nome = formatarNome(ultima.usuario);
-             dispararNotificacao(`📢 Geral: ${nome}`, ultima.texto);
+             dispararNotificacao(`📢 Geral: ${nome}`, ultima.texto, 'chat');
           }
         }
       }
 
-      // --- Verifica DIRETOS ---
+      // Verifica Mensagens nos DIRETOS
       if (data.direto) {
         Object.keys(data.direto).forEach((chatId) => {
           if (chatId.includes(user.uid)) {
@@ -122,7 +126,7 @@ export default function NotificationPopup() {
 
               if (ultima.uid !== user.uid && !primeiraCarga) {
                  const nome = formatarNome(ultima.usuario);
-                 dispararNotificacao(`👤 ${nome}`, ultima.texto);
+                 dispararNotificacao(`👤 ${nome}`, ultima.texto, 'chat');
               }
             }
           }
@@ -135,16 +139,29 @@ export default function NotificationPopup() {
     return () => unsubscribe();
   }, [user]);
 
+  // Ação ao clicar no popup
   const handlePopupClick = () => {
     setNotification(null);
-    navigate('/chat');
+    // Só redireciona para o chat se for uma mensagem. Se for do sistema, só fecha.
+    if (notification?.type === 'chat') {
+      navigate('/chat');
+    }
   };
 
   if (!notification) return null;
 
+  // Lógica para definir a cor e ícone consoante o tipo de aviso
+  let icon = '💬';
+  let isError = false;
+  
+  if (notification.type === 'system') {
+    isError = notification.title.toLowerCase().includes('erro') || notification.title.includes('❌');
+    icon = isError ? '❌' : '🔔';
+  }
+
   return (
-    <div className="notification-toast" onClick={handlePopupClick}>
-      <div className="notif-icon">💬</div>
+    <div className={`notification-toast ${notification.type} ${isError ? 'error' : ''}`} onClick={handlePopupClick}>
+      <div className="notif-icon">{icon}</div>
       <div className="notif-content">
         <strong>{notification.title}</strong>
         <p>{notification.msg}</p>

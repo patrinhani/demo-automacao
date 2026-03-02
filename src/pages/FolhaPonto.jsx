@@ -4,11 +4,15 @@ import { db, auth } from '../firebase';
 import { ref, onValue, update, get, push } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- IMPORTAÇÃO DO NOSSO CONTEXTO DE ALERTA
 import './FolhaPonto.css';
 
 export default function FolhaPonto() {
   const navigate = useNavigate();
   
+  // <-- INICIALIZAÇÃO DOS ALERTAS CUSTOMIZADOS
+  const { showAlert, showConfirm, showToast } = useAlert(); 
+
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
   const [registros, setRegistros] = useState({}); 
@@ -75,7 +79,6 @@ export default function FolhaPonto() {
               const cargo = (userData.cargo || '').toLowerCase();
               const role = userData.role || '';
               
-              // Verifica se é RH ou CEO para liberar a aba de gestão
               if(setor.includes('recursos humanos') || setor.includes('rh') || cargo.includes('c.e.o') || cargo.includes('ceo') || role === 'admin') {
                   setIsRH(true);
               }
@@ -146,7 +149,6 @@ export default function FolhaPonto() {
   const executarAutomacaoRH = async () => {
     if (!user) return;
     const pendentes = listaPendencias.filter(p => p.status !== 'Respondido');
-    console.log("🚀 Botão acionado! Enviando sinal para o robô de RH...");
     
     try {
         await update(ref(db, `fila_automacao_rh/${user.uid}`), { 
@@ -157,22 +159,23 @@ export default function FolhaPonto() {
         });
         
         if (pendentes.length === 0) {
-            alert("⚠️ Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
+            showAlert("Aviso", "Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
         } else {
-            alert(`🤖 Robô de RH acionado com sucesso! Processando ${pendentes.length} itens.`);
+            showToast("Robô Acionado", `🤖 Processando ${pendentes.length} pendências...`);
         }
     } catch (error) {
-        console.error("Erro ao acionar automação:", error);
-        alert("Erro ao conectar com o Robô.");
+        showAlert("Erro de Conexão", "Não foi possível enviar o comando ao Robô.");
     }
   };
 
   // Funções Ponto Normal
   const registrarPonto = async (tipo) => {
     if (!user) return;
-    if (tipo === 'almoco_ida' && !registros.entrada) { alert("🚫 Ação Negada: Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
-    if (tipo === 'almoco_volta' && !registros.almoco_ida) { alert("🚫 Ação Negada: Você não registrou a SAÍDA para o almoço."); return; }
-    if (tipo === 'saida' && !registros.almoco_volta) { alert("🚫 Ação Negada: Você precisa registrar o RETORNO do almoço antes da saída final."); return; }
+    
+    // Substituídos os alerts bloqueantes
+    if (tipo === 'almoco_ida' && !registros.entrada) { showAlert("Ação Negada", "Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
+    if (tipo === 'almoco_volta' && !registros.almoco_ida) { showAlert("Ação Negada", "Você não registrou a SAÍDA para o almoço."); return; }
+    if (tipo === 'saida' && !registros.almoco_volta) { showAlert("Ação Negada", "Você precisa registrar o RETORNO do almoço antes da saída final."); return; }
 
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
@@ -190,8 +193,12 @@ export default function FolhaPonto() {
              await update(casoRhRef, { pontos: novosPontos, status: 'Respondido' });
           }
       }
-      alert(`✅ Ponto registrado: ${horarioFormatado}`);
-    } catch (error) { alert("Erro ao registrar ponto."); }
+      
+      showToast("Ponto Registrado", `✅ Ponto registrado às ${horarioFormatado}`);
+      
+    } catch (error) { 
+        showAlert("Erro", "Falha ao registrar ponto. Tente novamente."); 
+    }
   };
 
   // Funções Ajuste de Ponto (Usuários Reais)
@@ -203,13 +210,21 @@ export default function FolhaPonto() {
         userId: user.uid, userName, dataAjuste, tipoMarcacao, horarioCorreto, justificativa, status: 'Pendente', timestamp: Date.now()
       };
       await push(ref(db, 'ajustes_ponto'), novoAjuste);
-      alert('✅ Solicitação de ajuste enviada para o Gestor!');
+      
+      showToast("Enviado", "✅ Solicitação enviada para o Gestor!");
+      
       setDataAjuste(''); setHorarioCorreto(''); setJustificativa('');
-    } catch (error) { alert("Erro ao solicitar ajuste."); }
+    } catch (error) { 
+        showAlert("Erro", "Falha ao enviar a solicitação."); 
+    }
   };
 
   // Aprovar ajuste de usuário REAL
   const aprovarAjuste = async (ajuste) => {
+    // Adicionado Confirmação antes de executar
+    const confirmou = await showConfirm("Aprovar Ajuste", `Confirma a alteração do horário de ${ajuste.userName} para as ${ajuste.horarioCorreto}?`);
+    if (!confirmou) return;
+
     try {
       await update(ref(db, `ponto/${ajuste.userId}/${ajuste.dataAjuste}`), { [ajuste.tipoMarcacao]: ajuste.horarioCorreto });
       await update(ref(db, `ajustes_ponto/${ajuste.id}`), { status: 'Aprovado' });
@@ -220,37 +235,45 @@ export default function FolhaPonto() {
           await update(erroRef, { status: 'Concluido' });
       }
 
-      alert('✅ Ajuste aprovado e banco de horas corrigido automaticamente!');
-    } catch (error) { alert('Erro ao aprovar o ajuste.'); }
+      showToast('Aprovado', '✅ Banco de horas corrigido automaticamente!');
+    } catch (error) { 
+        showAlert('Erro', 'Ocorreu um problema ao aprovar.'); 
+    }
   };
 
   const reprovarAjuste = async (ajuste) => {
-    const motivo = prompt('Motivo da reprovação:');
+    const confirmou = await showConfirm("Reprovar Ajuste", `Tem certeza que deseja reprovar o pedido de ${ajuste.userName}?`);
+    if (!confirmou) return;
+
+    // Mantemos o prompt nativo aqui pois precisamos que o usuário digite o texto
+    const motivo = prompt('Por favor, digite o motivo da reprovação:');
+    
     if (motivo && motivo.trim() !== '') {
       try {
         await update(ref(db, `ajustes_ponto/${ajuste.id}`), { 
             status: 'Reprovado', 
             motivoReprovacao: motivo 
         });
-        alert('❌ Ajuste reprovado com sucesso!');
+        showToast('Reprovado', '❌ Ajuste rejeitado e colaborador notificado.');
       } catch (error) {
-        console.error(error);
-        alert('Erro ao reprovar o ajuste.');
+        showAlert('Erro', 'Não foi possível reprovar o ajuste.');
       }
     }
   };
 
-  // Aprovar ponto de MOCK (Preserva os que estão certos, altera os que faltam)
+  // Aprovar ponto de MOCK (Auditoria Robô)
   const aprovarPontoMock = async (item, pontosPropostos) => {
+      const confirmou = await showConfirm("Concluir Auditoria", `Validar e registrar este espelho de ponto para ${item.nome}?`);
+      if (!confirmou) return;
+
       try {
           await update(ref(db, `rh/erros_ponto/${item.id}`), { 
               pontos: pontosPropostos, 
               status: 'Concluido' 
           });
-          alert('✅ Ajuste do colaborador fictício aprovado com sucesso!');
+          showToast('Concluído', '✅ Espelho de ponto regularizado!');
       } catch (error) {
-          console.error(error);
-          alert('Erro ao aprovar o ajuste do colaborador.');
+          showAlert('Erro', 'Falha ao regularizar o ponto do colaborador.');
       }
   };
 
@@ -418,7 +441,6 @@ export default function FolhaPonto() {
             {abaAtiva === 'gestao_rh' && isRH && (
                 <div className="gestao-rh-container">
                     
-                    {/* --- PAINEL DE AUTOMAÇÃO RPA (SÓ APARECE SE MODO APRESENTAÇÃO = TRUE) --- */}
                     {modoApresentacaoAtivo && (
                          <div className="banner-automacao-rh">
                            <div className="banner-automacao-rh-noise"></div>
@@ -437,7 +459,6 @@ export default function FolhaPonto() {
                            </button>
                          </div>
                     )}
-                    {/* --- FIM DO PAINEL DE AUTOMAÇÃO --- */}
 
                     <div className="ajuste-tabs">
                         <button className={`tab-btn ${subAbaGestao === 'auditoria' ? 'active' : ''}`} onClick={() => setSubAbaGestao('auditoria')}>

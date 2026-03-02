@@ -1,0 +1,41 @@
+.custom-alert-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(15, 23, 42, 0.85); /* Fundo escuro */
+  backdrop-filter: blur(8px);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 999999; /* Acima de tudo no sistema */
+}
+
+.custom-alert-box {
+  background: #1e293b;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 16px;
+  padding: 30px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.alert-icon { font-size: 3rem; margin-bottom: 10px; }
+.custom-alert-box h3 { margin: 0 0 10px 0; color: #60a5fa; font-size: 1.3rem; }
+.custom-alert-box p { margin: 0; color: #94a3b8; font-size: 0.95rem; line-height: 1.5; }
+
+.custom-alert-actions { display: flex; gap: 15px; margin-top: 25px; }
+.custom-alert-actions button {
+  flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+
+.btn-alert-confirm { background: #3b82f6; color: white; }
+.btn-alert-confirm:hover { background: #2563eb; transform: translateY(-2px); }
+
+.btn-alert-cancel { background: transparent; border: 1px solid #475569; color: #cbd5e1; }
+.btn-alert-cancel:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+.fade-in { animation: fadeIn 0.2s ease; }
+.pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }

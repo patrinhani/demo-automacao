@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // --- CONTEXTO GLOBAL (Autenticação) ---
 import { UserProvider } from './contexts/UserContext';
+import { AlertProvider } from './contexts/AlertContext';
 
 // --- COMPONENTE GLOBAL DE NOTIFICAÇÃO ---
 import NotificationPopup from './components/NotificationPopup';
@@ -58,7 +59,8 @@ import './App.css';
 function App() {
   return (                               
     <UserProvider>
-      <BrowserRouter>
+      <AlertProvider>
+        <BrowserRouter>
         
         {/* O NotificationPopup fica aqui para funcionar em todas as telas */}
         <NotificationPopup />
@@ -121,7 +123,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
           
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </AlertProvider>
     </UserProvider>
   );
 }

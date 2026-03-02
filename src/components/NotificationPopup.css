@@ -2,23 +2,35 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  background: rgba(15, 23, 42, 0.98); /* Fundo bem escuro */
-  border: 1px solid #3b82f6;
-  border-left: 5px solid #3b82f6; /* Borda lateral azul neon */
+  background: rgba(15, 23, 42, 0.98); 
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 15px 20px;
   border-radius: 8px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6); /* Sombra forte */
-  z-index: 10000; /* Garante que fique acima do menu e sidebar */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
+  z-index: 100000; 
   display: flex;
   align-items: center;
   gap: 15px;
-  animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito elástico */
+  animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
   color: white;
   min-width: 320px;
   max-width: 400px;
   cursor: pointer;
   backdrop-filter: blur(12px);
   overflow: hidden;
+}
+
+/* Tipos de Notificação: Chat (Azul), Sistema (Verde), Erro (Vermelho) */
+.notification-toast.chat {
+  border-left: 5px solid #3b82f6; 
+}
+
+.notification-toast.system {
+  border-left: 5px solid #10b981; 
+}
+
+.notification-toast.system.error {
+  border-left: 5px solid #ef4444; 
 }
 
 .notif-icon {
@@ -33,9 +45,13 @@
 .notif-content strong {
   display: block;
   font-size: 0.95rem;
-  color: #60a5fa; /* Azul claro */
   margin-bottom: 4px;
 }
+
+/* Cores do título baseadas no tipo */
+.notification-toast.chat .notif-content strong { color: #60a5fa; }
+.notification-toast.system .notif-content strong { color: #34d399; }
+.notification-toast.system.error .notif-content strong { color: #f87171; }
 
 .notif-content p {
   margin: 0;
@@ -43,9 +59,28 @@
   color: #e2e8f0;
   line-height: 1.3;
   display: -webkit-box;
-  line-clamp: 2;
+    line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Barra de progresso animada */
+.notif-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  animation: shrinkBar 5s linear forwards;
+}
+
+.notification-toast.chat .notif-bar { background: #3b82f6; }
+.notification-toast.system .notif-bar { background: #10b981; }
+.notification-toast.system.error .notif-bar { background: #ef4444; }
+
+@keyframes shrinkBar {
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 @keyframes slideInRight {
