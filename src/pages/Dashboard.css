@@ -319,3 +319,103 @@
     padding: 1rem;
   }
 }
+
+/* =========================================
+   --- ANIMAÇÕES DE ENTRADA (FADE IN UP) --- 
+   ========================================= */
+
+/* Define a animação: começa transparente e mais para baixo, termina visível e no lugar */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Aplica a animação nos cards de estatística */
+.glass-stat-card {
+  /* ... mantenha o seu código existente e adicione isto: */
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0; /* Começa invisível para a animação assumir */
+}
+
+/* Aplica a animação nos botões de acesso rápido */
+.tech-card {
+  /* ... mantenha o seu código existente e adicione isto: */
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+/* O segredo da cascata: cria um atraso (delay) progressivo usando pseudo-seletores */
+/* Cards de Cima (Stats) */
+.glass-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.glass-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.glass-stat-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* Cards de Baixo (Módulos) - Usamos mais atraso para aparecerem depois */
+.tech-card:nth-child(1) { animation-delay: 0.2s; }
+.tech-card:nth-child(2) { animation-delay: 0.25s; }
+.tech-card:nth-child(3) { animation-delay: 0.3s; }
+.tech-card:nth-child(4) { animation-delay: 0.35s; }
+.tech-card:nth-child(5) { animation-delay: 0.4s; }
+.tech-card:nth-child(6) { animation-delay: 0.45s; }
+.tech-card:nth-child(7) { animation-delay: 0.5s; }
+.tech-card:nth-child(8) { animation-delay: 0.55s; }
+.tech-card:nth-child(9) { animation-delay: 0.6s; }
+.tech-card:nth-child(10) { animation-delay: 0.65s; }
+.tech-card:nth-child(11) { animation-delay: 0.7s; }
+.tech-card:nth-child(12) { animation-delay: 0.75s; }
+
+/* =========================================
+   --- LUZES DE AMBIENTE (PULSAÇÃO FORTE) --- 
+   ========================================= */
+
+@keyframes pulseLight {
+  /* Começa com 50% de visibilidade e tamanho normal */
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  /* No pico da animação, vai a 95% de visibilidade e cresce 25% */
+  50% { opacity: 0.95; transform: scale(1.25); }
+}
+
+.ambient-light {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px); 
+  z-index: 0;
+  pointer-events: none; 
+  /* Reduzi o tempo de 8s para 6s para a pulsação ficar um pouco mais rápida */
+  animation: pulseLight 6s infinite alternate ease-in-out; 
+}
+
+/* Aumentei a força da cor (último número do rgba) de 0.15 para 0.4 */
+.light-1 {
+  top: -10%; left: -10%;
+  width: 40vw; height: 40vw;
+  background: rgba(59, 130, 246, 0.4); /* Azul Neon Forte */
+  animation-delay: 0s;
+}
+
+.light-2 {
+  bottom: -10%; right: -5%;
+  width: 50vw; height: 50vw;
+  background: rgba(139, 92, 246, 0.4); /* Roxo Neon Forte */
+  animation-delay: -3s; 
+}
+
+.light-3 {
+  top: 40%; left: 30%;
+  width: 25vw; height: 25vw; /* Aumentei o tamanho um pouco */
+  background: rgba(14, 165, 233, 0.3); /* Ciano Forte */
+  animation-duration: 10s; 
+}
+
+.light-4 { display: none; } 
+
+.tech-main, .tech-header, .tech-scroll-content {
+  z-index: 1;
+  position: relative;
+}
