@@ -9,9 +9,15 @@ import './Dashboard.css';
 export default function Dashboard() {
   const navigate = useNavigate();
   
-  const { user, isAdmin, uidAtivo } = useUser();
+  // 1. PUXANDO AS VARIÁVEIS DO DEVTOOLS
+  const { user, isAdmin, uidAtivo, simulatedRole, simulatedSetor } = useUser();
 
-  const [userProfile, setUserProfile] = useState({ nome: '...', cargo: '...' });
+  const [userProfile, setUserProfile] = useState({ 
+    nome: '...', 
+    cargo: '...', 
+    setor: '', 
+    role: '' 
+  });
 
   // Contadores
   const [contagemTarefas, setContagemTarefas] = useState(0);
@@ -20,7 +26,49 @@ export default function Dashboard() {
   const [proxFerias, setProxFerias] = useState('---');
   const [contagemReembolsos, setContagemReembolsos] = useState(0);
 
-  // 1. BUSCAR DADOS VISUAIS (NOME/CARGO) - Baseado no uidAtivo
+  // --- LÓGICA DE PERMISSÕES BLINDADA E CONECTADA AO DEVTOOLS ---
+  // Aqui está a mágica: Ele tenta ler o 'simulated' primeiro. Se não tiver, cai pro banco.
+  const setor = (simulatedSetor || userProfile.setor || '').trim().toLowerCase();
+  const role = (simulatedRole || userProfile.role || '').trim().toLowerCase();
+  const cargo = (userProfile.cargo || '').trim().toLowerCase();
+  
+  // MASTERS: Admins, TI ou Devs (Acesso total)
+  const isMaster = isAdmin || role === 'admin' || setor.includes('ti') || setor.includes('tecnologia') || cargo.includes('dev');
+  
+  // GESTORES: Cargos de liderança
+  const isGestor = isMaster || role === 'gerente' || role === 'gestor' || role === 'diretor' || role === 'coordenador';
+  
+  // RH: Permissão baseada no setor
+  const isRH = isMaster || setor === 'rh' || setor === 'recursos humanos' || setor === 'departamento pessoal' || setor === 'dp';
+  
+  // FINANCEIRO: Permissão baseada no setor
+  const isFinanceiro = isMaster || setor === 'financeiro' || setor === 'faturamento' || setor === 'adm' || setor === 'administrativo';
+
+  // Quem vê aprovações gerais
+  const podeVerAprovacoes = isMaster || isGestor || isRH;
+
+  // --- LÓGICA DE PERSONALIZAÇÃO (FAVORITOS) ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [favoritos, setFavoritos] = useState(() => {
+    const salvos = localStorage.getItem(`dashFavs_${uidAtivo}`);
+    return salvos ? JSON.parse(salvos) : ['tarefas', 'ponto', 'holerite'];
+  });
+
+  useEffect(() => {
+    if (uidAtivo) {
+      localStorage.setItem(`dashFavs_${uidAtivo}`, JSON.stringify(favoritos));
+    }
+  }, [favoritos, uidAtivo]);
+
+  const toggleFavorito = (id) => {
+    if (favoritos.includes(id)) {
+      setFavoritos(favoritos.filter(favId => favId !== id)); 
+    } else {
+      setFavoritos([...favoritos, id]); 
+    }
+  };
+
+  // 1. BUSCAR DADOS EXATOS DO FIREBASE
   useEffect(() => {
     if (!uidAtivo) return; 
     const userRef = ref(db, `users/${uidAtivo}`);
@@ -29,7 +77,9 @@ export default function Dashboard() {
       if (data) {
         setUserProfile({
           nome: data.nome || 'Usuário',
-          cargo: data.cargo || 'Cargo não definido'
+          cargo: data.cargo || 'Cargo não definido',
+          setor: data.setor || '',
+          role: data.role || 'colaborador' 
         });
       }
     });
@@ -76,7 +126,7 @@ export default function Dashboard() {
         let c = 0;
         if (snap.exists()) {
             Object.entries(snap.val()).forEach(([uid, viags]) => Object.values(viags).forEach(v => {
-                if (filterFunc(v.status) && (isAdmin || uid === uidAtivo)) c++;
+                if (filterFunc(v.status) && (podeVerAprovacoes || uid === uidAtivo)) c++;
             }));
         }
         setContagemViagens(c);
@@ -86,7 +136,7 @@ export default function Dashboard() {
       let c = 0;
       if (snap.exists()) {
         Object.values(snap.val()).forEach(cat => Object.values(cat).forEach(i => {
-            if (filterFunc(i.status) && (isAdmin || i.userId === uidAtivo)) c++;
+            if (filterFunc(i.status) && (podeVerAprovacoes || i.userId === uidAtivo)) c++;
         }));
       }
       setContagemGeral(c); 
@@ -96,27 +146,78 @@ export default function Dashboard() {
       let c = 0;
       if (snap.exists()) {
           Object.values(snap.val()).forEach(i => {
-              if (i.status === 'em_analise' && (isAdmin || i.userId === uidAtivo)) c++;
+              if (i.status === 'em_analise' && (podeVerAprovacoes || i.userId === uidAtivo)) c++;
           });
       }
       setContagemReembolsos(c);
     });
     
     return () => { unsubViagens(); unsubGerais(); unsubReembolsos(); };
-  }, [uidAtivo, isAdmin]); 
+  }, [uidAtivo, podeVerAprovacoes]); 
 
   const totalSolicitacoes = contagemReembolsos + contagemViagens + contagemGeral;
 
   const stats = [
     { titulo: 'Tarefas Pendentes', valor: contagemTarefas.toString(), icon: '⚡', cor: 'var(--neon-blue)', rota: '/tarefas' },
-    { titulo: isAdmin ? 'Aprovações Pendentes' : 'Minhas Solicitações', valor: totalSolicitacoes.toString(), icon: isAdmin ? '✅' : '📂', cor: 'var(--neon-purple)', rota: isAdmin ? '/aprovacoes-gerais' : '/historico-solicitacoes' },
+    { titulo: podeVerAprovacoes ? 'Aprovações Pendentes' : 'Minhas Solicitações', valor: totalSolicitacoes.toString(), icon: podeVerAprovacoes ? '✅' : '📂', cor: 'var(--neon-purple)', rota: podeVerAprovacoes ? '/aprovacoes-gerais' : '/historico-solicitacoes' },
     { titulo: 'Próx. Férias', valor: proxFerias, icon: '🌴', cor: 'var(--neon-green)', rota: '/ferias' },
   ];
 
-  const acessos = [
-    ...(isAdmin ? [{ titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' },{ titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' },{ titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' }] : []),
-    { titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },{ titulo: 'Minhas Tarefas', desc: 'Organização de tarefas', icon: '⚡', rota: '/tarefas' },{ titulo: 'Reembolsos', desc: 'Solicitar Reembolso', icon: '💸', rota: '/solicitacao' },{ titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' },{ titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },{ titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },{ titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' },{ titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },{ titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },{ titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },{ titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
+  // --- LISTA DE ACESSOS ---
+  const todosAcessos = [
+    ...(isRH ? [
+      { id: 'criar-usuario', titulo: 'Criar Usuário', desc: 'Cadastrar Colaborador', icon: '🔐', rota: '/cadastro-usuario' }
+    ] : []),
+    ...(podeVerAprovacoes ? [
+      { id: 'aprovacoes', titulo: 'Aprovações Gerais', desc: 'Central Unificada', icon: '✅', rota: '/aprovacoes-gerais' }
+    ] : []),
+    ...(isFinanceiro ? [
+      { id: 'conciliacao', titulo: 'Conciliação', desc: 'Baixa Bancária', icon: '🏦', rota: '/conciliacao' },
+      { id: 'gerador-nota', titulo: 'Gerador de Nota', desc: 'Emissão de NF de serviço', icon: '🧾', rota: '/gerar-nota' }
+    ] : []),
+    { id: 'historico', titulo: 'Histórico Geral', desc: 'Ver aprovações', icon: '📜', rota: '/historico-solicitacoes' },
+    { id: 'tarefas', titulo: 'Minhas Tarefas', desc: 'Organização de tarefas', icon: '⚡', rota: '/tarefas' },
+    { id: 'reembolsos', titulo: 'Reembolsos', desc: 'Solicitar Reembolso', icon: '💸', rota: '/solicitacao' },
+    { id: 'ferias', titulo: 'Minhas Férias', desc: 'Agendar descanso', icon: '🌴', rota: '/ferias' },
+    { id: 'ponto', titulo: 'Ponto Eletrônico', desc: 'Registrar entrada/saída', icon: '⏰', rota: '/folha-ponto' },
+    { id: 'holerite', titulo: 'Holerite Online', desc: 'Documentos digitais', icon: '📄', rota: '/holerite' },
+    { id: 'comunicacao', titulo: 'Mural & Avisos', desc: 'Notícias internas', icon: '📢', rota: '/comunicacao' },
+    { id: 'helpdesk', titulo: 'Helpdesk TI', desc: 'Abrir chamado', icon: '🎧', rota: '/helpdesk' },
+    { id: 'reservas', titulo: 'Reserva de Salas', desc: 'Agendar espaço', icon: '📅', rota: '/reservas' },
+    { id: 'viagens', titulo: 'Gestão de Viagens', desc: 'Passagens e hotéis', icon: '✈️', rota: '/viagens' },
   ];
+
+  const acessosRapidos = todosAcessos.filter(item => favoritos.includes(item.id));
+  const outrasFerramentas = todosAcessos.filter(item => !favoritos.includes(item.id));
+
+  const handleCardClick = (item) => {
+    if (isEditing) {
+      toggleFavorito(item.id);
+    } else {
+      navigate(item.rota);
+    }
+  };
+
+  const renderCard = (item, index) => {
+    const isFav = favoritos.includes(item.id);
+    return (
+      <div 
+        key={item.id} 
+        className={`tech-card ${isEditing ? 'edit-mode' : ''} ${isEditing && isFav ? 'is-fav' : ''}`} 
+        onClick={() => handleCardClick(item)}
+        style={{ animationDelay: `${0.2 + (index * 0.05)}s` }}
+      >
+        <div className="tech-icon">{item.icon}</div>
+        <div className="tech-info">
+          <h3>{item.titulo}</h3>
+          <p>{item.desc}</p>
+        </div>
+        <div className="arrow-icon">
+          {isEditing ? (isFav ? '⭐' : '➕') : '→'}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="tech-layout">
@@ -133,7 +234,7 @@ export default function Dashboard() {
           <div className="tech-profile" onClick={() => navigate('/perfil')}>
             <div className="profile-info">
               <span className="name">{userProfile.nome}</span>
-              <span className="role">{userProfile.cargo}</span>
+              <span className="role">{simulatedRole || userProfile.cargo}</span>
             </div>
             <div className="profile-avatar">
               {userProfile.nome && userProfile.nome !== '...' ? userProfile.nome.substring(0,2).toUpperCase() : 'GS'}
@@ -144,7 +245,7 @@ export default function Dashboard() {
         <div className="tech-scroll-content">
           <section className="stats-row">
             {stats.map((stat, i) => (
-              <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor, cursor: 'pointer' }} onClick={() => stat.rota && navigate(stat.rota)}>
+              <div key={i} className="glass-stat-card" style={{ borderTopColor: stat.cor, cursor: 'pointer', animationDelay: `${0.1 + (i * 0.1)}s` }} onClick={() => stat.rota && navigate(stat.rota)}>
                 <div className="stat-icon" style={{ background: stat.cor, boxShadow: `0 0 20px ${stat.cor}` }}>
                     {stat.icon}
                 </div>
@@ -156,21 +257,41 @@ export default function Dashboard() {
             ))}
           </section>
 
-          <section className="modules-section">
-            <h2 className="section-title">Acesso Rápido</h2>
-            <div className="modules-grid-tech">
-              {acessos.map((item, index) => (
-                <div key={index} className="tech-card" onClick={() => navigate(item.rota)}>
-                  <div className="tech-icon">{item.icon}</div>
-                  <div className="tech-info">
-                    <h3>{item.titulo}</h3>
-                    <p>{item.desc}</p>
-                  </div>
-                  <div className="arrow-icon">→</div>
-                </div>
-              ))}
+          <div className="dashboard-split">
+            <div className="split-column">
+              <div className="column-header">
+                <h2 className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, marginBottom: 0 }}>Acesso Rápido</h2>
+                <button 
+                  className={`btn-personalizar ${isEditing ? 'ativo' : ''}`} 
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  {isEditing ? 'Concluir' : '⚙️ Personalizar'}
+                </button>
+              </div>
+              
+              {isEditing && (
+                <p className="edit-hint">Clique nas ferramentas abaixo para adicionar ou remover do seu acesso rápido.</p>
+              )}
+
+              <div className="modules-grid-tech">
+                {acessosRapidos.length > 0 ? (
+                  acessosRapidos.map((item, index) => renderCard(item, index))
+                ) : (
+                  <p className="empty-msg">Nenhuma ferramenta fixada.</p>
+                )}
+              </div>
             </div>
-          </section>
+
+            <div className="split-column">
+              <div className="column-header">
+                <h2 className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, marginBottom: 0, color: '#94a3b8' }}>Outras Ferramentas</h2>
+              </div>
+              
+              <div className="modules-grid-tech">
+                {outrasFerramentas.map((item, index) => renderCard(item, index))}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -419,3 +419,94 @@
   z-index: 1;
   position: relative;
 }
+
+/* =========================================
+   --- LAYOUT DIVIDIDO (NOVO) --- 
+   ========================================= */
+
+.dashboard-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Divide a tela em duas metades iguais */
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  padding-left: 10px;
+}
+
+.btn-personalizar {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-personalizar:hover {
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+.btn-personalizar.ativo {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  border-color: #3b82f6;
+}
+
+.edit-hint {
+  color: #fbbf24;
+  font-size: 0.85rem;
+  margin-top: -10px;
+  margin-bottom: 15px;
+  font-style: italic;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.empty-msg {
+  color: #64748b;
+  font-size: 0.9rem;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Efeitos Visuais no Modo de Edição */
+.tech-card.edit-mode {
+  border-style: dashed;
+}
+
+.tech-card.edit-mode:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.1);
+}
+
+.tech-card.edit-mode.is-fav {
+  border-color: rgba(59, 130, 246, 0.6);
+  border-style: solid;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* --- Ajuste Responsivo para a Tela Dividida --- */
+@media (max-width: 1200px) {
+  .dashboard-split {
+    grid-template-columns: 1fr; /* Empilha as colunas em telas menores */
+    gap: 3rem;
+  }
+}
