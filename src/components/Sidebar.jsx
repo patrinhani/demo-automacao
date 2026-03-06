@@ -101,7 +101,7 @@ export default function Sidebar() {
               {isRH && (
                 <button className={`nav-item ${isActive('/cadastro-usuario')}`} onClick={() => handleNavigation('/cadastro-usuario')}><span className="icon">🔐</span> Criar Usuário</button>
               )}
-              <button className={`nav-item ${isActive('/gestao-reembolsos')}`} onClick={() => handleNavigation('/gestao-reembolsos')}><span className="icon">💰</span> Aprovações</button>
+              <button className={`nav-item ${isActive('/aprovacoes-gerais')}`} onClick={() => handleNavigation('/aprovacoes-gerais')}><span className="icon">💰</span> Aprovações</button>
             </div>
           )}
 
