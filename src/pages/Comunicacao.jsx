@@ -293,7 +293,7 @@ export default function Comunicacao() {
                   {/* Link NOVO: Abre o Modal de Documentações / POP (ADICIONADO) */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); setShowModalDocs(true); }}>
-                      📚 Manuais e Procedimentos (POP)
+                      Manuais e Procedimentos (POP)
                     </a>
                   </li>
 
