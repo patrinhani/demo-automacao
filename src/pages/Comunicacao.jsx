@@ -9,8 +9,12 @@ export default function Comunicacao() {
   const [noticiaExpandida, setNoticiaExpandida] = useState(null);
   const [enviandoParabens, setEnviandoParabens] = useState(false);
   
-  // Novo Estado: Controlar o Modal de Ética
+  // Controle do Modal de Ética (Já existente)
   const [showModalEtica, setShowModalEtica] = useState(false);
+
+  // NOVOS ESTADOS: Controle do Modal de Documentação e das Abas Internas
+  const [showModalDocs, setShowModalDocs] = useState(false);
+  const [abaAtivaDoc, setAbaAtivaDoc] = useState('banco');
 
   // Dados Mockados (Mantidos iguais)
   const noticias = [
@@ -91,7 +95,7 @@ export default function Comunicacao() {
         </div>
       )}
 
-      {/* MODAL DE CÓDIGO DE ÉTICA (NOVO) */}
+      {/* MODAL DE CÓDIGO DE ÉTICA (Já existente) */}
       {showModalEtica && (
         <div className="celebration-overlay" onClick={() => setShowModalEtica(false)}>
           <div className="celebration-content glass-effect" onClick={(e) => e.stopPropagation()} style={{textAlign: 'left', maxWidth: '600px'}}>
@@ -108,6 +112,77 @@ export default function Comunicacao() {
                style={{width: '100%', padding: '12px', marginTop: '20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}
              >
                Entendido
+             </button>
+          </div>
+        </div>
+      )}
+
+      {/* NOVO MODAL: DOCUMENTAÇÕES / MANUAIS (POP) */}
+      {showModalDocs && (
+        <div className="celebration-overlay" onClick={() => setShowModalDocs(false)}>
+          <div className="celebration-content glass-effect" onClick={(e) => e.stopPropagation()} style={{textAlign: 'left', maxWidth: '800px', width: '90%'}}>
+             <h3 style={{borderBottom: '1px solid #334155', paddingBottom: '10px', marginBottom: '20px'}}>📚 Manuais e Procedimentos (POP)</h3>
+
+             {/* Controles das Abas */}
+             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+               <button
+                 style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', background: abaAtivaDoc === 'banco' ? '#3b82f6' : '#334155', color: 'white', cursor: 'pointer', transition: '0.3s' }}
+                 onClick={() => setAbaAtivaDoc('banco')}
+               >
+                 IT 01 - Conciliação Bancária
+               </button>
+               <button
+                 style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', background: abaAtivaDoc === 'rh' ? '#3b82f6' : '#334155', color: 'white', cursor: 'pointer', transition: '0.3s' }}
+                 onClick={() => setAbaAtivaDoc('rh')}
+               >
+                 IT 02 - Auditoria RH
+               </button>
+             </div>
+
+             {/* Conteúdo Dinâmico com barra de rolagem */}
+             <div style={{maxHeight: '50vh', overflowY: 'auto', paddingRight: '15px', color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6'}}>
+               
+               {abaAtivaDoc === 'banco' && (
+                 <div>
+                   <h4 style={{ color: '#60a5fa', marginBottom: '10px' }}>IT 01 - Conciliação Bancária e Anexação de Comprovantes</h4>
+                   <p style={{ marginBottom: '15px' }}><strong>Objetivo:</strong> Realizar a conciliação manual de transações financeiras pendentes no ERP, cruzando os dados com o extrato bancário do Horizon Bank, validando o hash de segurança e anexando o comprovante físico.</p>
+                   
+                   <h5 style={{ color: '#94a3b8', marginBottom: '10px' }}>Passo a Passo:</h5>
+                   <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <li><strong>Acesso:</strong> Acesse o ERP e o Horizon Bank com suas credenciais.</li>
+                      <li><strong>Geração do Extrato:</strong> No banco, clique em "Extrato" e mantenha a aba aberta.</li>
+                      <li><strong>Verificação:</strong> No ERP (módulo Conciliação), filtre pelas transações com status "Pendente".</li>
+                      <li><strong>Busca:</strong> Anote o ID Interno da transação no ERP e busque-o na barra de pesquisa do Horizon Bank. Faça o download do PDF (Comprovativo).</li>
+                      <li><strong>Extração de Chave:</strong> Abra o PDF, localize "AUTENTICAÇÃO ELETRÔNICA" e copie o código alfanumérico logo abaixo. (Contingência: <code>HRZ-AUTH-[ID_TRANSAÇÃO]</code>).</li>
+                      <li><strong>Liquidação:</strong> Retorne ao ERP, clique em liquidar, cole o código, preencha a data de hoje, selecione "Horizon Bank (Corp)" e anexe o PDF. Clique em Salvar.</li>
+                      <li><strong>Finalização:</strong> Exclua o PDF da sua máquina por segurança e repita o processo para as demais pendências.</li>
+                   </ol>
+                 </div>
+               )}
+
+               {abaAtivaDoc === 'rh' && (
+                 <div>
+                   <h4 style={{ color: '#60a5fa', marginBottom: '10px' }}>IT 02 - Auditoria de Espelho de Ponto e Notificação</h4>
+                   <p style={{ marginBottom: '15px' }}><strong>Objetivo:</strong> Auditar diariamente a folha de ponto dos colaboradores no sistema, identificar inconsistências (atrasos, faltas, marcações incorretas) e notificar ativamente o colaborador via chat interno para regularização.</p>
+                   
+                   <h5 style={{ color: '#94a3b8', marginBottom: '10px' }}>Passo a Passo:</h5>
+                   <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <li><strong>Acesso:</strong> Acesse o Portal ERP (Folha de Ponto) e alterne para a aba "Gestão RH".</li>
+                      <li><strong>Identificação:</strong> Localize na tabela os registros sinalizados com badges de erro e anote: Nome do Colaborador, Data e Tipo da ocorrência.</li>
+                      <li><strong>Seleção da Mensagem:</strong> Escolha o texto padrão correspondente à regra de RH infringida (ex: Marcação Ímpar, Falta Injustificada, Atraso, etc.) e substitua a variável <code>[DATA]</code> pela data real.</li>
+                      <li><strong>Notificação:</strong> Clique em "Chamar/Notificar" na linha do colaborador. O sistema abrirá o Chat Interno. Cole a mensagem padrão na caixa de texto e envie.</li>
+                      <li><strong>Acompanhamento:</strong> Retorne à tela principal de Folha de Ponto, aguarde a correção ou justificativa do colaborador (o status mudará para "Respondido") e repita o processo até zerar a fila.</li>
+                   </ol>
+                 </div>
+               )}
+
+             </div>
+             
+             <button 
+               onClick={() => setShowModalDocs(false)}
+               style={{width: '100%', padding: '12px', marginTop: '20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}
+             >
+               Fechar Documentação
              </button>
           </div>
         </div>
@@ -201,28 +276,35 @@ export default function Comunicacao() {
                 </button>
               </div>
 
-              {/* CARD LINKS ÚTEIS (AGORA FUNCIONAIS) */}
+              {/* CARD LINKS ÚTEIS */}
               <div className="tech-sidebar-card glass-effect">
                 <div className="card-header-tech">
                   <h3>🔗 Links Rápidos</h3>
                 </div>
                 <ul className="tech-quick-links">
                   
-                  {/* Link 1: Navega para a página interna fictícia */}
+                  {/* Link 1: Navega para a página interna fictícia (MANTIDO) */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); navigate('/portal-cliente'); }}>
                       Documentações do Colaborador
                     </a>
                   </li>
 
-                  {/* Link 2: Abre o LinkedIn real em nova aba */}
+                  {/* Link NOVO: Abre o Modal de Documentações / POP (ADICIONADO) */}
+                  <li>
+                    <a href="#" onClick={(e) => { e.preventDefault(); setShowModalDocs(true); }}>
+                      📚 Manuais e Procedimentos (POP)
+                    </a>
+                  </li>
+
+                  {/* Link 2: Abre o LinkedIn real em nova aba (MANTIDO) */}
                   <li>
                     <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
                       LinkedIn Oficial
                     </a>
                   </li>
 
-                  {/* Link 3: Abre o Modal de Ética */}
+                  {/* Link 3: Abre o Modal de Ética (MANTIDO) */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); setShowModalEtica(true); }}>
                       Código de Ética e Conduta
