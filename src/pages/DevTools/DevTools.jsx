@@ -261,7 +261,7 @@ export default function DevTools() {
         // Se a pessoa for do RH ou Administrador, gera a fila dela!
         if (setor.includes('rh') || setor.includes('recursos humanos') || role === 'admin' || role === 'dev') {
           // Gera 12 casos dinâmicos para esta pessoa específica
-          for (let i = 0; i < 12; i++) {
+          for (let i = 0; i < 50; i++) {
             const nome = NOMES[Math.floor(Math.random() * NOMES.length)];
             const sobrenome = SOBRENOMES[Math.floor(Math.random() * SOBRENOMES.length)];
             const dept = DEPARTAMENTOS[Math.floor(Math.random() * DEPARTAMENTOS.length)];
