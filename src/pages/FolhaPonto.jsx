@@ -4,13 +4,62 @@ import { db, auth } from '../firebase';
 import { ref, onValue, update, get, push } from 'firebase/database';
 import { onAuthStateChanged } from "firebase/auth";
 import Logo from '../components/Logo';
-import { useAlert } from '../contexts/AlertContext'; // <-- IMPORTAÇÃO DO NOSSO CONTEXTO DE ALERTA
+import { useAlert } from '../contexts/AlertContext'; 
 import './FolhaPonto.css';
+
+// --- MOTOR DE ALEATORIEDADE (MOCKS DINÂMICOS) ---
+const NOMES = ["Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gabriel", "Helena", "Igor", "Juliana", "Lucas", "Mariana", "Nicolas", "Olívia", "Pedro", "Rafael", "Sofia", "Tiago", "Vinícius", "Vitória"];
+const SOBRENOMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho", "Almeida"];
+
+const DEPARTAMENTOS = [
+    { setor: "TI", cargos: ["Dev. Júnior", "Dev Fullstack", "Suporte N2", "Segurança Info", "P.O.", "UX Designer", "DevOps"] },
+    { setor: "Financeiro", cargos: ["Analista Fin.", "Controller", "Auxiliar Financeiro", "Especialista Fiscal"] },
+    { setor: "RH", cargos: ["Assistente RH", "Analista RH", "BP RH", "Recrutador"] },
+    { setor: "Comercial", cargos: ["Vendedor", "Gerente Vendas", "Executivo de Contas", "SDR"] }
+];
+
+const TIPOS_ERRO = [
+    "Marcação Ímpar", "Falta Injustificada", "Atraso Excessivo", 
+    "Batida Duplicada", "Intervalo < 1h", "Ponto Britânico", "Hora Extra N/A"
+];
+
+// Gera horários coerentes com o tipo de erro sorteado
+const gerarHorariosPorErro = (erro) => {
+    let base = { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' };
+    
+    switch(erro) {
+        case "Falta Injustificada": 
+            return { e: '---', si: '---', vi: '---', s: '---' };
+        case "Marcação Ímpar":
+            const chaves = ['e', 'si', 'vi', 's'];
+            const chaveFaltando = chaves[Math.floor(Math.random() * chaves.length)];
+            base[chaveFaltando] = '---';
+            return base;
+        case "Atraso Excessivo":
+            const atrasos = ['09:45', '10:30', '11:15', '10:00', '10:50'];
+            base.e = atrasos[Math.floor(Math.random() * atrasos.length)];
+            return base;
+        case "Batida Duplicada":
+            base.si = '08:02'; 
+            base.vi = '12:00';
+            base.s = '17:00';
+            return base;
+        case "Intervalo < 1h":
+            const retornosAdiantados = ['12:35', '12:40', '12:45'];
+            base.vi = retornosAdiantados[Math.floor(Math.random() * retornosAdiantados.length)];
+            return base;
+        case "Hora Extra N/A":
+            const horasExtras = ['19:30', '20:15', '21:00', '22:45', '23:10'];
+            base.s = horasExtras[Math.floor(Math.random() * horasExtras.length)];
+            return base;
+        case "Ponto Britânico":
+        default: 
+            return base;
+    }
+};
 
 export default function FolhaPonto() {
   const navigate = useNavigate();
-  
-  // <-- INICIALIZAÇÃO DOS ALERTAS CUSTOMIZADOS
   const { showAlert, showConfirm, showToast } = useAlert(); 
 
   const [user, setUser] = useState(null);
@@ -42,7 +91,7 @@ export default function FolhaPonto() {
 
   const gerarDataInconsistencia = (item) => {
       if (item._visualDate) return item._visualDate;
-      const isCurrentUser = user && item.id === user.uid;
+      const isCurrentUser = user && item.id === user?.uid;
       const isYan = item.nome && item.nome.toLowerCase().includes('yan');
 
       if (isCurrentUser || isYan) {
@@ -125,7 +174,7 @@ export default function FolhaPonto() {
 
   // Listener Auditoria RH
   useEffect(() => {
-      if (!isRH) return;
+      if (!isRH || !user) return;
       const rhRef = ref(db, 'rh/erros_ponto');
       const unsubscribe = onValue(rhRef, (snapshot) => {
           const data = snapshot.val();
@@ -135,6 +184,10 @@ export default function FolhaPonto() {
               })).filter(item => {
                   if (item.status === 'Concluido') return false;
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
+                  
+                  // 🔒 REGRA DE ISOLAMENTO
+                  if (item.donoUid && item.donoUid !== user.uid) return false;
+                  
                   return true;
               });
               setListaPendencias(lista);
@@ -143,7 +196,67 @@ export default function FolhaPonto() {
           }
       });
       return () => unsubscribe();
-  }, [isRH]);
+  }, [isRH, user]);
+
+  // --- FUNÇÕES DE TESTE (MOCKS ISOLADOS POR USUÁRIO) ---
+  const gerarMeusCasos = async () => {
+    if (!user) return;
+    showToast("A gerar...", "Criando casos 100% dinâmicos para si ⏳");
+    
+    const rhRef = ref(db, 'rh/erros_ponto');
+    const updates = {};
+    
+    // Gera 12 casos únicos a cada clique
+    for (let i = 0; i < 12; i++) {
+      const nome = NOMES[Math.floor(Math.random() * NOMES.length)];
+      const sobrenome = SOBRENOMES[Math.floor(Math.random() * SOBRENOMES.length)];
+      const deptSorteado = DEPARTAMENTOS[Math.floor(Math.random() * DEPARTAMENTOS.length)];
+      const cargo = deptSorteado.cargos[Math.floor(Math.random() * deptSorteado.cargos.length)];
+      const erro = TIPOS_ERRO[Math.floor(Math.random() * TIPOS_ERRO.length)];
+      
+      const pontos = gerarHorariosPorErro(erro);
+      
+      const newKey = push(rhRef).key;
+      updates[newKey] = { 
+          nome: `${nome} ${sobrenome}`,
+          cargo: cargo,
+          setor: deptSorteado.setor,
+          erro: erro,
+          pontos: pontos,
+          donoUid: user.uid, 
+          status: "Pendente", 
+          createdAt: Date.now() 
+      };
+    }
+    
+    await update(rhRef, updates);
+    showToast("Sucesso", "12 casos imprevisíveis foram gerados! ✅");
+  };
+
+  const limparMeusCasos = async () => {
+    if (!user) return;
+    
+    const confirmou = await showConfirm("Atenção", "Deseja limpar todos os casos de teste gerados por si?");
+    if (!confirmou) return;
+
+    try {
+        const snap = await get(ref(db, 'rh/erros_ponto'));
+        const updates = {};
+        
+        if (snap.exists()) {
+            Object.entries(snap.val()).forEach(([key, val]) => {
+                if (val.donoUid === user.uid) {
+                    updates[`rh/erros_ponto/${key}`] = null;
+                }
+            });
+        }
+        
+        await update(ref(db), updates);
+        showToast("Limpeza", "Os seus casos de teste foram removidos! 🧹");
+    } catch (e) {
+        showAlert("Erro", "Falha ao limpar os casos.");
+    }
+  };
 
   // Função para Disparar Automação RPA (RH)
   const executarAutomacaoRH = async () => {
@@ -161,7 +274,7 @@ export default function FolhaPonto() {
         if (pendentes.length === 0) {
             showAlert("Aviso", "Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
         } else {
-            showToast("Robô Acionado", `🤖 Processando ${pendentes.length} pendências...`);
+            showToast("Robô Acionado", `🤖 A processar ${pendentes.length} pendências...`);
         }
     } catch (error) {
         showAlert("Erro de Conexão", "Não foi possível enviar o comando ao Robô.");
@@ -172,9 +285,9 @@ export default function FolhaPonto() {
   const registrarPonto = async (tipo) => {
     if (!user) return;
     
-    if (tipo === 'almoco_ida' && !registros.entrada) { showAlert("Ação Negada", "Você precisa registrar a ENTRADA antes de sair para o almoço."); return; }
-    if (tipo === 'almoco_volta' && !registros.almoco_ida) { showAlert("Ação Negada", "Você não registrou a SAÍDA para o almoço."); return; }
-    if (tipo === 'saida' && !registros.almoco_volta) { showAlert("Ação Negada", "Você precisa registrar o RETORNO do almoço antes da saída final."); return; }
+    if (tipo === 'almoco_ida' && !registros.entrada) { showAlert("Ação Negada", "Precisa de registar a ENTRADA antes de sair para o almoço."); return; }
+    if (tipo === 'almoco_volta' && !registros.almoco_ida) { showAlert("Ação Negada", "Não registou a SAÍDA para o almoço."); return; }
+    if (tipo === 'saida' && !registros.almoco_volta) { showAlert("Ação Negada", "Precisa de registar o RETORNO do almoço antes da saída final."); return; }
 
     const horarioFormatado = horaAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dateKey = getDataKey(new Date());
@@ -194,14 +307,14 @@ export default function FolhaPonto() {
           }
       }
       
-      showToast("Ponto Registrado", `✅ Ponto registrado às ${horarioFormatado}`);
+      showToast("Ponto Registado", `✅ Ponto registado às ${horarioFormatado}`);
       
     } catch (error) { 
-        showAlert("Erro", "Falha ao registrar ponto. Tente novamente."); 
+        showAlert("Erro", "Falha ao registar o ponto. Tente novamente."); 
     }
   };
 
-  // Funções Ajuste de Ponto (Usuários Reais)
+  // Funções Ajuste de Ponto (Utilizadores Reais)
   const handleSubmitAjuste = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -219,7 +332,6 @@ export default function FolhaPonto() {
     }
   };
 
-  // Aprovar ajuste de usuário REAL
   const aprovarAjuste = async (ajuste) => {
     const confirmou = await showConfirm("Aprovar Ajuste", `Confirma a alteração do horário de ${ajuste.userName} para as ${ajuste.horarioCorreto}?`);
     if (!confirmou) return;
@@ -241,7 +353,7 @@ export default function FolhaPonto() {
   };
 
   const reprovarAjuste = async (ajuste) => {
-    const confirmou = await showConfirm("Reprovar Ajuste", `Tem certeza que deseja reprovar o pedido de ${ajuste.userName}?`);
+    const confirmou = await showConfirm("Reprovar Ajuste", `Tem a certeza que deseja reprovar o pedido de ${ajuste.userName}?`);
     if (!confirmou) return;
 
     const motivo = prompt('Por favor, digite o motivo da reprovação:');
@@ -259,7 +371,6 @@ export default function FolhaPonto() {
     }
   };
 
-  // Aprovar ponto de MOCK (Auditoria Chat)
   const aprovarPontoMock = async (item, pontosPropostos) => {
       const confirmou = await showConfirm("Aprovar Ajuste", `Confirma a regularização do espelho de ponto para ${item.nome}?`);
       if (!confirmou) return;
@@ -269,7 +380,6 @@ export default function FolhaPonto() {
               pontos: pontosPropostos, 
               status: 'Concluido' 
           });
-          // MELHORIA AQUI: Removida a palavra "fictício" e adicionado o Toast bonito
           showToast('Aprovado', '✅ Ajuste de ponto aprovado com sucesso!');
       } catch (error) {
           console.error(error);
@@ -291,9 +401,8 @@ export default function FolhaPonto() {
       }
   };
 
-  // Funções Auxiliares UI
   const formatarDataExtenso = (date) => date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-  const formatarNomeErro = (erro) => ({ 'Esquecimento Real': 'Ausência de Registro', 'Atraso Excessivo': 'Atraso Crítico', 'Falta Injustificada': 'Falta Não Justificada' }[erro] || erro);
+  const formatarNomeErro = (erro) => ({ 'Esquecimento Real': 'Ausência de Registo', 'Atraso Excessivo': 'Atraso Crítico', 'Falta Injustificada': 'Falta Não Justificada' }[erro] || erro);
   const formatarTipoAjuste = (tipo) => ({ 'entrada': 'Entrada', 'almoco_ida': 'Saída Almoço', 'almoco_volta': 'Retorno Almoço', 'saida': 'Saída' }[tipo] || tipo);
 
   const irParaChatComUsuario = (usuario) => {
@@ -308,7 +417,6 @@ export default function FolhaPonto() {
       navigate('/chat', { state: { chatTarget: { id: usuario.id, nome: usuario.nome, cargo: usuario.cargo } } });
   };
 
-  // RENDERIZAÇÃO DA AÇÃO DA AUDITORIA
   const renderAcao = (item, pontosPropostos) => {
       if (item.id === user?.uid) return <span className="badge-bloqueado">🚫 Auto-gestão Bloqueada</span>;
       
@@ -319,7 +427,7 @@ export default function FolhaPonto() {
           </div>
       );
 
-      if (item.status === 'Notificado') return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ Aguardando...</span>;
+      if (item.status === 'Notificado') return <span style={{color: '#facc15', fontSize:'0.8rem'}}>⏳ A aguardar...</span>;
       
       return <button className="btn-chamar" onClick={() => irParaChatComUsuario(item)}>💬 Chamar</button>;
   };
@@ -333,7 +441,7 @@ export default function FolhaPonto() {
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
            <span className="divider">|</span>
-           <span className="page-title">Controle de Ponto</span>
+           <span className="page-title">Controlo de Ponto</span>
         </div>
         
         <div className="toggle-rh-container">
@@ -357,7 +465,6 @@ export default function FolhaPonto() {
       <div className="ponto-container">
         <div className="ponto-content">
             
-            {/* ABA: MEU PONTO */}
             {abaAtiva === 'meu_ponto' && (
                 <>
                     <div className="clock-card glass-effect">
@@ -387,7 +494,7 @@ export default function FolhaPonto() {
                                     disabled={!!registros[tipo] || locked}
                                     style={locked ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
                                 >
-                                    {registros[tipo] ? 'Registrado' : locked ? 'Aguardando' : 'Registrar'}
+                                    {registros[tipo] ? 'Registado' : locked ? 'A aguardar' : 'Registar'}
                                 </button>
                             </div>
                         );
@@ -396,7 +503,6 @@ export default function FolhaPonto() {
                 </>
             )}
 
-            {/* ABA: AJUSTES (COLABORADOR) */}
             {abaAtiva === 'ajustes' && (
                 <div className="ajustes-wrapper glass-effect" style={{padding: '25px', borderRadius: '12px', textAlign: 'left', maxWidth: '800px', margin: '0 auto'}}>
                     <form onSubmit={handleSubmitAjuste} className="ajuste-form">
@@ -407,7 +513,7 @@ export default function FolhaPonto() {
                                 <input type="date" required value={dataAjuste} onChange={(e) => setDataAjuste(e.target.value)} />
                             </div>
                             <div className="form-group">
-                                <label>Qual marcação deseja corrigir?</label>
+                                <label>Qual a marcação a corrigir?</label>
                                 <select required value={tipoMarcacao} onChange={(e) => setTipoMarcacao(e.target.value)}>
                                     <option value="entrada">Entrada</option>
                                     <option value="almoco_ida">Saída para Almoço</option>
@@ -422,7 +528,7 @@ export default function FolhaPonto() {
                         </div>
                         <div className="form-group" style={{marginBottom: '15px'}}>
                             <label>Justificativa:</label>
-                            <textarea rows="3" placeholder="Ex: Esqueci de bater o ponto pois entrei direto em reunião com o cliente..." required value={justificativa} onChange={(e) => setJustificativa(e.target.value)}></textarea>
+                            <textarea rows="3" placeholder="Ex: Esqueci-me de bater o ponto pois entrei direto em reunião com o cliente..." required value={justificativa} onChange={(e) => setJustificativa(e.target.value)}></textarea>
                         </div>
                         <button type="submit" className="btn-submit-ajuste">Enviar para Aprovação</button>
                     </form>
@@ -451,7 +557,6 @@ export default function FolhaPonto() {
                 </div>
             )}
 
-            {/* ABA: GESTÃO RH */}
             {abaAtiva === 'gestao_rh' && isRH && (
                 <div className="gestao-rh-container">
                     
@@ -486,6 +591,17 @@ export default function FolhaPonto() {
                     {/* Sub-aba: Auditoria */}
                     {subAbaGestao === 'auditoria' && (
                         <div className="tabela-rh-wrapper">
+                            
+                            {/* --- BOTÕES DE SIMULAÇÃO AQUI --- */}
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', padding: '0 10px' }}>
+                                <button onClick={gerarMeusCasos} className="btn-approve" style={{fontSize: '11px', padding: '6px 12px', background: '#3b82f6', borderColor: '#2563eb'}}>
+                                    + Gerar Casos (Demonstração)
+                                </button>
+                                <button onClick={limparMeusCasos} className="btn-reject" style={{fontSize: '11px', padding: '6px 12px'}}>
+                                    🗑️ Limpar Meus Casos
+                                </button>
+                            </div>
+
                             {listaPendencias.filter(item => item.status !== 'Respondido').length === 0 ? (
                                 <p style={{color: '#94a3b8', padding: '20px'}}>Nenhuma auditoria pendente no momento.</p>
                             ) : (
@@ -550,7 +666,6 @@ export default function FolhaPonto() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {/* LINHAS: PESSOAS REAIS (Via Formulário) */}
                                             {pendenciasAjuste.map(item => (
                                                 <tr key={item.id}>
                                                     <td>
@@ -578,7 +693,6 @@ export default function FolhaPonto() {
                                                 </tr>
                                             ))}
 
-                                            {/* LINHAS: MOCKS (Via Chatbot) */}
                                             {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
                                                 const dataVisual = gerarDataInconsistencia(item);
                                                 

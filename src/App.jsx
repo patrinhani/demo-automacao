@@ -53,6 +53,8 @@ import PDFFactory from './pages/DevTools/PDFFactory'; // <--- (1) IMPORTAÇÃO A
 // Ele gerencia sozinho se mostra o Login ou o Extrato.
 import Banco from './pages/Banco/Banco'; 
 
+import AberturaDev from "./pages/AberturaDev/AberturaDev";
+
 // CSS GLOBAL
 import './App.css';
 
@@ -72,6 +74,7 @@ function App() {
              ======================================================= */}
           <Route path="/" element={<Login />} />
           <Route path="/trocar-senha" element={<TrocarSenha />} />
+          <Route path="/apresentacao" element={<AberturaDev />} />
 
           {/* =======================================================
               ROTAS DO SISTEMA (ÁREA LOGADA)

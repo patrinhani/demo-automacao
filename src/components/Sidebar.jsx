@@ -58,7 +58,7 @@ export default function Sidebar() {
       {/* Sidebar principal */}
       <aside className={`tech-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          {/* Adicionamos flex para colocar um botão de fechar (X) ao lado da logo no mobile */}
+          {/* Botão de fechar (X) ao lado da logo no mobile */}
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             <div>
               <Logo />
@@ -82,6 +82,11 @@ export default function Sidebar() {
             </div>
             <button onClick={() => handleNavigation('/dev-tools')} style={{ width:'100%', background: 'transparent', border:'1px solid #a855f7', color:'#d8b4fe', fontSize:'11px', padding:'5px', borderRadius:'4px' }}>Fábrica de Dados ⚡</button>
             <button onClick={() => handleNavigation('/pdf-factory')} style={{ width:'100%', background: 'transparent', border:'1px solid #a855f7', color:'#d8b4fe', fontSize:'11px', padding:'5px', borderRadius:'4px', marginTop: '5px' }}>Fábrica de PDF 🖨️</button>
+            
+            {/* NOVO BOTÃO DA TELA DE APRESENTAÇÃO */}
+            <button onClick={() => handleNavigation('/apresentacao')} style={{ width:'100%', background: '#a855f7', border:'1px solid #a855f7', color:'#fff', fontSize:'11px', padding:'8px 5px', borderRadius:'4px', marginTop: '15px', fontWeight: 'bold', textTransform: 'uppercase', boxShadow: '0 0 10px rgba(168, 85, 247, 0.4)' }}>
+               🎬 Iniciar Apresentação
+            </button>
           </div>
         )}
 
@@ -101,6 +106,7 @@ export default function Sidebar() {
               {isRH && (
                 <button className={`nav-item ${isActive('/cadastro-usuario')}`} onClick={() => handleNavigation('/cadastro-usuario')}><span className="icon">🔐</span> Criar Usuário</button>
               )}
+              {/* Rota corrigida para a Central Unificada de Aprovações */}
               <button className={`nav-item ${isActive('/aprovacoes-gerais')}`} onClick={() => handleNavigation('/aprovacoes-gerais')}><span className="icon">💰</span> Aprovações</button>
             </div>
           )}

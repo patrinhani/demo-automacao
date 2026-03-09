@@ -1,0 +1,114 @@
+.abertura-layout {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #020617; /* Fundo super escuro */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Courier New', Courier, monospace;
+  color: #38bdf8;
+}
+
+/* Efeito de TV antiga/Terminal */
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: rgba(56, 189, 248, 0.1);
+  opacity: 0.4;
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.terminal-container {
+  width: 80%;
+  max-width: 800px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
+}
+
+.logo-glitch {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+}
+
+.terminal-lines .line {
+  margin: 10px 0;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: typeLine 0.1s forwards;
+}
+
+.line.success { color: #34d399; }
+.line.warning { color: #facc15; }
+
+.start-sequence {
+  margin-top: 40px;
+  text-align: center;
+  border-top: 1px dashed #334155;
+  padding-top: 30px;
+}
+
+.system-ready {
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 5px;
+  color: #f8fafc;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+  animation: blink 2s infinite;
+}
+
+.btn-boot {
+  background: transparent;
+  color: #38bdf8;
+  border: 2px solid #38bdf8;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) inset;
+}
+
+.btn-boot:hover {
+  background: #38bdf8;
+  color: #0f172a;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 1s ease-in forwards;
+}
+
+/* Animações */
+@keyframes scan {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+@keyframes typeLine {
+  to { opacity: 1; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
