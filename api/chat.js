@@ -1,3 +1,8 @@
+// 1. AUMENTA O TEMPO DE VIDA DA FUNÇÃO NA VERCEL
+// O plano gratuito (Hobby) permite no máximo 60 segundos. 
+// Isso impede que a Vercel corte a IA no meio de uma resposta longa.
+export const maxDuration = 60; 
+
 export default async function handler(req, res) {
   // Garante que só aceitamos requisições POST
   if (req.method !== 'POST') {
@@ -12,11 +17,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Pegamos os dados que vieram do React
+    const requestData = req.body;
+
+    // 2. FORÇA UM LIMITE ALTO DE TOKENS (Tamanho da resposta)
+    // Se o React não enviou configurações de geração, criamos uma.
+    if (!requestData.generationConfig) {
+        requestData.generationConfig = {};
+    }
+    // Força a IA a permitir respostas de até 8192 tokens (textos gigantes)
+    requestData.generationConfig.maxOutputTokens = 8192; 
+
     // Faz a requisição para o Google DE DENTRO DO SERVIDOR
     const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body) // Repassa os dados que vieram do front-end
+      body: JSON.stringify(requestData) // Repassa os dados atualizados com o limite de tokens
     });
 
     const data = await googleResponse.json();
