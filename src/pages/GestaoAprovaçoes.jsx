@@ -3,13 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { ref, onValue, update, get } from 'firebase/database';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; 
 import './GestaoReembolsos.css';
 
 export default function GestaoAprovacoes() {
   const navigate = useNavigate();
+  const { showToast, showAlert } = useAlert(); // Mantemos apenas o Toast para a notificação de sucesso
+  
   const [abaAtiva, setAbaAtiva] = useState('ferias');
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // --- ESTADOS DO MODAL INTERNO ---
+  const [modalAcao, setModalAcao] = useState({ isOpen: false, type: '', title: '', message: '', item: null, decisao: '' });
+  const [motivoRejeicao, setMotivoRejeicao] = useState('');
 
   // 1. SEGURANÇA
   useEffect(() => {
@@ -19,17 +26,14 @@ export default function GestaoAprovacoes() {
       
       const userRef = ref(db, `users/${user.uid}`);
       get(userRef).then((snapshot) => {
-          const userData = snapshot.val();
-          // Lógica de proteção opcional
+          // Lógica de proteção opcional mantida
       });
     };
     checkUser();
   }, [navigate]);
 
-  // HELPER DE STATUS (CORRIGIDO AQUI)
   const isPendente = (s) => {
       if (!s) return true;
-      // Adicionado 'em_analise' na lista
       return ['pendente', 'em analise', 'em_analise', 'em análise', 'solicitado', 'aguardando', 'aberto'].includes(s.toLowerCase());
   };
 
@@ -39,8 +43,6 @@ export default function GestaoAprovacoes() {
     setDados([]); 
     
     let dbRef;
-    
-    // --- ROTEAMENTO DE PASTAS ---
     if (abaAtiva === 'viagens') {
         dbRef = ref(db, 'viagens'); 
     } else if (abaAtiva === 'reembolsos') {
@@ -55,35 +57,24 @@ export default function GestaoAprovacoes() {
 
       if (data) {
         if (abaAtiva === 'viagens') {
-          // --- CASO ESPECIAL: VIAGENS ---
           Object.keys(data).forEach((uidUsuario) => {
             const viagensUser = data[uidUsuario];
             if (viagensUser) {
                 Object.keys(viagensUser).forEach((chaveFirebase) => {
                   const viagem = viagensUser[chaveFirebase];
                   if (isPendente(viagem.status)) {
-                    lista.push({ 
-                        ...viagem, 
-                        firebaseKey: chaveFirebase, 
-                        uidOriginal: uidUsuario 
-                    });
+                    lista.push({ ...viagem, firebaseKey: chaveFirebase, uidOriginal: uidUsuario });
                   }
                 });
             }
           });
         } else {
-          // --- CASO PADRÃO ---
           lista = Object.entries(data)
-            .map(([chaveFirebase, valor]) => ({ 
-                ...valor, 
-                firebaseKey: chaveFirebase,
-                id: valor.protocolo || valor.id || chaveFirebase 
-            }))
+            .map(([chaveFirebase, valor]) => ({ ...valor, firebaseKey: chaveFirebase, id: valor.protocolo || valor.id || chaveFirebase }))
             .filter(item => isPendente(item.status));
         }
       }
       
-      // Ordena por data
       lista.sort((a, b) => {
           const dA = new Date(a.createdAt || a.data_criacao || a.data_ida || 0);
           const dB = new Date(b.createdAt || b.data_criacao || b.data_ida || 0);
@@ -97,12 +88,33 @@ export default function GestaoAprovacoes() {
     return () => unsubscribe();
   }, [abaAtiva]);
 
-  // 3. AÇÃO DE APROVAR / REJEITAR
-  const handleAvaliar = async (item, decisao) => {
-    const textoAcao = decisao === 'aprovado' ? 'APROVAR' : 'REJEITAR';
-    if (!window.confirm(`Deseja ${textoAcao} esta solicitação?`)) return;
+  // 3. ABRE O MODAL LOCAL
+  const handleAvaliarClick = (item, decisao) => {
+    const isAprovando = decisao === 'aprovado';
+    const nomeSolicitante = item.solicitanteNome || item.nome || item.userEmail || 'Colaborador';
 
+    setMotivoRejeicao(''); // Limpa o input
+    setModalAcao({
+        isOpen: true,
+        type: isAprovando ? 'confirm' : 'prompt',
+        title: `${isAprovando ? 'Aprovar' : 'Rejeitar'} Solicitação`,
+        message: isAprovando 
+            ? `Deseja realmente APROVAR esta solicitação de ${nomeSolicitante}?` 
+            : `Por favor, indique o motivo para rejeitar a solicitação de ${nomeSolicitante}:`,
+        item,
+        decisao
+    });
+  };
+
+  // 4. CONFIRMA A AÇÃO E SALVA NO BANCO
+  const confirmarAcao = async () => {
+    const { item, decisao } = modalAcao;
+    const isAprovando = decisao === 'aprovado';
+    const motivo = motivoRejeicao;
+
+    // Remove da tela imediatamente (Otimismo UI)
     setDados(prev => prev.filter(d => d.firebaseKey !== item.firebaseKey));
+    setModalAcao({ isOpen: false, type: '', title: '', message: '', item: null, decisao: '' }); // Fecha o modal
 
     try {
       let itemRef;
@@ -111,35 +123,29 @@ export default function GestaoAprovacoes() {
 
       if (abaAtiva === 'viagens') {
           itemRef = ref(db, `viagens/${item.uidOriginal}/${item.firebaseKey}`);
-          updateData = {
-            status: decisao === 'aprovado' ? 'APROVADO' : 'REJEITADO',
-            aprovadoPor: user.email,
-            dataAprovacao: new Date().toISOString()
-          };
+          updateData = { status: isAprovando ? 'APROVADO' : 'REJEITADO', aprovadoPor: user.email, dataAprovacao: new Date().toISOString() };
+          if (!isAprovando) updateData.observacao = motivo;
       } else if (abaAtiva === 'reembolsos') {
           itemRef = ref(db, `reembolsos/${item.firebaseKey}`);
-          updateData = { 
-              status: decisao, 
-              avaliadoPor: user.uid 
-          };
+          updateData = { status: decisao, avaliadoPor: user.uid };
+          if (!isAprovando) updateData.motivoReprovacao = motivo;
       } else {
           itemRef = ref(db, `solicitacoes/${abaAtiva}/${item.firebaseKey}`);
-          
           if (abaAtiva === 'helpdesk') {
-              updateData = {
-                  status: decisao === 'aprovado' ? 'em_andamento' : 'cancelado',
-                  atendidoPor: user.uid
-              };
+              updateData = { status: isAprovando ? 'em_andamento' : 'cancelado', atendidoPor: user.uid };
+              if (!isAprovando) updateData.motivoCancelamento = motivo;
           } else {
               updateData = { status: decisao, avaliadoPor: user.uid };
+              if (!isAprovando) updateData.motivoReprovacao = motivo;
           }
       }
 
       await update(itemRef, updateData);
+      showToast(isAprovando ? 'Aprovado!' : 'Rejeitado!', `A solicitação foi ${isAprovando ? 'aprovada' : 'negada'} com sucesso.`, isAprovando ? 'success' : 'warning');
       
     } catch (error) {
       console.error(error);
-      alert("Erro ao salvar. A página será recarregada.");
+      showAlert("Erro", "Erro ao salvar. A página será recarregada.");
       window.location.reload();
     }
   };
@@ -175,9 +181,7 @@ export default function GestaoAprovacoes() {
             {dados.map(item => (
               <div key={item.firebaseKey} className="card-aprovacao">
                 <div className="card-header">
-                  <span className="protocolo">
-                    {(item.protocolo || item.id || 'ID').toString().substring(0,10).toUpperCase()}
-                  </span>
+                  <span className="protocolo">{(item.protocolo || item.id || 'ID').toString().substring(0,10).toUpperCase()}</span>
                   <span className="data">{new Date(item.createdAt || item.data_criacao || item.dataInicio || Date.now()).toLocaleDateString()}</span>
                 </div>
                 
@@ -211,14 +215,54 @@ export default function GestaoAprovacoes() {
                 </div>
 
                 <div className="card-actions">
-                  <button className="btn-reject" onClick={() => handleAvaliar(item, 'rejeitado')}>✖ {abaAtiva === 'helpdesk' ? 'Cancelar' : 'Negar'}</button>
-                  <button className="btn-approve" onClick={() => handleAvaliar(item, 'aprovado')}>✔ {abaAtiva === 'helpdesk' ? 'Atender' : 'Aprovar'}</button>
+                  <button className="btn-reject" onClick={() => handleAvaliarClick(item, 'rejeitado')}>✖ {abaAtiva === 'helpdesk' ? 'Cancelar' : 'Negar'}</button>
+                  <button className="btn-approve" onClick={() => handleAvaliarClick(item, 'aprovado')}>✔ {abaAtiva === 'helpdesk' ? 'Atender' : 'Aprovar'}</button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* --- MODAL INTERNO --- */}
+      {modalAcao.isOpen && (
+        <div className="local-modal-overlay">
+          <div className="local-modal-box glass-effect">
+            <h3 className="local-modal-title">{modalAcao.title}</h3>
+            <p className="local-modal-message">{modalAcao.message}</p>
+
+            {modalAcao.type === 'prompt' && (
+              <textarea 
+                className="local-modal-input" 
+                placeholder="Escreva o motivo aqui..."
+                value={motivoRejeicao}
+                onChange={(e) => setMotivoRejeicao(e.target.value)}
+                rows={3}
+                autoFocus
+              />
+            )}
+
+            <div className="local-modal-actions">
+              <button 
+                className="btn-reject" 
+                style={{flex: 1}} 
+                onClick={() => setModalAcao({ isOpen: false, type: '', title: '', message: '', item: null, decisao: '' })}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-approve" 
+                style={{flex: 1, opacity: (modalAcao.type === 'prompt' && !motivoRejeicao.trim()) ? 0.5 : 1}}
+                onClick={confirmarAcao}
+                disabled={modalAcao.type === 'prompt' && !motivoRejeicao.trim()}
+              >
+                {modalAcao.type === 'prompt' ? 'Confirmar Rejeição' : 'Confirmar Aprovação'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

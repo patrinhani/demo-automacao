@@ -48,12 +48,16 @@ export default function StatusReembolso() {
 
   // --- RENDERIZAÇÃO DA TELA DE DETALHES ---
   if (solicitacaoSelecionada) {
-    const dados = solicitacaoSelecionada;
+    // Busca a versão mais atualizada direto da lista do Firebase (Tempo Real)
+    const dados = listaSolicitacoes.find(req => req.id === solicitacaoSelecionada.id) || solicitacaoSelecionada;
 
-    // LÓGICA DE STATUS CORRIGIDA
-    const isAnalise = dados.status === 'em_analise';
-    const isAprovado = dados.status === 'aprovado';
-    const isPago = dados.status === 'pago';
+    const statusNormalizado = String(dados.status).toLowerCase();
+    
+    // VERIFICAÇÃO ATUALIZADA: Aceita "rejeitado" ou "reprovado"
+    const isAnalise = statusNormalizado === 'em_analise';
+    const isAprovado = statusNormalizado === 'aprovado';
+    const isPago = statusNormalizado === 'pago';
+    const isReprovado = statusNormalizado === 'reprovado' || statusNormalizado === 'rejeitado';
 
     return (
       <div className="tech-layout-status">
@@ -74,13 +78,14 @@ export default function StatusReembolso() {
         <div className="status-container-tech">
           <div className="status-card-glass">
             
-            <div className="success-icon-tech">
-              {isPago ? '💲' : '✓'}
+            {/* ÍCONE PRINCIPAL DINÂMICO */}
+            <div className={`success-icon-tech ${isReprovado ? 'reprovado' : ''}`}>
+              {isReprovado ? '✕' : isPago ? '💲' : '✓'}
             </div>
             
             <h2>Solicitação: {dados.protocolo}</h2>
             <div className="protocolo-tech">
-               Status atual: <strong style={{textTransform: 'uppercase', color: 'var(--neon-blue)'}}>
+               Status atual: <strong style={{textTransform: 'uppercase', color: isReprovado ? '#ef4444' : 'var(--neon-blue)'}}>
                  {dados.status.replace('_', ' ')}
                </strong>
             </div>
@@ -93,11 +98,12 @@ export default function StatusReembolso() {
               <div className="timeline-line-bg"></div>
               
               {/* Barra de Progresso Dinâmica */}
-              <div className="timeline-line-fill" style={{
-                width: isPago ? '100%' : isAprovado ? '75%' : '25%'
-              }}></div>
+              <div 
+                className={`timeline-line-fill ${isReprovado ? 'reprovado' : ''}`} 
+                style={{ width: isPago ? '100%' : isAprovado ? '66%' : isReprovado ? '66%' : '33%' }}
+              ></div>
 
-              {/* ETAPA 1: ENVIADO (Sempre Concluído) */}
+              {/* ETAPA 1: ENVIADO */}
               <div className="timeline-step completed">
                 <div className="step-circle">✓</div>
                 <div>
@@ -109,28 +115,29 @@ export default function StatusReembolso() {
               </div>
 
               {/* ETAPA 2: ANÁLISE */}
-              {/* Se está em análise = Active. Se aprovado/pago = Completed */}
               <div className={`timeline-step ${isAnalise ? 'active' : 'completed'}`}>
-                <div className="step-circle">2</div>
+                <div className="step-circle">{!isAnalise ? '✓' : '2'}</div>
                 <div>
                     <div className="step-label">Análise</div>
                     <div className="step-sub">RH</div>
                 </div>
               </div>
 
-              {/* ETAPA 3: APROVAÇÃO */}
-              {/* Se em análise = Pending. Se aprovado/pago = Completed (AQUI ESTAVA O ERRO) */}
-              <div className={`timeline-step ${(isAprovado || isPago) ? 'completed' : 'pending'}`}>
-                <div className="step-circle">3</div>
+              {/* ETAPA 3: APROVAÇÃO / REJEIÇÃO */}
+              <div className={`timeline-step ${isReprovado ? 'reprovado' : (isAprovado || isPago) ? 'completed' : 'pending'}`}>
+                <div className="step-circle">
+                  {isReprovado ? '✕' : (isAprovado || isPago) ? '✓' : '3'}
+                </div>
                 <div>
-                    <div className="step-label">Aprovação</div>
+                    <div className="step-label">
+                      {isReprovado ? 'Rejeitado' : 'Aprovação'}
+                    </div>
                     <div className="step-sub">Gestor</div>
                 </div>
               </div>
 
               {/* ETAPA 4: PAGAMENTO */}
-              {/* Se pago = Completed. Se aprovado (esperando pgto) = Active. Resto = Pending */}
-              <div className={`timeline-step ${isPago ? 'completed' : (isAprovado ? 'active' : 'pending')}`}>
+              <div className={`timeline-step ${isPago ? 'completed' : (isAprovado ? 'active' : 'pending')}`} style={isReprovado ? { opacity: 0.3 } : {}}>
                 <div className="step-circle">4</div>
                 <div>
                     <div className="step-label">Pagamento</div>
@@ -197,28 +204,34 @@ export default function StatusReembolso() {
            </div>
         ) : (
           <div className="lista-cards-tech">
-            {listaSolicitacoes.map((item) => (
-              <div 
-                key={item.id} 
-                className="card-resumo-glass" 
-                onClick={() => setSolicitacaoSelecionada(item)}
-              >
-                <div className="card-top">
-                  <span className="protocolo-badge">{item.protocolo}</span>
-                  <span className={`status-pill ${item.status}`}>
-                    {item.status === 'em_analise' ? 'Em Análise' : item.status}
-                  </span>
+            {listaSolicitacoes.map((item) => {
+              const statusDb = String(item.status).toLowerCase();
+              // Se for 'rejeitado', aplica a classe 'reprovado' do CSS para ficar vermelho
+              const cssClass = (statusDb === 'rejeitado' || statusDb === 'reprovado') ? 'reprovado' : statusDb;
+
+              return (
+                <div 
+                  key={item.id} 
+                  className="card-resumo-glass" 
+                  onClick={() => setSolicitacaoSelecionada(item)}
+                >
+                  <div className="card-top">
+                    <span className="protocolo-badge">{item.protocolo}</span>
+                    <span className={`status-pill ${cssClass}`}>
+                      {statusDb === 'em_analise' ? 'Em Análise' : item.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="card-body">
+                    <p><strong>Motivo:</strong> {item.motivo}</p>
+                    <p><strong>Data:</strong> {new Date(item.data_despesa).toLocaleDateString()}</p>
+                    <p className="valor-destaque">{formatarValor(item.valor)}</p>
+                  </div>
+                  <div className="card-footer">
+                    <span>Clique para detalhes →</span>
+                  </div>
                 </div>
-                <div className="card-body">
-                  <p><strong>Motivo:</strong> {item.motivo}</p>
-                  <p><strong>Data:</strong> {new Date(item.data_despesa).toLocaleDateString()}</p>
-                  <p className="valor-destaque">{formatarValor(item.valor)}</p>
-                </div>
-                <div className="card-footer">
-                  <span>Clique para detalhes →</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

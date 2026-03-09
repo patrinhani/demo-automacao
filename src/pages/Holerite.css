@@ -1,10 +1,11 @@
 /* --- LAYOUT BASE (INTERFACE TECH) --- */
 .tech-holerite-layout {
-  min-height: 100vh;
+  height: 100vh; 
+  overflow-y: auto; 
+  overflow-x: hidden; /* <--- ADICIONE ESTA LINHA PARA CORTAR A ROLAGEM HORIZONTAL */
   position: relative;
   color: #fff;
   padding-bottom: 40px;
-  /* O layout base não precisa de padding, o container interno que cuidará disso */
 }
 
 /* CONTAINER PRINCIPAL (Correção do Espaçamento do Topo) */

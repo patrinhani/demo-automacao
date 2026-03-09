@@ -147,11 +147,9 @@
 /* LINHAS DE FUNDO E PREENCHIMENTO */
 .timeline-line-bg, .timeline-line-fill {
   position: absolute;
-  /* Top 25px = Metade da altura da bolinha (50px / 2) */
-  top: 25px; 
-  /* Left/Right 50px = Metade da largura do container do passo (100px / 2) */
-  left: 40px; 
-  right: 50px;
+  top: 23px; /* Centro exato da bolinha (25px) menos metade da linha (2px) */
+  left: 50px; /* Alinha com o centro da primeira bolinha */
+  right: 50px; /* Alinha com o centro da última bolinha */
   height: 4px;
   z-index: 0; /* Atrás de tudo */
   border-radius: 4px;
@@ -159,12 +157,11 @@
 
 .timeline-line-bg {
   background: rgba(255, 255, 255, 0.1);
+  width: auto;
 }
 
 .timeline-line-fill {
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
-  /* Ajuste Fino: Aumentei um pouco para entrar embaixo da bolinha laranja */
-  width: 31%; 
   box-shadow: 0 0 15px var(--neon-orange);
   transition: width 1s ease-in-out;
 }
@@ -322,8 +319,15 @@
   .timeline-tech { flex-direction: column; align-items: flex-start; padding-left: 20px; height: auto; margin-bottom: 20px; gap: 0; }
   
   /* Linha Vertical no Mobile */
-  .timeline-line-bg, .timeline-line-fill { width: 4px; height: 100%; left: 48px; top: 25px; right: auto; }
-  .timeline-line-fill { height: 33%; width: 4px; }
+  .timeline-line-bg, .timeline-line-fill { 
+    width: 4px; 
+    height: auto; 
+    bottom: 50px; 
+    left: 43px; 
+    top: 25px; 
+    right: auto; 
+  }
+  .timeline-line-fill { transition: height 1s ease; }
 
   .timeline-step { flex-direction: row; width: 100%; margin-bottom: 30px; align-items: center; }
   .step-circle { margin-bottom: 0; margin-right: 15px; }
@@ -385,6 +389,7 @@
 .status-pill.em_analise { background: rgba(255, 165, 0, 0.2); color: orange; }
 .status-pill.aprovado { background: rgba(0, 255, 0, 0.2); color: #0f0; }
 .status-pill.pago { background: rgba(0, 243, 255, 0.2); color: var(--neon-blue); }
+.status-pill.reprovado, .status-pill.rejeitado { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
 .card-body p {
   color: #ccc;
@@ -412,4 +417,39 @@
   text-align: center;
   color: #aaa;
   margin-top: 50px;
+}
+
+/* =========================================
+   STATUS REPROVADO (MODIFICADORES)
+   ========================================= */
+.success-icon-tech.reprovado {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  animation: pulseError 2s infinite;
+}
+
+@keyframes pulseError {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.timeline-line-fill.reprovado {
+  background: #ef4444;
+  box-shadow: 0 0 15px #ef4444;
+}
+
+.timeline-step.reprovado .step-circle {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  z-index: 10;
+}
+
+.timeline-step.reprovado .step-label {
+  color: #ef4444;
+  text-shadow: 0 0 10px rgba(239,68,68,0.4);
 }
