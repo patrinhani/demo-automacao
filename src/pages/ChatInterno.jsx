@@ -11,17 +11,54 @@ const TEAM_FIXO = [
   { id: "user_teste_demo", nome: "Cadastro Teste", cargo: "Usuário de Testes", email: "teste@techcorp.com.br" },
 ];
 
-// --- FUNÇÃO DE EXPONENTIAL BACKOFF (FILA DE ESPERA) ---
-const fetchComRetry = async (url, options, maxTentativas = 3) => {
+// --- TRAVA GLOBAL ANTI-DUPLICIDADE ---
+const mensagensProcessadasPelaIA = new Set();
+
+// --- FILA GLOBAL DE REQUISIÇÕES (PROMISE QUEUE) ---
+// Garante que NUNCA faremos duas requisições simultâneas para a API
+let filaGlobalIA = Promise.resolve();
+
+const enfileirarIA = (tarefaAsync) => {
+    filaGlobalIA = filaGlobalIA.then(async () => {
+        try {
+            await tarefaAsync();
+        } catch(e) {
+            console.error("Erro na fila da IA:", e);
+        }
+        // 🛑 RESPIRAÇÃO OBRIGATÓRIA: Força um atraso de 5 segundos após CADA requisição.
+        // O plano gratuito permite ~15 RPM (1 a cada 4s). Isso garante que nunca ultrapassamos a cota de tempo.
+        await new Promise(resolve => setTimeout(resolve, 5000));
+    });
+};
+
+// --- FUNÇÃO DE DETECÇÃO DE 429 (QUOTA EXCEEDED) ---
+const fetchComRetry = async (url, options, maxTentativas = 4) => {
     let tempoEspera = 2000; 
     
     for (let i = 0; i < maxTentativas; i++) {
         const response = await fetch(url, options);
+        
         if (response.status !== 429) return response; 
         
-        console.warn(`Limite da IA atingido. Tentativa ${i + 1}. A aguardar ${tempoEspera / 1000}s...`);
+        // Se batermos no teto (429), lemos o tempo que o Google exige que esperemos
+        const responseClone = response.clone();
+        try {
+            const data = await responseClone.json();
+            const errMsg = data?.error?.message || data?.error || '';
+            
+            // Procura a frase "retry in Xs" na resposta do erro
+            const match = typeof errMsg === 'string' && errMsg.match(/retry in (\d+\.?\d*)s/i);
+            if (match && match[1]) {
+                tempoEspera = (parseFloat(match[1]) * 1000) + 2000; // Soma 2 segundos de margem de segurança
+            }
+        } catch (e) {
+            console.error("Não foi possível ler o tempo de espera do Google. Usando padrão.");
+        }
+        
+        console.warn(`⏳ Cota atingida (429). Tentativa ${i + 1}/${maxTentativas}. Aguardando ${Math.round(tempoEspera / 1000)}s...`);
         await new Promise(resolve => setTimeout(resolve, tempoEspera));
-        tempoEspera *= 2; 
+        
+        tempoEspera *= 1.5; 
     }
     return fetch(url, options); 
 };
@@ -44,11 +81,9 @@ export default function ChatInterno() {
   const [ultimasInteracoes, setUltimasInteracoes] = useState({}); 
   const [termoBusca, setTermoBusca] = useState('');
   
-  // NOVO ESTADO: Controla se a IA está digitando para travar o input e mostrar a animação
   const [iaDigitando, setIaDigitando] = useState(false); 
 
   const processedInitialState = useRef(false);
-  const lastProcessedMsgRef = useRef(null);
   const scrollRef = useRef(null);
 
   // 1. AUTH
@@ -211,17 +246,15 @@ export default function ChatInterno() {
     return () => unsubscribe();
   }, [canalAtivo, user]); 
 
-  // Rola para baixo sempre que chegar mensagem OU quando a IA começar a digitar
   useEffect(() => { 
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
   }, [mensagens, iaDigitando]);
 
-  // --- 6. AUTO-REPLY DO ROBÔ (COM IA GEMINI PROTEGIDA VIA BACKEND) ---
+  // --- 6. AUTO-REPLY DO ROBÔ (AGORA COM FILA GLOBAL) ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
-      
       if (ultimaMsg.uid !== user.uid) return; 
 
       const usuarioAtual = todosUsuarios.find(u => u.id === canalAtivo.id);
@@ -229,20 +262,18 @@ export default function ChatInterno() {
       if (usuarioAtual && usuarioAtual.isMock === true) {
           const mockId = usuarioAtual.id;
 
-          if (lastProcessedMsgRef.current === ultimaMsg.id) return;
-          lastProcessedMsgRef.current = ultimaMsg.id;
+          if (mensagensProcessadasPelaIA.has(ultimaMsg.id)) return;
+          mensagensProcessadasPelaIA.add(ultimaMsg.id);
 
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
-          
-          // ATIVA A TRAVA E A ANIMAÇÃO
-          setIaDigitando(true);
 
-          // AUMENTADO O TEMPO: Sorteia um atraso entre 2 e 35 segundos para não estourar a API
-          const tempoEspera = Math.floor(Math.random() * 33000) + 2000;
+          // ENFILEIRA A TAREFA (Garante que só roda 1 por vez, esperando a anterior)
+          enfileirarIA(async () => {
+              
+              // Só ativa a animação quando chega a vez dela na fila!
+              setIaDigitando(true);
 
-          // Dispara o robô no "plano de fundo" sem salvar a variável do timer
-          setTimeout(async () => {
               try {
                   let erroTipo = "Dúvida sobre o ponto";
                   let pontosReais = {}; 
@@ -279,7 +310,6 @@ Regras inquebráveis:
                   let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
 
                   try {
-                      // FAZ A CHAMADA PARA A NOSSA PRÓPRIA API (O Backend na Vercel)
                       const response = await fetchComRetry('/api/chat', {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
@@ -297,13 +327,17 @@ Regras inquebráveis:
                       
                       if (!response.ok) {
                           console.error("Erro retornado pelo Backend/Google:", data);
-                          textoFinal = `🤖 [ERRO DE COMUNICAÇÃO]: ${data.error?.message || data.error || 'Erro desconhecido'}`;
+                          if (response.status === 429) {
+                              textoFinal = "Putz, acho que o sistema de chat está muito lento agora (limite excedido). Pode tentar me chamar de novo daqui a um tempinho?";
+                          } else {
+                              textoFinal = "Vish, minha internet deu uma oscilada feia e não consegui receber tudo direito. (Erro de Servidor)";
+                          }
                       } else if (data.candidates && data.candidates[0].content) {
                           textoFinal = data.candidates[0].content.parts[0].text;
                       }
                   } catch (erroApi) {
                       console.error("Erro ao chamar a nossa API:", erroApi);
-                      textoFinal = "🤖 [ERRO INTERNO]: Não foi possível contactar o servidor.";
+                      textoFinal = "Acho que a minha net caiu aqui, a mensagem não carregou... pode repetir?";
                   }
 
                   const path = `chats/direto/${[meuId, mockId].sort().join('_')}`;
@@ -317,19 +351,16 @@ Regras inquebráveis:
               } catch (e) {
                   console.error("Erro na requisição/salvamento do Robô:", e);
               } finally {
-                  // DESATIVA A TRAVA
                   setIaDigitando(false);
               }
-
-          }, tempoEspera);
-          
+          });
       }
   }, [mensagens, canalAtivo, user, todosUsuarios]);
 
   // 7. ENVIAR 
   const enviarMensagem = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!novaMensagem.trim() || !user || iaDigitando) return; // Segurança extra aqui
+    if (!novaMensagem.trim() || !user || iaDigitando) return; 
 
     let path = canalAtivo.id === 'geral' 
         ? 'chats/geral' 
