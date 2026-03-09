@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useUser } from '../../contexts/UserContext'; 
-import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
+import { useAlert } from '../../contexts/AlertContext'; 
 import { db } from '../../firebase';
 import { ref, onValue, update, set } from 'firebase/database';
 import './Conciliacao.css';
@@ -10,7 +10,7 @@ import './Conciliacao.css';
 export default function Conciliacao() {
   // Pegamos os dados do Contexto (já com a lógica de nome e permissão aplicada)
   const { user, uidAtivo, isFinanceiro } = useUser();
-  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
+  const { showAlert } = useAlert(); 
   const navigate = useNavigate();
   
   // Estados de Dados
@@ -31,7 +31,6 @@ export default function Conciliacao() {
   const [bancoDestino, setBancoDestino] = useState('');
 
   // --- FUNÇÃO AUXILIAR: GERAR INICIAIS DO AVATAR ---
-  // Ex: "João Silva" -> "JS", "Robô de Ana" -> "RA"
   const getIniciais = (nome) => {
     if (!nome) return 'FN'; // FN = Financeiro (Padrão)
     
@@ -118,15 +117,12 @@ export default function Conciliacao() {
         });
         
         if (pendentes.length === 0) {
-            // <-- Substituído o alert nativo
             await showAlert("Aviso", "⚠️ Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
         } else {
-            // <-- Substituído o alert nativo
             await showAlert("Sucesso", `🤖 Robô acionado com sucesso! Processando ${pendentes.length} itens.`);
         }
     } catch (error) {
         console.error("Erro ao acionar automação:", error);
-        // <-- Substituído o alert nativo
         await showAlert("Erro", "Erro ao conectar com o Robô.");
     }
   };
@@ -434,13 +430,10 @@ export default function Conciliacao() {
 
               <form onSubmit={confirmarBaixaManual} className="form-tech">
                 
-                {/* Campo de Código Hash */}
+                {/* Campo de Código Hash (Dica Removida) */}
                 <div className="form-group-tech">
                     <label style={{color:'#f59e0b', fontWeight:'bold'}}>
                         Digite o Hash de Validação
-                        <span style={{float:'right', fontSize:'0.7rem', fontWeight:'normal', opacity:0.7}}>
-                           (Disponível no Extrato: {faturaSelecionada.codigoHash})
-                        </span>
                     </label>
                     <input 
                         type="text" 
@@ -514,7 +507,7 @@ export default function Conciliacao() {
                 )}
 
                 <div className="modal-actions-tech" style={{marginTop:'25px'}}>
-                  <button type="submit" className="btn-save-tech" style={{width:'100%', padding:'15px', fontSize:'1rem'}}>
+                  <button type="submit" className="btn-save-tech" style={{width:'100%', padding:'15px', fontSize:'1rem', border: 'none'}}>
                     ✅ Confirmar Baixa
                   </button>
                 </div>
