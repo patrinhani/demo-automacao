@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { ref, onValue, update, get } from 'firebase/database';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import './GestaoReembolsos.css'; // Vamos criar esse CSS simples abaixo
 
 export default function GestaoReembolsos() {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook de alertas
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +26,8 @@ export default function GestaoReembolsos() {
       const ehGestor = userData && (userData.role === 'admin' || userData.role === 'gestor');
 
       if (!ehGestor) {
-        alert("Acesso restrito a gestores.");
+        // <-- Substituído o alert nativo
+        await showAlert("Acesso Negado", "Acesso restrito a gestores.");
         navigate('/dashboard');
         return;
       }
@@ -48,12 +51,15 @@ export default function GestaoReembolsos() {
     };
 
     carregarDados();
-  }, [navigate]);
+  }, [navigate, showAlert]);
 
   // --- 2. AÇÕES DE APROVAÇÃO ---
   const handleAvaliar = async (id, decisao) => {
     // decisao deve ser 'aprovado' ou 'rejeitado'
-    if (!window.confirm(`Tem certeza que deseja ${decisao.toUpperCase()} esta solicitação?`)) return;
+    
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", `Tem certeza que deseja ${decisao.toUpperCase()} esta solicitação?`);
+    if (!confirmou) return;
 
     try {
       const itemRef = ref(db, `reembolsos/${id}`);
@@ -62,9 +68,11 @@ export default function GestaoReembolsos() {
         avaliadoPor: auth.currentUser.uid,
         dataAvaliacao: new Date().toISOString()
       });
-      alert(`Solicitação ${decisao} com sucesso!`);
+      // <-- Substituído o alert nativo
+      await showAlert("Sucesso", `Solicitação ${decisao} com sucesso!`);
     } catch (error) {
-      alert("Erro ao atualizar.");
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Erro ao atualizar.");
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useUser } from '../../contexts/UserContext'; 
+import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
 import { db } from '../../firebase';
 import { ref, onValue, update, set } from 'firebase/database';
 import './Conciliacao.css';
@@ -9,6 +10,7 @@ import './Conciliacao.css';
 export default function Conciliacao() {
   // Pegamos os dados do Contexto (já com a lógica de nome e permissão aplicada)
   const { user, uidAtivo, isFinanceiro } = useUser();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
   const navigate = useNavigate();
   
   // Estados de Dados
@@ -51,12 +53,17 @@ export default function Conciliacao() {
 
   // --- 1. SEGURANÇA: BLOQUEIO DE ACESSO ---
   useEffect(() => {
-    // Se o usuário carregou e NÃO é do financeiro, expulsa
-    if (user && isFinanceiro === false) {
-      alert("⛔ ACESSO NEGADO\nEsta área é restrita ao Departamento Financeiro.");
-      navigate('/dashboard');
-    }
-  }, [user, isFinanceiro, navigate]);
+    // Criado uma função async interna para aguardar o fechamento do alerta antes de navegar
+    const verificarAcesso = async () => {
+      // Se o usuário carregou e NÃO é do financeiro, expulsa
+      if (user && isFinanceiro === false) {
+        await showAlert("⛔ Acesso Negado", "Esta área é restrita ao Departamento Financeiro.");
+        navigate('/dashboard');
+      }
+    };
+    
+    verificarAcesso();
+  }, [user, isFinanceiro, navigate, showAlert]);
 
   // --- 2. BUSCA DE DADOS (FIREBASE) ---
   useEffect(() => {
@@ -111,13 +118,16 @@ export default function Conciliacao() {
         });
         
         if (pendentes.length === 0) {
-            alert("⚠️ Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
+            // <-- Substituído o alert nativo
+            await showAlert("Aviso", "⚠️ Nenhuma pendência encontrada, mas o sinal de teste foi enviado ao Robô.");
         } else {
-            alert(`🤖 Robô acionado com sucesso! Processando ${pendentes.length} itens.`);
+            // <-- Substituído o alert nativo
+            await showAlert("Sucesso", `🤖 Robô acionado com sucesso! Processando ${pendentes.length} itens.`);
         }
     } catch (error) {
         console.error("Erro ao acionar automação:", error);
-        alert("Erro ao conectar com o Robô.");
+        // <-- Substituído o alert nativo
+        await showAlert("Erro", "Erro ao conectar com o Robô.");
     }
   };
 

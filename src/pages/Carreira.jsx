@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'; // <--- Adicionado useEffect
+import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { getAuth } from "firebase/auth"; // <--- Import do Auth
-import { ref, onValue } from "firebase/database"; // <--- Imports do Database
-import { db } from '../firebase'; // <--- Import da conexão
+import { getAuth } from "firebase/auth"; 
+import { ref, onValue } from "firebase/database"; 
+import { db } from '../firebase'; 
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <--- Import do contexto de alertas
 import './Carreira.css';
 
 export default function Carreira() {
   const navigate = useNavigate();
-  const auth = getAuth(); // <--- Inicializa Auth
+  const auth = getAuth(); 
+  const { showAlert, showConfirm, showToast } = useAlert(); // <--- Inicialização dos alertas customizados
 
   // --- 1. INTEGRAÇÃO: ESTADO DO USUÁRIO ---
   const [user, setUser] = useState(null);
@@ -110,9 +112,11 @@ export default function Carreira() {
     }
   ]);
 
-  // Ação de Aplicar
-  const handleAplicar = (id) => {
-    if (window.confirm('Confirmar candidatura?')) {
+  // Ação de Aplicar (Modificada para usar Custom Confirm)
+  const handleAplicar = async (id) => {
+    const confirmado = await showConfirm('Confirmar Candidatura', 'Tem certeza que deseja se candidatar a esta vaga?');
+    
+    if (confirmado) {
       setVagas(vagas.map(v => v.id === id ? { 
         ...v, 
         aplicado: true,
@@ -121,6 +125,8 @@ export default function Carreira() {
           historico: [{ data: new Date().toLocaleDateString(), msg: 'Candidatura enviada.' }] 
         } 
       } : v));
+      
+      showToast('Sucesso', 'Candidatura enviada com sucesso!');
     }
   };
 
@@ -130,13 +136,13 @@ export default function Carreira() {
     setModalAberto('tracking');
   };
 
-  // Abrir Certificado ou Curso
+  // Abrir Certificado ou Curso (Modificado para usar Custom Alert)
   const handleCurso = (curso) => {
     if (curso.status === 'Concluído') {
       setItemSelecionado(curso);
       setModalAberto('certificado');
     } else {
-      alert(`Continuando curso: ${curso.titulo}...`);
+      showAlert('Curso em Andamento', `Continuando curso: ${curso.titulo}...`);
     }
   };
 

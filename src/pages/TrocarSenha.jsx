@@ -4,10 +4,12 @@ import { updatePassword } from "firebase/auth";
 import { ref, update } from "firebase/database"; 
 import { auth, db } from '../firebase';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import './Login.css'; // Reutiliza o CSS da tela de login para manter o padrão visual
 
 export default function TrocarSenha() {
   const navigate = useNavigate();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
   
   // Estados do formulário
   const [novaSenha, setNovaSenha] = useState('');
@@ -35,7 +37,8 @@ export default function TrocarSenha() {
 
     // Segurança: Se por algum motivo o usuário não estiver logado, chuta para fora
     if (!user) {
-      alert("Sessão expirada. Faça login novamente.");
+      // <-- Substituído o alert nativo
+      await showAlert("Aviso", "Sessão expirada. Faça login novamente.");
       navigate('/');
       return;
     }
@@ -54,7 +57,8 @@ export default function TrocarSenha() {
       });
 
       // Sucesso!
-      alert("Senha atualizada com sucesso! Você será redirecionado.");
+      // <-- Substituído o alert nativo
+      await showAlert("Sucesso", "Senha atualizada com sucesso! Você será redirecionado.");
       navigate('/dashboard');
 
     } catch (err) {

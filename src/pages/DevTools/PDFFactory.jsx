@@ -7,12 +7,15 @@ import 'jspdf-autotable';
 
 import { db } from '../../firebase'; 
 import { ref, get } from 'firebase/database'; 
+import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
 
 import './PDFFactory.css';
 
 export default function PDFFactory() {
   const { isDev } = useUser();
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook de alertas
+
   const [activeTab, setActiveTab] = useState('boasvindas');
   const [previewUrl, setPreviewUrl] = useState(null);
   
@@ -38,11 +41,15 @@ export default function PDFFactory() {
   });
 
   useEffect(() => {
-    if (isDev === false) { 
-      alert("Acesso restrito a Desenvolvedores.");
-      navigate('/dashboard');
-    }
-  }, [isDev, navigate]);
+    // <-- Função assíncrona para aguardar o alerta
+    const verificarAcesso = async () => {
+      if (isDev === false) { 
+        await showAlert("Acesso Negado", "Acesso restrito a Desenvolvedores.");
+        navigate('/dashboard');
+      }
+    };
+    verificarAcesso();
+  }, [isDev, navigate, showAlert]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -202,7 +209,10 @@ export default function PDFFactory() {
 
   // --- GERAÇÃO EM LOTE COM DELAY ---
   const handleGerarLoteBanco = async () => {
-    if (!confirm("Gerar PDFs para TODOS os usuários? Isso pode levar alguns segundos.")) return;
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", "Gerar PDFs para TODOS os usuários? Isso pode levar alguns segundos.");
+    if (!confirmou) return;
+    
     setIsGeneratingBatch(true);
     setProgressoBatch("Iniciando...");
 
@@ -237,13 +247,16 @@ export default function PDFFactory() {
         }
 
         setProgressoBatch("Concluído!");
-        alert(`Sucesso! ${count} arquivos gerados. Verifique sua pasta de Downloads.`);
+        // <-- Substituído o alert nativo
+        await showAlert("Sucesso", `Sucesso! ${count} arquivos gerados. Verifique sua pasta de Downloads.`);
       } else {
-        alert("Nenhum usuário encontrado no banco de dados.");
+        // <-- Substituído o alert nativo
+        await showAlert("Aviso", "Nenhum usuário encontrado no banco de dados.");
       }
     } catch (error) {
       console.error("Erro no lote:", error);
-      alert("Erro ao buscar usuários: " + error.message);
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Erro ao buscar usuários: " + error.message);
     } finally {
       setIsGeneratingBatch(false);
       setProgressoBatch("");

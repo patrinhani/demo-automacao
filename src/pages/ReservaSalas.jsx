@@ -4,10 +4,12 @@ import { db, auth } from '../firebase'; // Importa o Firebase
 import { ref, onValue, push, remove } from 'firebase/database';
 import { onAuthStateChanged } from 'firebase/auth';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import './ReservaSalas.css';
 
 export default function ReservaSalas() {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook do alerta
   const [user, setUser] = useState(null);
   const [abaAtiva, setAbaAtiva] = useState('reservar');
   const [dataSelecionada, setDataSelecionada] = useState(new Date().toISOString().split('T')[0]);
@@ -82,13 +84,24 @@ export default function ReservaSalas() {
   // --- 3. AÇÕES ---
   const handleReservar = async (hora) => {
     const status = getStatusHorario(hora);
-    if (status === 'ocupado') return alert('❌ Este horário já foi reservado por outro colega.');
-    if (status === 'reservado-voce') return alert('⚠️ Você já reservou este horário.');
+    
+    // <-- Substituído o alert nativo e ajustado o return para esperar o alerta fechar
+    if (status === 'ocupado') {
+      await showAlert('Aviso', '❌ Este horário já foi reservado por outro colega.');
+      return;
+    }
+    if (status === 'reservado-voce') {
+      await showAlert('Aviso', '⚠️ Você já reservou este horário.');
+      return;
+    }
+    
     if (!user) return;
 
     const salaInfo = salas.find(s => s.id === salaSelecionada);
 
-    if (window.confirm(`Confirmar reserva da ${salaInfo.nome} às ${hora}?`)) {
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm('Confirmar Reserva', `Confirmar reserva da ${salaInfo.nome} às ${hora}?`);
+    if (confirmou) {
       try {
         const reservasRef = ref(db, 'reservas_salas');
         await push(reservasRef, {
@@ -100,21 +113,26 @@ export default function ReservaSalas() {
           usuarioNome: user.displayName || user.email.split('@')[0], // Nome para quem for admin ver
           createdAt: Date.now()
         });
-        alert('✅ Sala reservada com sucesso!');
+        // <-- Substituído o alert nativo
+        await showAlert('Sucesso', '✅ Sala reservada com sucesso!');
       } catch (error) {
         console.error(error);
-        alert('Erro ao realizar reserva.');
+        // <-- Substituído o alert nativo
+        await showAlert('Erro', 'Erro ao realizar reserva.');
       }
     }
   };
 
   const handleCancelar = async (id) => {
-    if (window.confirm('Tem certeza que deseja cancelar esta reserva?')) {
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm('Cancelar', 'Tem certeza que deseja cancelar esta reserva?');
+    if (confirmou) {
       try {
         const reservaRef = ref(db, `reservas_salas/${id}`);
         await remove(reservaRef);
       } catch (error) {
-        alert('Erro ao cancelar.');
+        // <-- Substituído o alert nativo
+        await showAlert('Erro', 'Erro ao cancelar.');
       }
     }
   };

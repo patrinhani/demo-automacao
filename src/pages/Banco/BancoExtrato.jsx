@@ -3,11 +3,13 @@ import { db } from '../../firebase';
 import { ref, set, update } from 'firebase/database';
 import { gerarCenarioFinanceiro } from '../../utils/geradorFinanceiro';
 import { useUser } from '../../contexts/UserContext';
+import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
 import { jsPDF } from 'jspdf'; 
 import './Banco.css'; 
 
 export default function BancoExtrato({ extrato, saldo, isCorporate }) {
   const { user } = useUser();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -25,7 +27,9 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
       });
       updates['banco_mock/saldo'] = 850000.00 + (Math.random() * 50000);
       await update(ref(db), updates);
-      alert("✅ Lote Processado! Dados adicionados ao seu extrato.");
+      
+      // <-- Substituído o alert nativo
+      await showAlert("Sucesso", "✅ Lote Processado! Dados adicionados ao seu extrato.");
     } catch (e) { 
       console.error(e); 
     } finally { 
@@ -34,7 +38,8 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
   };
 
   // === GERAÇÃO NATIVA DO PDF EM TEXTO (RPA FRIENDLY) ===
-  const handleBaixarComprovante = (item) => {
+  // <-- Transformada em async para poder usar o await no showAlert do catch
+  const handleBaixarComprovante = async (item) => {
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const margin = 20;
@@ -231,7 +236,8 @@ export default function BancoExtrato({ extrato, saldo, isCorporate }) {
 
     } catch (error) {
       console.error("ERRO AO GERAR O PDF:", error);
-      alert("Falha ao gerar o PDF! Verifique a consola do navegador.");
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Falha ao gerar o PDF! Verifique a consola do navegador.");
     }
   };
 

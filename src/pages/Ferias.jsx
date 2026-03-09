@@ -5,11 +5,13 @@ import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
 import { db, auth } from '../firebase';
 import { ref, push, get } from 'firebase/database';
+import { useAlert } from '../contexts/AlertContext'; // <--- Import do contexto de alertas
 import './Ferias.css';
 
 export default function Ferias() {
   const navigate = useNavigate();
   const formRef = useRef();
+  const { showAlert } = useAlert(); // <--- Inicialização dos alertas customizados
   
   const [userData, setUserData] = useState({ nome: '', cargo: '', matricula: '' });
   const [dataInicio, setDataInicio] = useState('');
@@ -65,7 +67,13 @@ export default function Ferias() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (erroData || conflito) return alert("Verifique os erros antes de enviar.");
+    
+    // Substituição do alert nativo
+    if (erroData || conflito) {
+        await showAlert("Atenção", "Verifique os erros antes de enviar.");
+        return;
+    }
+    
     setLoading(true);
 
     try {
@@ -85,7 +93,8 @@ export default function Ferias() {
 
         setShowModal(true);
     } catch (error) {
-        alert("Erro ao solicitar: " + error.message);
+        // Substituição do alert nativo
+        await showAlert("Erro", "Erro ao solicitar: " + error.message);
     } finally {
         setLoading(false);
     }

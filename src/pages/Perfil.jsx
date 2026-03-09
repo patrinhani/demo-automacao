@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { ref, onValue, update } from 'firebase/database';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import '../App.css';
 import './Perfil.css';
 
 export default function Perfil() {
   const navigate = useNavigate();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
 
   const [userData, setUserData] = useState({
     nome: '',
@@ -84,8 +86,7 @@ export default function Perfil() {
       const userRef = ref(db, `users/${user.uid}`);
       
       await update(userRef, {
-        nome: userData.nome,
-        cargo: userData.cargo,
+        // Cargo e nome removido daqui para evitar sobrescrita indevida no banco
         telefone: userData.telefone, // Salva já formatado
         nascimento: userData.nascimento,
         matricula: userData.matricula, // Salva a matrícula gerada
@@ -93,10 +94,12 @@ export default function Perfil() {
       });
 
       setEditando(false);
-      alert('Perfil atualizado com sucesso!');
+      // <-- Substituído o alert nativo
+      await showAlert("Sucesso", "Perfil atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar alterações.");
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Erro ao salvar alterações.");
     }
   };
 
@@ -156,7 +159,7 @@ export default function Perfil() {
           <form onSubmit={handleSalvar} className="perfil-form-tech">
             <div className="form-header">
               <h3>Dados Pessoais</h3>
-              <p>Edite suas informações de contato e cargo.</p>
+              <p>Edite suas informações de contato.</p>
             </div>
 
             <div className="form-grid-tech">
@@ -166,10 +169,10 @@ export default function Perfil() {
                   type="text" 
                   name="nome"
                   value={userData.nome} 
-                  disabled={!editando}
+                  disabled={true}
                   onChange={handleChange}
                   placeholder="Seu nome aqui"
-                  className={editando ? 'editable' : ''}
+                  className="locked"
                 />
               </div>
 
@@ -179,10 +182,9 @@ export default function Perfil() {
                   type="text" 
                   name="cargo"
                   value={userData.cargo} 
-                  disabled={!editando}
-                  onChange={handleChange}
+                  disabled={true}
                   placeholder="Ex: Desenvolvedor Front-end"
-                  className={editando ? 'editable' : ''}
+                  className="locked"
                 />
               </div>
 

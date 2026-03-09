@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase'; // <--- Importamos o auth
 import { ref, onValue, push, update, remove } from 'firebase/database';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import './Tarefas.css';
 
 export default function Tarefas() {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook de alertas
   
   const [modalAberto, setModalAberto] = useState(false);
   const [novoItem, setNovoItem] = useState({
@@ -43,12 +45,20 @@ export default function Tarefas() {
   }, []);
 
   // --- 2. SALVAR COM O ID DO USUÁRIO ---
-  const handleSalvar = (e) => {
+  const handleSalvar = async (e) => {
     e.preventDefault();
-    if (!novoItem.titulo.trim()) return alert("O título é obrigatório!");
+    if (!novoItem.titulo.trim()) {
+      // <-- Substituído o alert nativo
+      await showAlert("Aviso", "O título é obrigatório!");
+      return;
+    }
 
     const user = auth.currentUser;
-    if (!user) return alert("Você precisa estar logado!");
+    if (!user) {
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Você precisa estar logado!");
+      return;
+    }
 
     const tarefasRef = ref(db, 'tarefas');
     
@@ -70,20 +80,16 @@ export default function Tarefas() {
     update(tarefaRef, { status: novoStatus });
   };
 
-  const excluirTarefa = (id) => {
-    if(window.confirm("Remover esta tarefa permanentemente?")) {
+  const excluirTarefa = async (id) => {
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", "Remover esta tarefa permanentemente?");
+    if (confirmou) {
       const tarefaRef = ref(db, `tarefas/${id}`);
       remove(tarefaRef);
     }
   };
 
-  // ... (O restante do código visual/return permanece IGUAL ao anterior)
-  // Vou abreviar a parte visual para não ficar gigante, 
-  // pois a lógica acima é o que mudou.
-  // Mantenha o return (...) que você já tem no arquivo, 
-  // pois ele não precisa mudar.
-  
-  // Componente Coluna (Mantenha igual)
+  // Componente Coluna
   const Coluna = ({ titulo, status, icon }) => {
     const itens = tarefas.filter(t => t.status === status);
     return (

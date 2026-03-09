@@ -4,6 +4,7 @@ import { db, auth } from '../../firebase';
 import { ref, push, set, get, update } from 'firebase/database';
 import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
+import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
 import './DevTools.css';
 
 // --- MOTOR DE ALEATORIEDADE PARA RH ---
@@ -11,43 +12,44 @@ const NOMES = ["Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gabr
 const SOBRENOMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho", "Almeida"];
 
 const DEPARTAMENTOS = [
-    { setor: "TI", cargos: ["Dev. Júnior", "Dev Fullstack", "Suporte N2", "Segurança Info", "P.O.", "UX Designer", "DevOps"] },
-    { setor: "Financeiro", cargos: ["Analista Fin.", "Controller", "Auxiliar Financeiro", "Especialista Fiscal"] },
-    { setor: "RH", cargos: ["Assistente RH", "Analista RH", "BP RH", "Recrutador"] },
-    { setor: "Comercial", cargos: ["Vendedor", "Gerente Vendas", "Executivo de Contas", "SDR"] }
+  { setor: "TI", cargos: ["Dev. Júnior", "Dev Fullstack", "Suporte N2", "Segurança Info", "P.O.", "UX Designer", "DevOps"] },
+  { setor: "Financeiro", cargos: ["Analista Fin.", "Controller", "Auxiliar Financeiro", "Especialista Fiscal"] },
+  { setor: "RH", cargos: ["Assistente RH", "Analista RH", "BP RH", "Recrutador"] },
+  { setor: "Comercial", cargos: ["Vendedor", "Gerente Vendas", "Executivo de Contas", "SDR"] }
 ];
 
 const TIPOS_ERRO = [
-    "Marcação Ímpar", "Falta Injustificada", "Atraso Excessivo", 
-    "Batida Duplicada", "Intervalo < 1h", "Ponto Britânico", "Hora Extra N/A"
+  "Marcação Ímpar", "Falta Injustificada", "Atraso Excessivo", 
+  "Batida Duplicada", "Intervalo < 1h", "Ponto Britânico", "Hora Extra N/A"
 ];
 
 // Gera horários coerentes com o tipo de erro sorteado
 const gerarHorariosPorErro = (erro) => {
-    let base = { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' };
-    switch(erro) {
-        case "Falta Injustificada": return { e: '---', si: '---', vi: '---', s: '---' };
-        case "Marcação Ímpar":
-            const chaves = ['e', 'si', 'vi', 's'];
-            base[chaves[Math.floor(Math.random() * chaves.length)]] = '---';
-            return base;
-        case "Atraso Excessivo":
-            base.e = ['09:45', '10:30', '11:15', '10:00', '10:50'][Math.floor(Math.random() * 5)];
-            return base;
-        case "Batida Duplicada":
-            return { e: '08:00', si: '08:02', vi: '12:00', s: '17:00' };
-        case "Intervalo < 1h":
-            base.vi = ['12:35', '12:40', '12:45'][Math.floor(Math.random() * 3)];
-            return base;
-        case "Hora Extra N/A":
-            base.s = ['19:30', '20:15', '21:00', '22:45', '23:10'][Math.floor(Math.random() * 5)];
-            return base;
-        default: return base;
-    }
+  let base = { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' };
+  switch(erro) {
+      case "Falta Injustificada": return { e: '---', si: '---', vi: '---', s: '---' };
+      case "Marcação Ímpar":
+          const chaves = ['e', 'si', 'vi', 's'];
+          base[chaves[Math.floor(Math.random() * chaves.length)]] = '---';
+          return base;
+      case "Atraso Excessivo":
+          base.e = ['09:45', '10:30', '11:15', '10:00', '10:50'][Math.floor(Math.random() * 5)];
+          return base;
+      case "Batida Duplicada":
+          return { e: '08:00', si: '08:02', vi: '12:00', s: '17:00' };
+      case "Intervalo < 1h":
+          base.vi = ['12:35', '12:40', '12:45'][Math.floor(Math.random() * 3)];
+          return base;
+      case "Hora Extra N/A":
+          base.s = ['19:30', '20:15', '21:00', '22:45', '23:10'][Math.floor(Math.random() * 5)];
+          return base;
+      default: return base;
+  }
 };
 
 export default function DevTools() {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook do alerta
   
   // --- CONTEXTO DE USUÁRIO (Simulação) ---
   const { 
@@ -122,7 +124,9 @@ export default function DevTools() {
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
 
   const limparHistoricoPontoUnificado = async () => {
-    if (!window.confirm("⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?")) return;
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", "⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?");
+    if (!confirmou) return;
     
     try {
         const updates = {};
@@ -223,7 +227,10 @@ export default function DevTools() {
   };
 
   const limparTodos = async () => {
-    if (!window.confirm("Apagar faturas de TODOS os usuários listados?")) return;
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", "Apagar faturas de TODOS os usuários listados?");
+    if (!confirmou) return;
+
     try {
       const updates = {};
       usuariosComDados.forEach(u => {
@@ -307,7 +314,10 @@ export default function DevTools() {
   };
 
   const limparTudo = async () => {
-    if(!window.confirm("⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!")) return;
+    // <-- Substituído o window.confirm nativo
+    const confirmou = await showConfirm("Atenção", "⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!");
+    if(!confirmou) return;
+
     const updates = {};
     updates[`viagens/${userProfile.uid}`] = null;
     updates[`ponto/${userProfile.uid}`] = null;
@@ -536,7 +546,7 @@ export default function DevTools() {
                 
                 <div style={{marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #333', display: 'flex', gap: '10px'}}>
                    <button onClick={limparTodos} style={{flex: 1, background: '#ef4444', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'}}>
-                     🧨 Limpar Todos
+                      🧨 Limpar Todos
                    </button>
                 </div>
               </>

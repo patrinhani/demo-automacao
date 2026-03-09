@@ -9,7 +9,7 @@ import './FolhaPonto.css';
 
 export default function FolhaPonto() {
   const navigate = useNavigate();
-  const { showAlert, showConfirm, showToast } = useAlert(); 
+  const { showAlert, showConfirm, showPrompt, showToast } = useAlert(); 
 
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
@@ -116,7 +116,6 @@ export default function FolhaPonto() {
     return () => { clearInterval(timer); unsubscribeAuth(); };
   }, [navigate]);
 
-  // Listener Auditoria RH
   useEffect(() => {
       if (!isRH || !user) return;
       const rhRef = ref(db, 'rh/erros_ponto');
@@ -128,8 +127,6 @@ export default function FolhaPonto() {
               })).filter(item => {
                   if (item.status === 'Concluido') return false;
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
-                  
-                  // 🔒 REGRA DE ISOLAMENTO: Oculta casos que pertencem a outros usuários
                   if (item.donoUid && item.donoUid !== user.uid) return false;
                   
                   return true;
@@ -141,7 +138,6 @@ export default function FolhaPonto() {
       });
       return () => unsubscribe();
   }, [isRH, user]);
-
 
   const executarAutomacaoRH = async () => {
     if (!user) return;
@@ -235,10 +231,8 @@ export default function FolhaPonto() {
   };
 
   const reprovarAjuste = async (ajuste) => {
-    const confirmou = await showConfirm("Reprovar Ajuste", `Tem a certeza que deseja reprovar o pedido de ${ajuste.userName}?`);
-    if (!confirmou) return;
-
-    const motivo = prompt('Por favor, digite o motivo da reprovação:');
+    // Chamamos o prompt diretamente para evitar choque de modais!
+    const motivo = await showPrompt('Reprovar Ajuste', `Por favor, digite o motivo da reprovação para o pedido de ${ajuste.userName}:`);
     
     if (motivo && motivo.trim() !== '') {
       try {
@@ -250,6 +244,8 @@ export default function FolhaPonto() {
       } catch (error) {
         showAlert('Erro', 'Não foi possível reprovar o ajuste.');
       }
+    } else if (motivo !== null) { // null = utilizador cancelou
+        showAlert('Aviso', 'É necessário preencher um motivo para reprovar.');
     }
   };
 
@@ -270,7 +266,9 @@ export default function FolhaPonto() {
   };
 
   const reprovarPontoMock = async (id) => {
-      const motivo = prompt('Motivo da reprovação do ajuste sugerido pelo chat:');
+      // Chamamos o prompt diretamente para evitar choque de modais!
+      const motivo = await showPrompt('Motivo da Reprovação', 'Motivo da reprovação do ajuste sugerido pelo chat:');
+      
       if (motivo && motivo.trim() !== '') {
           try {
               await update(ref(db, `rh/erros_ponto/${id}`), { status: 'Notificado' });
@@ -278,7 +276,7 @@ export default function FolhaPonto() {
           } catch (error) {
               showAlert('Erro', 'Erro ao reprovar o ajuste.');
           }
-      } else {
+      } else if (motivo !== null) { 
           showAlert('Aviso', 'É necessário preencher um motivo para reprovar.');
       }
   };

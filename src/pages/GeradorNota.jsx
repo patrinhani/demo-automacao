@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo'; 
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import './GeradorNota.css';
 
 // --- COMPONENTE DE CÓDIGO DE BARRAS "MANUAL" ---
@@ -35,6 +36,7 @@ const TechBarcode = () => {
 
 export default function GeradorNota() {
   const navigate = useNavigate();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
   const [loading, setLoading] = useState(false);
   const invoiceRef = useRef();
 
@@ -73,11 +75,13 @@ export default function GeradorNota() {
         const nomeArquivo = `NFE_${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}.pdf`;
         pdf.save(nomeArquivo);
 
-        alert("✅ Nota Fiscal gerada com sucesso!");
+        // <-- Substituído o alert nativo
+        await showAlert("Sucesso", "✅ Nota Fiscal gerada com sucesso!");
         
       } catch (error) {
         console.error("Erro ao gerar PDF:", error);
-        alert("Erro ao gerar PDF.");
+        // <-- Substituído o alert nativo
+        await showAlert("Erro", "Erro ao gerar PDF.");
       } finally {
         setLoading(false);
       }

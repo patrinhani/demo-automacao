@@ -6,12 +6,14 @@ import Logo from '../components/Logo';
 import { db, auth } from '../firebase'; 
 import { ref, get } from 'firebase/database'; 
 import { onAuthStateChanged } from 'firebase/auth'; 
+import { useAlert } from '../contexts/AlertContext'; // <--- Import do contexto de alertas
 import '../App.css';
 import './Holerite.css';
 
 export default function Holerite() {
   const navigate = useNavigate();
   const printRef = useRef();
+  const { showAlert } = useAlert(); // <--- Inicialização dos alertas customizados
 
   // --- ESTADOS ---
   const [loadingUser, setLoadingUser] = useState(true);
@@ -188,7 +190,7 @@ export default function Holerite() {
         }
       } catch (error) { 
         console.error("Erro PDF:", error); 
-        alert("Erro ao gerar PDF.");
+        await showAlert("Erro", "Erro ao gerar PDF."); // <--- Substituição do alert
       } 
       finally { 
         setDownloadingId(null); 

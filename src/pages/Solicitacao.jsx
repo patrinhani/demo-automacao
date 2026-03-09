@@ -2,11 +2,13 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase'; // <--- 1. Importamos 'auth'
 import { ref, push } from 'firebase/database';
+import { useAlert } from '../contexts/AlertContext'; // <-- Importado o AlertContext
 import Logo from '../components/Logo';
 import './Solicitacao.css';
 
 export default function Solicitacao() {
   const navigate = useNavigate();
+  const { showAlert } = useAlert(); // <-- Inicializado o hook do alerta
   const formRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [arquivoNome, setArquivoNome] = useState('');
@@ -28,7 +30,8 @@ export default function Solicitacao() {
     // VERIFICAÇÃO DE SEGURANÇA
     const usuarioAtual = auth.currentUser;
     if (!usuarioAtual) {
-      alert("Erro: Você não está logado!");
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Erro: Você não está logado!");
       navigate('/');
       return;
     }
@@ -54,12 +57,12 @@ export default function Solicitacao() {
       navigate('/status-reembolso', { state: novaSolicitacao });
     } catch (error) {
       console.error("Erro ao enviar:", error);
-      alert("Erro ao enviar solicitação.");
+      // <-- Substituído o alert nativo
+      await showAlert("Erro", "Erro ao enviar solicitação.");
       setLoading(false);
     }
   };
 
-  // ... (O restante do return (HTML) permanece exatamente igual ao anterior)
   return (
     <div className="tech-layout-solicitacao">
       <div className="ambient-light light-1"></div>

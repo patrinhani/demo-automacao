@@ -124,7 +124,7 @@ export default function HistoricoSolicitacoes() {
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
            <span className="divider">|</span>
-           <span className="page-title">Portal da Transparência</span>
+           {/* <span className="page-title">Historico de Aprovações</span> */}
         </div>
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
           Voltar ↩
@@ -164,7 +164,7 @@ export default function HistoricoSolicitacoes() {
                             <th>Solicitante</th>
                             <th>Resumo</th>
                             <th>Status</th>
-                            <th>Aprovado Por</th>
+                            <th>Responsável</th>
                         </tr>
                     </thead>
                     <tbody>

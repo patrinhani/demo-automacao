@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { ref, onValue, update, push } from 'firebase/database';
+import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
 import './Banco.css'; // Garante que o CSS atualizado seja carregado
 
 export default function BancoCartoes({ accessLevel, isCorporate }) {
@@ -11,6 +12,8 @@ export default function BancoCartoes({ accessLevel, isCorporate }) {
   const [bloqueado, setBloqueado] = useState(false);
   const [loadingPay, setLoadingPay] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook do alerta
 
   // Define tipo de cartão visualmente
   const cardType = isCorporate ? 'black' : 'standard';
@@ -42,7 +45,10 @@ export default function BancoCartoes({ accessLevel, isCorporate }) {
   // Função: Pagar Fatura
   const pagarFatura = async () => {
     if (faturaAtual <= 0) return;
-    if (!window.confirm(`Confirma o pagamento de R$ ${faturaAtual.toLocaleString('pt-BR')}?`)) return;
+    
+    // <-- Substituído o window.confirm nativo pelo showConfirm do contexto
+    const confirmou = await showConfirm("Atenção", `Confirma o pagamento de R$ ${faturaAtual.toLocaleString('pt-BR')}?`);
+    if (!confirmou) return;
 
     setLoadingPay(true);
     
@@ -55,9 +61,11 @@ export default function BancoCartoes({ accessLevel, isCorporate }) {
         valor: -faturaAtual,
         tipo: "D"
       });
-      alert("Fatura paga com sucesso!");
+      // <-- Substituído o alert nativo pelo showAlert
+      await showAlert("Sucesso", "Fatura paga com sucesso!");
     } catch (err) {
-      alert("Erro ao processar pagamento.");
+      // <-- Substituído o alert nativo pelo showAlert
+      await showAlert("Erro", "Erro ao processar pagamento.");
     } finally {
       setLoadingPay(false);
     }

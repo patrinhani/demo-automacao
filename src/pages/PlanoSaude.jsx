@@ -6,11 +6,13 @@ import { getAuth } from "firebase/auth";
 import { ref, onValue, update, push } from "firebase/database";
 import { db } from '../firebase';
 import Logo from '../components/Logo';
+import { useAlert } from '../contexts/AlertContext'; // <--- Import do contexto de alertas
 import './PlanoSaude.css';
 
 export default function PlanoSaude() {
   const navigate = useNavigate();
   const auth = getAuth();
+  const { showAlert, showConfirm, showToast } = useAlert(); // <--- Inicialização dos alertas customizados
 
   // --- ESTADOS DO FIREBASE (Integração) ---
   const [user, setUser] = useState(null);
@@ -66,7 +68,8 @@ export default function PlanoSaude() {
     if (!user) return false;
     
     if (saldo < valor) {
-      alert(`Saldo insuficiente no Banco TechCorp!\n\nSeu saldo: R$ ${saldo.toFixed(2)}\nValor necessário: R$ ${valor.toFixed(2)}`);
+      // Substituição do alert nativo
+      await showAlert("Saldo Insuficiente", `Saldo insuficiente no Banco TechCorp!\n\nSeu saldo: R$ ${saldo.toFixed(2)}\nValor necessário: R$ ${valor.toFixed(2)}`);
       return false;
     }
 
@@ -94,7 +97,8 @@ export default function PlanoSaude() {
       return true;
     } catch (error) {
       console.error("Erro no pagamento:", error);
-      alert("Erro ao processar pagamento. Tente novamente.");
+      // Substituição do alert nativo
+      await showAlert("Erro", "Erro ao processar pagamento. Tente novamente.");
       return false;
     }
   };
@@ -174,8 +178,12 @@ export default function PlanoSaude() {
 
   const handleFileChange = (e) => { if (e.target.files && e.target.files[0]) setReembolsoFile(e.target.files[0]); };
   
-  const handleEnviarReembolso = () => {
-    if (!reembolsoFile) return alert("Anexe o comprovante!");
+  // Função agora é async para suportar o showAlert
+  const handleEnviarReembolso = async () => {
+    if (!reembolsoFile) {
+        await showAlert("Atenção", "Por favor, anexe o comprovante do recibo médico!");
+        return;
+    }
     setLoading(true);
     setTimeout(() => { setLoading(false); setModalOpen(null); setShowSuccess(true); setReembolsoFile(null); }, 2000);
   };
@@ -199,11 +207,18 @@ export default function PlanoSaude() {
 
   // --- 3. INTEGRAÇÃO: CONFIRMAR AGENDAMENTO COM PAGAMENTO ---
   const confirmarAgendamento = async () => {
-    if (!horarioSelecionado) return alert("Selecione um horário!");
+    if (!horarioSelecionado) {
+        await showAlert("Atenção", "Selecione um horário disponível!");
+        return;
+    }
     
     // Valor fixo de coparticipação para exemplo
     const custoCopart = 60.00;
-    const confirmacao = window.confirm(`Confirmar agendamento?\n\nSerá debitada uma coparticipação de R$ ${custoCopart.toFixed(2)} da sua conta bancária.`);
+    // Substituição do window.confirm
+    const confirmacao = await showConfirm(
+        "Confirmar Agendamento", 
+        `Deseja confirmar o agendamento?\n\nSerá debitada uma coparticipação de R$ ${custoCopart.toFixed(2)} da sua conta bancária.`
+    );
     
     if (!confirmacao) return;
 
@@ -225,7 +240,11 @@ export default function PlanoSaude() {
   // --- 4. INTEGRAÇÃO: TELEMEDICINA COM PAGAMENTO ---
   const iniciarTelemedicina = async () => { 
     const custoTele = 45.00;
-    const confirmacao = window.confirm(`Iniciar Telemedicina (Plantão)?\n\nCusto do atendimento: R$ ${custoTele.toFixed(2)}.`);
+    // Substituição do window.confirm
+    const confirmacao = await showConfirm(
+        "Iniciar Telemedicina", 
+        `Deseja iniciar o Plantão Clínico Geral?\n\nCusto do atendimento: R$ ${custoTele.toFixed(2)}.`
+    );
 
     if (!confirmacao) return;
 
@@ -238,7 +257,7 @@ export default function PlanoSaude() {
     if (pagou) {
       setTimeout(() => { 
         setConectandoTele(false); 
-        alert("Sala aberta em nova aba."); 
+        showToast("Conectado", "Sala de atendimento aberta com sucesso."); // Substituição do alert usando toast
         setModalOpen(null); 
       }, 2500); 
     } else {
