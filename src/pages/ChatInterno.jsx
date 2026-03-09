@@ -238,8 +238,8 @@ export default function ChatInterno() {
           // ATIVA A TRAVA E A ANIMAÇÃO
           setIaDigitando(true);
 
-          // AUMENTADO O TEMPO: Simula de 3 a 6 segundos lendo/digitando
-          const tempoEspera = Math.floor(Math.random() * (3000) + 3000);
+          // AUMENTADO O TEMPO: Sorteia um atraso entre 2 e 35 segundos para não estourar a API
+          const tempoEspera = Math.floor(Math.random() * 33000) + 2000;
 
           // Dispara o robô no "plano de fundo" sem salvar a variável do timer
           setTimeout(async () => {
@@ -489,7 +489,7 @@ Regras inquebráveis:
 
           <form className="chat-input-area" onSubmit={enviarMensagem}>
             <textarea 
-              placeholder={iaDigitando ? `${formatarNome(canalAtivo.nome)} está digitando...` : `Mensagem para ${canalAtivo.nome}...`}
+              placeholder={iaDigitando ? `${formatarNome(canalAtivo.nome)} está a digitar...` : `Mensagem para ${canalAtivo.nome}...`}
               value={novaMensagem}
               disabled={iaDigitando}
               onChange={(e) => {
