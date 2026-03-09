@@ -21,7 +21,7 @@ export default function GestaoViagens() {
   const [user, setUser] = useState(null);
   const [viagens, setViagens] = useState([]);
 
-  // NOVO: Estado para o Modal de Alerta
+  // Estado para o Modal de Alerta
   const [alerta, setAlerta] = useState({ visivel: false, tipo: '', titulo: '', mensagem: '' });
 
   // --- EFEITO PARA CARREGAR DADOS DO FIREBASE ---
@@ -59,18 +59,54 @@ export default function GestaoViagens() {
   });
 
   const handleInputChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
-  const nextStep = () => setStep(step + 1);
+  
+  // --- VALIDAÇÃO DE ETAPAS (NÃO DEIXA AVANÇAR VAZIO) ---
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!formData.motivo.trim() || !formData.centro_custo.trim()) {
+        setAlerta({
+          visivel: true, tipo: 'erro', titulo: 'Campos Obrigatórios',
+          mensagem: 'Por favor, preencha o Motivo e selecione o Centro de Custo antes de avançar.'
+        });
+        return;
+      }
+    } else if (step === 2) {
+      if (!formData.origem.trim() || !formData.destino.trim() || !formData.data_ida || !formData.data_volta) {
+        setAlerta({
+          visivel: true, tipo: 'erro', titulo: 'Campos Obrigatórios',
+          mensagem: 'Por favor, preencha a Origem, o Destino e as datas de Ida e Volta.'
+        });
+        return;
+      }
+      
+      // Validação extra: Data de volta não pode ser antes da ida
+      if (new Date(formData.data_volta) < new Date(formData.data_ida)) {
+        setAlerta({
+          visivel: true, tipo: 'erro', titulo: 'Datas Inválidas',
+          mensagem: 'A data de volta não pode ser anterior à data de ida.'
+        });
+        return;
+      }
+    }
+    setStep(step + 1);
+  };
+
   const prevStep = () => setStep(step - 1);
 
-  // --- SUBMIT ATUALIZADO ---
+  // --- SUBMIT FINAL ---
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Impede o recarregamento da página
+
+    // Dupla verificação caso alguém tente burlar apertando Enter na Etapa 3
+    if (!formData.motivo || !formData.origem || !formData.destino) {
+        setAlerta({ visivel: true, tipo: 'erro', titulo: 'Atenção', mensagem: 'Preencha todos os campos obrigatórios.'});
+        return;
+    }
+
     if (!user) {
       setAlerta({
-        visivel: true,
-        tipo: 'erro',
-        titulo: 'Sessão Expirada',
-        mensagem: 'Erro: Usuário não identificado. Faça login novamente.'
+        visivel: true, tipo: 'erro', titulo: 'Sessão Expirada',
+        mensagem: 'Usuário não identificado. Faça login novamente.'
       });
       return;
     }
@@ -79,26 +115,23 @@ export default function GestaoViagens() {
 
     const novaViagem = {
       id: `TRIP-${Math.floor(Math.random() * 10000)}`, 
-      origem: formData.origem || 'São Paulo', 
-      destino: formData.destino || 'Destino X',
+      origem: formData.origem, 
+      destino: formData.destino,
       data_ida: formData.data_ida, 
       data_volta: formData.data_volta, 
       motivo: formData.motivo,
       status: 'PENDENTE', 
       custo: 'A Calcular', 
       voo: 'A Definir', 
-      hotel: formData.precisa_hotel === 'sim' ? 'A Definir' : '-',
+      hotel: formData.precisa_hotel === 'sim' ? (formData.hotel_pref || 'A Definir') : '-',
       createdAt: Date.now() 
     };
 
     push(ref(db, `viagens/${user.uid}`), novaViagem)
       .then(() => {
         setLoading(false);
-        // NOVO: Chama o Modal de Sucesso
         setAlerta({
-          visivel: true,
-          tipo: 'sucesso',
-          titulo: 'Solicitação Enviada',
+          visivel: true, tipo: 'sucesso', titulo: 'Solicitação Enviada',
           mensagem: `A viagem para ${novaViagem.destino} foi registrada e enviada para aprovação do gestor.`
         });
         
@@ -112,31 +145,11 @@ export default function GestaoViagens() {
       .catch((error) => {
         console.error("Erro ao salvar viagem:", error);
         setLoading(false);
-        // NOVO: Chama o Modal de Erro
         setAlerta({
-          visivel: true,
-          tipo: 'erro',
-          titulo: 'Erro na Solicitação',
+          visivel: true, tipo: 'erro', titulo: 'Erro na Solicitação',
           mensagem: 'Não foi possível salvar os dados. Verifique sua conexão e tente novamente.'
         });
       });
-  };
-
-  const gerarVoucher = async (viagem) => {
-    setVoucherParaImpressao(viagem);
-    setTimeout(async () => {
-      if(printRef.current) {
-        const element = printRef.current;
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Voucher_${viagem.id}.pdf`);
-      }
-      setVoucherParaImpressao(null);
-    }, 500);
   };
 
   return (
@@ -146,7 +159,6 @@ export default function GestaoViagens() {
       <div className="ambient-light light-2"></div>
       <div className="ambient-light light-3"></div>
 
-      {/* HEADER ESPECÍFICO */}
       <header className="viagens-header">
         <div className="brand" onClick={() => navigate('/dashboard')} style={{cursor:'pointer'}}>
           <div style={{transform: 'scale(0.8)'}}><Logo /></div> 
@@ -157,7 +169,6 @@ export default function GestaoViagens() {
         </div>
       </header>
 
-      {/* CONTEÚDO */}
       <div className="viagens-scroll-content">
         <div className="page-header-tech">
           <h2>Gestão de Viagens Corporativas</h2>
@@ -214,20 +225,29 @@ export default function GestaoViagens() {
               {step === 1 && "Dados do Projeto"} {step === 2 && "Logística & Datas"} {step === 3 && "Revisão Final"}
             </div>
 
-            <form onSubmit={handleSubmit}>
+            {/* PREVENÇÃO DO ENTER: Se apertar enter, ele avança a etapa em vez de dar submit direto */}
+            <form 
+              onSubmit={handleSubmit} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault(); 
+                  if (step < 3) handleNextStep();
+                }
+              }}
+            >
               {step === 1 && (
                 <div className="wizard-form-grid-tech">
-                  <div className="form-group-tech full-width"><label>Motivo *</label><input className="glass-input" name="motivo" value={formData.motivo} onChange={handleInputChange} required /></div>
-                  <div className="form-group-tech"><label>Centro de Custo *</label><select className="glass-input" name="centro_custo" value={formData.centro_custo} onChange={handleInputChange} required><option value="">Selecione...</option><option value="1000">1000 - Comercial</option><option value="2000">2000 - TI</option></select></div>
+                  <div className="form-group-tech full-width"><label>Motivo *</label><input className="glass-input" name="motivo" value={formData.motivo} onChange={handleInputChange} /></div>
+                  <div className="form-group-tech"><label>Centro de Custo *</label><select className="glass-input" name="centro_custo" value={formData.centro_custo} onChange={handleInputChange}><option value="">Selecione...</option><option value="1000">1000 - Comercial</option><option value="2000">2000 - TI</option></select></div>
                   <div className="form-group-tech"><label>Projeto (Opcional)</label><input className="glass-input" name="projeto" value={formData.projeto} onChange={handleInputChange} /></div>
                 </div>
               )}
               {step === 2 && (
                 <div className="wizard-form-grid-tech">
-                  <div className="form-group-tech"><label>Origem *</label><input className="glass-input" name="origem" value={formData.origem} onChange={handleInputChange} required /></div>
-                  <div className="form-group-tech"><label>Destino *</label><input className="glass-input" name="destino" value={formData.destino} onChange={handleInputChange} required /></div>
-                  <div className="form-group-tech"><label>Ida *</label><input className="glass-input" name="data_ida" value={formData.data_ida} onChange={handleInputChange} type="date" required /></div>
-                  <div className="form-group-tech"><label>Volta *</label><input className="glass-input" name="data_volta" value={formData.data_volta} onChange={handleInputChange} type="date" required /></div>
+                  <div className="form-group-tech"><label>Origem *</label><input className="glass-input" name="origem" value={formData.origem} onChange={handleInputChange} /></div>
+                  <div className="form-group-tech"><label>Destino *</label><input className="glass-input" name="destino" value={formData.destino} onChange={handleInputChange} /></div>
+                  <div className="form-group-tech"><label>Ida *</label><input className="glass-input" name="data_ida" value={formData.data_ida} onChange={handleInputChange} type="date" /></div>
+                  <div className="form-group-tech"><label>Volta *</label><input className="glass-input" name="data_volta" value={formData.data_volta} onChange={handleInputChange} type="date" /></div>
                   <div className="form-group-tech"><label>Hotel?</label><select className="glass-input" name="precisa_hotel" value={formData.precisa_hotel} onChange={handleInputChange}><option value="nao">Não</option><option value="sim">Sim</option></select></div>
                   {formData.precisa_hotel === 'sim' && (<div className="form-group-tech"><label>Preferência</label><input className="glass-input" name="hotel_pref" value={formData.hotel_pref} onChange={handleInputChange} /></div>)}
                   <div className="form-group-tech full-width"><label>Adiantamento (R$)</label><input className="glass-input" name="adiantamento" type="number" value={formData.adiantamento} onChange={handleInputChange} /></div>
@@ -244,29 +264,31 @@ export default function GestaoViagens() {
               )}
               <div className="wizard-footer-tech">
                 {step > 1 ? <button type="button" className="btn-glass-secondary" onClick={prevStep}>Anterior</button> : <div></div>}
-                {step < 3 ? <button type="button" className="btn-neon-primary" onClick={nextStep}>Próximo</button> : <button type="submit" className="btn-neon-primary" disabled={loading}>{loading ? 'Enviando...' : 'Confirmar'}</button>}
+                
+                {step < 3 ? (
+                  // SUBSTITUÍDO: Agora chama handleNextStep para validar antes de avançar
+                  <button type="button" className="btn-neon-primary" onClick={handleNextStep}>Próximo</button>
+                ) : (
+                  <button type="submit" className="btn-neon-primary" disabled={loading}>{loading ? 'Enviando...' : 'Confirmar Solicitação'}</button>
+                )}
               </div>
             </form>
           </div>
         )}
       </div>
 
-      {/* NOVO: MODAL DE ALERTA CUSTOMIZADO (Sucesso ou Erro) */}
+      {/* MODAL DE ALERTA CUSTOMIZADO */}
       {alerta.visivel && (
         <div className="modal-overlay" onClick={() => setAlerta({ ...alerta, visivel: false })}>
           <div className="modal-content-tech alert-modal" onClick={e => e.stopPropagation()}>
-            
             <div className={`alert-icon-box ${alerta.tipo}`}>
               {alerta.tipo === 'sucesso' ? '✓' : '✖'}
             </div>
-            
             <h3 className="alert-title">{alerta.titulo}</h3>
             <p className="alert-msg">{alerta.mensagem}</p>
-            
             <button className={`btn-alert ${alerta.tipo}`} onClick={() => setAlerta({ ...alerta, visivel: false })}>
-              Confirmar
+              {alerta.tipo === 'sucesso' ? 'Continuar' : 'Entendi'}
             </button>
-            
           </div>
         </div>
       )}
