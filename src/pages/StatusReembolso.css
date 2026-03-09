@@ -443,7 +443,7 @@
 .timeline-step.reprovado .step-circle {
   border-color: #ef4444;
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: #1e293b; /* <--- CORREÇÃO AQUI: Mudado para cor sólida para tampar a linha */
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
   z-index: 10;
 }

@@ -299,3 +299,82 @@ form {
   .modal-content-hd { width: 95%; max-height: 95vh; }
   .helpdesk-container { padding: 15px; padding-top: 100px; } /* Ajuste mobile também */
 }
+
+/* =========================================
+   NOVO: MODAL DE ALERTA (SUCESSO / ERRO)
+   ========================================= */
+.alert-modal {
+  max-width: 400px;
+  text-align: center;
+  padding: 40px 30px;
+  align-items: center;
+}
+
+.alert-icon-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  margin: 0 auto 20px auto;
+  animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.alert-icon-box.sucesso {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--neon-green);
+  border: 2px solid var(--neon-green);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+.alert-icon-box.erro {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+}
+
+.alert-title {
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.alert-msg {
+  color: #94a3b8;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+.btn-alert {
+  border: none;
+  padding: 12px 35px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.btn-alert.sucesso {
+  background: linear-gradient(135deg, var(--neon-green), #059669);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+.btn-alert.sucesso:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5); }
+
+.btn-alert.erro {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+.btn-alert.erro:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); }
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  80% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

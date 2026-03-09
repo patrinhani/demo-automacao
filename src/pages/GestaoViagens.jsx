@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react'; // Adicionado useEffect
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
-import './GestaoViagens.css'; // CSS Isolado
+import './GestaoViagens.css'; 
 
 // --- IMPORTAÇÕES DO FIREBASE ---
 import { db, auth } from '../firebase';
@@ -19,29 +19,26 @@ export default function GestaoViagens() {
   
   const [voucherParaImpressao, setVoucherParaImpressao] = useState(null);
   const [user, setUser] = useState(null);
-
-  // Estado das viagens agora começa vazio e será preenchido pelo Firebase
   const [viagens, setViagens] = useState([]);
+
+  // NOVO: Estado para o Modal de Alerta
+  const [alerta, setAlerta] = useState({ visivel: false, tipo: '', titulo: '', mensagem: '' });
 
   // --- EFEITO PARA CARREGAR DADOS DO FIREBASE ---
   useEffect(() => {
-    // Monitora o estado de autenticação para garantir que temos o usuário
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         
-        // Referência ao nó de viagens deste usuário específico
         const viagensRef = ref(db, `viagens/${currentUser.uid}`);
         
-        // Listener em tempo real (onValue)
         onValue(viagensRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-            // Transforma o objeto do Firebase em array e mantém a ordem (mais recentes primeiro, se quiser inverter use reverse())
             const listaViagens = Object.keys(data).map(key => ({
-              firebaseKey: key, // Guarda a chave original do Firebase se precisar
+              firebaseKey: key, 
               ...data[key]
-            })).reverse(); // Inverte para mostrar as últimas adicionadas no topo
+            })).reverse(); 
             setViagens(listaViagens);
           } else {
             setViagens([]);
@@ -49,7 +46,7 @@ export default function GestaoViagens() {
         });
       } else {
         setUser(null);
-        setViagens([]); // Limpa se não houver usuário logado
+        setViagens([]); 
       }
     });
 
@@ -65,19 +62,23 @@ export default function GestaoViagens() {
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
-  // --- SUBMIT ATUALIZADO PARA O FIREBASE ---
+  // --- SUBMIT ATUALIZADO ---
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!user) {
-      alert("Erro: Usuário não identificado. Faça login novamente.");
+      setAlerta({
+        visivel: true,
+        tipo: 'erro',
+        titulo: 'Sessão Expirada',
+        mensagem: 'Erro: Usuário não identificado. Faça login novamente.'
+      });
       return;
     }
 
     setLoading(true);
 
-    // Cria o objeto da viagem mantendo a estrutura visual que você já tinha
     const novaViagem = {
-      id: `TRIP-${Math.floor(Math.random() * 10000)}`, // Mantém o ID visual "TRIP-XXXX"
+      id: `TRIP-${Math.floor(Math.random() * 10000)}`, 
       origem: formData.origem || 'São Paulo', 
       destino: formData.destino || 'Destino X',
       data_ida: formData.data_ida, 
@@ -87,17 +88,22 @@ export default function GestaoViagens() {
       custo: 'A Calcular', 
       voo: 'A Definir', 
       hotel: formData.precisa_hotel === 'sim' ? 'A Definir' : '-',
-      createdAt: Date.now() // Útil para ordenação se precisar
+      createdAt: Date.now() 
     };
 
-    // Envia para o Firebase (push gera uma chave única automaticamente)
     push(ref(db, `viagens/${user.uid}`), novaViagem)
       .then(() => {
         setLoading(false);
-        alert('Solicitação enviada para aprovação!');
+        // NOVO: Chama o Modal de Sucesso
+        setAlerta({
+          visivel: true,
+          tipo: 'sucesso',
+          titulo: 'Solicitação Enviada',
+          mensagem: `A viagem para ${novaViagem.destino} foi registrada e enviada para aprovação do gestor.`
+        });
+        
         setActiveTab('minhas_viagens');
         setStep(1);
-        // Limpa o formulário
         setFormData({
           projeto: '', centro_custo: '', motivo: '', origem: '', destino: '', data_ida: '', data_volta: '',
           precisa_hotel: 'nao', hotel_pref: '', adiantamento: '0'
@@ -106,7 +112,13 @@ export default function GestaoViagens() {
       .catch((error) => {
         console.error("Erro ao salvar viagem:", error);
         setLoading(false);
-        alert("Erro ao salvar a solicitação.");
+        // NOVO: Chama o Modal de Erro
+        setAlerta({
+          visivel: true,
+          tipo: 'erro',
+          titulo: 'Erro na Solicitação',
+          mensagem: 'Não foi possível salvar os dados. Verifique sua conexão e tente novamente.'
+        });
       });
   };
 
@@ -128,7 +140,6 @@ export default function GestaoViagens() {
   };
 
   return (
-    // CLASSE RENOMEADA: viagens-layout
     <div className="viagens-layout">
       
       <div className="ambient-light light-1"></div>
@@ -146,7 +157,7 @@ export default function GestaoViagens() {
         </div>
       </header>
 
-      {/* CONTEÚDO COM SCROLL ESPECÍFICO */}
+      {/* CONTEÚDO */}
       <div className="viagens-scroll-content">
         <div className="page-header-tech">
           <h2>Gestão de Viagens Corporativas</h2>
@@ -239,6 +250,26 @@ export default function GestaoViagens() {
           </div>
         )}
       </div>
+
+      {/* NOVO: MODAL DE ALERTA CUSTOMIZADO (Sucesso ou Erro) */}
+      {alerta.visivel && (
+        <div className="modal-overlay" onClick={() => setAlerta({ ...alerta, visivel: false })}>
+          <div className="modal-content-tech alert-modal" onClick={e => e.stopPropagation()}>
+            
+            <div className={`alert-icon-box ${alerta.tipo}`}>
+              {alerta.tipo === 'sucesso' ? '✓' : '✖'}
+            </div>
+            
+            <h3 className="alert-title">{alerta.titulo}</h3>
+            <p className="alert-msg">{alerta.mensagem}</p>
+            
+            <button className={`btn-alert ${alerta.tipo}`} onClick={() => setAlerta({ ...alerta, visivel: false })}>
+              Confirmar
+            </button>
+            
+          </div>
+        </div>
+      )}
 
       {/* PDF TEMPLATE */}
       <div className="print-hidden-wrapper">

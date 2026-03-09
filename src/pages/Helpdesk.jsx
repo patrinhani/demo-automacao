@@ -14,15 +14,18 @@ export default function Helpdesk() {
   const [meusChamados, setMeusChamados] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Estado do Formulário
+  // Estado do Formulário e Modais
   const [novoChamado, setNovoChamado] = useState({
     titulo: '',
-    categoria: 'hardware', // hardware, software, rede, acesso
+    categoria: 'hardware', 
     prioridade: 'normal',
     descricao: ''
   });
 
   const [modalAberto, setModalAberto] = useState(false);
+  
+  // NOVO: Estado para o nosso alerta customizado
+  const [alerta, setAlerta] = useState({ visivel: false, tipo: '', titulo: '', mensagem: '' });
 
   // 1. MONITORAR AUTH E BUSCAR CHAMADOS
   useEffect(() => {
@@ -30,17 +33,15 @@ export default function Helpdesk() {
       if (currentUser) {
         setUser(currentUser);
         
-        // --- ALTERAÇÃO 1: Caminho padronizado ---
         const chamadosRef = ref(db, 'solicitacoes/helpdesk');
         
         onValue(chamadosRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-            // Converte objeto em array e filtra pelo dono
             const lista = Object.entries(data)
               .map(([id, valor]) => ({ id, ...valor }))
               .filter(item => item.userId === currentUser.uid)
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Mais recentes primeiro
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); 
             
             setMeusChamados(lista);
           } else {
@@ -63,7 +64,6 @@ export default function Helpdesk() {
     if (!novoChamado.titulo.trim() || !user) return;
 
     try {
-      // --- ALTERAÇÃO 2: Caminho padronizado ---
       const chamadosRef = ref(db, 'solicitacoes/helpdesk');
       const protocolo = `HD-${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}`;
       
@@ -72,39 +72,43 @@ export default function Helpdesk() {
         protocolo,
         userId: user.uid,
         userEmail: user.email,
-        nome: user.displayName || 'Colaborador', // Importante para o Gestor ver o nome
-        // --- ALTERAÇÃO 3: Status padronizado para a Central de Aprovações ---
+        nome: user.displayName || 'Colaborador', 
         status: 'pendente', 
         createdAt: new Date().toISOString(),
         respostas: [] 
       });
 
-      alert(`Chamado ${protocolo} aberto com sucesso!`);
+      // NOVO: Abre o modal de Sucesso no lugar do 'alert()'
+      setAlerta({
+        visivel: true,
+        tipo: 'sucesso',
+        titulo: 'Chamado Aberto!',
+        mensagem: `Seu chamado (${protocolo}) foi registrado com sucesso e já está na fila de atendimento.`
+      });
+      
       setNovoChamado({ titulo: '', categoria: 'hardware', prioridade: 'normal', descricao: '' });
       setModalAberto(false);
 
     } catch (error) {
       console.error("Erro ao abrir chamado:", error);
-      alert("Erro ao conectar com o servidor.");
+      
+      // NOVO: Abre o modal de Erro no lugar do 'alert()'
+      setAlerta({
+        visivel: true,
+        tipo: 'erro',
+        titulo: 'Oops, algo deu errado',
+        mensagem: 'Não foi possível conectar com o servidor. Tente novamente mais tarde.'
+      });
     }
   };
 
-  // Cores e Ícones por Status (Adaptado para ler os status do banco)
+  // Cores e Ícones por Status
   const getStatusInfo = (status) => {
     const s = status ? status.toLowerCase() : '';
-    
-    // Mapeia 'pendente' (banco) para 'Aberto' (visual)
     if (s === 'pendente' || s === 'aberto') return { label: 'Aberto', cor: 'var(--neon-blue)', icon: '🆕' };
-    
-    // Mapeia 'aprovado' ou 'em_andamento' para 'Em Atendimento'
     if (s === 'aprovado' || s === 'em_andamento') return { label: 'Em Atendimento', cor: 'var(--neon-purple)', icon: '⚙️' };
-    
-    // Concluído
     if (s === 'concluido' || s === 'resolvido') return { label: 'Resolvido', cor: 'var(--neon-green)', icon: '✅' };
-    
-    // Cancelado/Rejeitado
     if (s === 'cancelado' || s === 'rejeitado') return { label: 'Fechado', cor: '#ef4444', icon: '✖' };
-
     return { label: status, cor: '#ccc', icon: '❓' };
   };
 
@@ -248,6 +252,27 @@ export default function Helpdesk() {
           </div>
         </div>
       )}
+
+      {/* NOVO: MODAL DE ALERTA CUSTOMIZADO (Sucesso ou Erro) */}
+      {alerta.visivel && (
+        <div className="modal-overlay" onClick={() => setAlerta({ ...alerta, visivel: false })}>
+          <div className="modal-content-hd alert-modal" onClick={e => e.stopPropagation()}>
+            
+            <div className={`alert-icon-box ${alerta.tipo}`}>
+              {alerta.tipo === 'sucesso' ? '✓' : '✖'}
+            </div>
+            
+            <h3 className="alert-title">{alerta.titulo}</h3>
+            <p className="alert-msg">{alerta.mensagem}</p>
+            
+            <button className={`btn-alert ${alerta.tipo}`} onClick={() => setAlerta({ ...alerta, visivel: false })}>
+              Entendi
+            </button>
+            
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

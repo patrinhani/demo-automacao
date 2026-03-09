@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import Logo from '../../components/Logo';
@@ -11,6 +11,86 @@ export default function AberturaDev() {
   
   const [phase, setPhase] = useState('intro');
   const [bootSequence, setBootSequence] = useState(0);
+  const canvasRef = useRef(null);
+
+  // === MOTOR DA MATRIX OTIMIZADO (CANVAS) ===
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    const setSize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+    setSize();
+    window.addEventListener('resize', setSize);
+
+    const chars = "01ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789=+-<>".split('');
+    const fontSize = 16;
+    let columns = Math.floor(width / fontSize);
+
+    let drops = [];
+    let colors = [];
+    // Cores TechCorp
+    const themeColors = ['#38bdf8', '#a855f7', '#34d399'];
+
+    // Inicializar as gotas espalhadas pelo ecrã
+    for (let x = 0; x < columns; x++) {
+      drops[x] = Math.random() * height / fontSize; 
+      colors[x] = themeColors[Math.floor(Math.random() * themeColors.length)];
+    }
+
+    let animationFrameId;
+    let lastDrawTime = 0;
+    const fps = 35; // 35 FPS dá a velocidade cinematográfica perfeita sem pesar
+    const interval = 1000 / fps;
+
+    const draw = (timestamp) => {
+      animationFrameId = requestAnimationFrame(draw);
+
+      if (timestamp - lastDrawTime < interval) return;
+      lastDrawTime = timestamp;
+
+      // Desenha um retângulo semi-transparente para criar o efeito de rasto que desaparece
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.15)'; // O azul escuro do fundo da sua app
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        
+        // Letra colorida
+        ctx.fillStyle = colors[i];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        // Ponta da linha ocasionalmente pisca a branco para o efeito "energia"
+        if (Math.random() > 0.85) {
+           ctx.fillStyle = '#ffffff';
+           ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        }
+
+        // Envia a gota de volta para o topo aleatoriamente quando chega ao fundo
+        if (drops[i] * fontSize > height && Math.random() > 0.95) {
+          drops[i] = 0;
+          colors[i] = themeColors[Math.floor(Math.random() * themeColors.length)];
+        }
+
+        drops[i]++;
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(draw);
+
+    return () => {
+      window.removeEventListener('resize', setSize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []); // Executa apenas na montagem inicial
 
   const dispararSequenciaDeBoot = () => {
     if (phase !== 'intro') return;
@@ -47,25 +127,19 @@ export default function AberturaDev() {
   return (
     <div className="abertura-layout" onClick={dispararSequenciaDeBoot}>
       
-      {/* Elementos de Fundo - Grelha 3D e Sombras */}
+      {/* Elementos de Fundo - Grelha 3D */}
       <div className="cyber-grid-container">
         <div className="cyber-grid"></div>
       </div>
       
-      {/* NOVO: Partículas Tecnológicas Flutuantes (Versão Neon Chamativa) */}
-      <div className="floating-tech-elements">
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className={`tech-element el-${i}`}>
-            {['{ }', '</>', '01', 'sys', '[]', '||', '=>', 'NaN'][i % 8]}
-          </div>
-        ))}
-      </div>
+      {/* CANVAS MATRIX - Ultra otimizado */}
+      <canvas ref={canvasRef} className="matrix-canvas" />
 
       <div className="vignette-overlay"></div>
       <div className="scanline"></div>
 
       <AnimatePresence mode="wait">
-        {/* === FASE 1: INTRO COM HUD RINGS E GRELHA === */}
+        {/* === FASE 1: INTRO === */}
         {phase === 'intro' && (
           <motion.div 
             key="intro"
@@ -78,14 +152,12 @@ export default function AberturaDev() {
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
             >
               
-              {/* Anéis Tecnológicos (HUD) a rodar no fundo */}
               <div className="sci-fi-rings">
                 <motion.div className="ring ring-1" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} />
                 <motion.div className="ring ring-2" animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} />
                 <motion.div className="ring ring-3" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} />
               </div>
 
-              {/* Logo Central */}
               <motion.div
                 initial={{ scale: 0, filter: "brightness(3)", rotate: -90 }}
                 animate={{ scale: 1, filter: "brightness(1)", rotate: 0 }}
@@ -126,7 +198,7 @@ export default function AberturaDev() {
           </motion.div>
         )}
 
-        {/* === FASE 2: GLITCH (Ficou mais digital) === */}
+        {/* === FASE 2: GLITCH === */}
         {phase === 'glitch' && (
           <motion.div 
             key="glitch"
@@ -146,7 +218,7 @@ export default function AberturaDev() {
           />
         )}
 
-        {/* === FASE 3: TERMINAL AVANÇADO === */}
+        {/* === FASE 3: TERMINAL === */}
         {phase === 'terminal' && (
           <motion.div 
             key="terminal"
