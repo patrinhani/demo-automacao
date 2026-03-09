@@ -6,37 +6,45 @@ import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
 import './DevTools.css';
 
-// --- MASSA DE DADOS PARA RH (28 CASOS REAIS) ---
-const MOCKS_RH = [
-  { nome: "Lucas Mendes", cargo: "Dev. Júnior", setor: "TI", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { nome: "Mariana Costa", cargo: "Analista Fin. Jr", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Roberto Almeida", cargo: "Suporte N2", setor: "TI", data: "28/01", erro: "Atraso Excessivo", pontos: { e: '10:45', si: '13:00', vi: '14:00', s: '19:00' } },
-  { nome: "Fernanda Oliveira", cargo: "Assistente RH", setor: "RH", data: "28/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { nome: "Carlos Eduardo Silva", cargo: "DevOps", setor: "TI", data: "28/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '22:15' } },
-  { nome: "Juliana Ribeiro", cargo: "Controller", setor: "Financeiro", data: "28/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Bruno Souza", cargo: "Segurança Info", setor: "TI", data: "27/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { nome: "Patrícia Andrade", cargo: "Gerente Cultura", setor: "RH", data: "27/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:02', vi: '12:00', s: '18:00' } },
-  { nome: "Ricardo Martins", cargo: "Analista Fin. Sr", setor: "Financeiro", data: "27/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:35', s: '17:00' } },
-  { nome: "Amanda Silva", cargo: "P.O.", setor: "TI", data: "26/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Felipe Santos", cargo: "Analista RH", setor: "RH", data: "26/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { nome: "Larissa Fernandes", cargo: "Aux. Financeiro", setor: "Financeiro", data: "26/01", erro: "Atraso Excessivo", pontos: { e: '11:00', si: '13:00', vi: '14:00', s: '18:00' } },
-  { nome: "Thiago Pereira", cargo: "Dev Fullstack", setor: "TI", data: "25/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Talita Barbosa", cargo: "BP RH", setor: "RH", data: "25/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Fernando Costa", cargo: "CFO", setor: "Financeiro", data: "25/01", erro: "Marcação Ímpar", pontos: { e: '09:00', si: '13:00', vi: '15:00', s: '---' } },
-  { nome: "João Pedro Alves", cargo: "Estagiário TI", setor: "TI", data: "24/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '---' } },
-  { nome: "Ana Clara Pereira", cargo: "Analista Contábil", setor: "Financeiro", data: "24/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Luciano Moraes", cargo: "Gerente Vendas", setor: "Comercial", data: "24/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Beatriz Rocha", cargo: "Analista Mkt", setor: "Marketing", data: "23/01", erro: "Atraso Excessivo", pontos: { e: '10:30', si: '13:00', vi: '14:00', s: '18:00' } },
-  { nome: "Augusto Ferreira", cargo: "Coord. Projetos", setor: "TI", data: "23/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '---' } },
-  { nome: "Isabela Carvalho", cargo: "Analista RH", setor: "RH", data: "23/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '21:00' } },
-  { nome: "Paulo Roberto Dias", cargo: "Especialista", setor: "Marketing", data: "22/01", erro: "Falta Injustificada", pontos: { e: '---', si: '---', vi: '---', s: '---' } },
-  { nome: "Sérgio Batista", cargo: "Diretor Comercial", setor: "Diretoria", data: "22/01", erro: "Ponto Britânico", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' } },
-  { nome: "Helena Castro", cargo: "Recepção", setor: "Adm", data: "22/01", erro: "Intervalo < 1h", pontos: { e: '08:00', si: '12:00', vi: '12:15', s: '17:00' } },
-  { nome: "Rodrigo Nogueira", cargo: "Segurança", setor: "Infra", data: "21/01", erro: "Batida Duplicada", pontos: { e: '08:00', si: '08:01', vi: '---', s: '---' } },
-  { nome: "Eliana Farias", cargo: "Secretária Executiva", setor: "Adm", data: "21/01", erro: "Marcação Ímpar", pontos: { e: '08:00', si: '---', vi: '---', s: '17:00' } },
-  { nome: "Celso Machado", cargo: "Trainee", setor: "TI", data: "21/01", erro: "Atraso Excessivo", pontos: { e: '09:45', si: '13:00', vi: '14:00', s: '17:00' } },
-  { nome: "Camila Gomes", cargo: "Jovem Aprendiz", setor: "RH", data: "20/01", erro: "Hora Extra N/A", pontos: { e: '08:00', si: '12:00', vi: '13:00', s: '18:30' } }
+// --- MOTOR DE ALEATORIEDADE PARA RH ---
+const NOMES = ["Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gabriel", "Helena", "Igor", "Juliana", "Lucas", "Mariana", "Nicolas", "Olívia", "Pedro", "Rafael", "Sofia", "Tiago", "Vinícius", "Vitória"];
+const SOBRENOMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho", "Almeida"];
+
+const DEPARTAMENTOS = [
+    { setor: "TI", cargos: ["Dev. Júnior", "Dev Fullstack", "Suporte N2", "Segurança Info", "P.O.", "UX Designer", "DevOps"] },
+    { setor: "Financeiro", cargos: ["Analista Fin.", "Controller", "Auxiliar Financeiro", "Especialista Fiscal"] },
+    { setor: "RH", cargos: ["Assistente RH", "Analista RH", "BP RH", "Recrutador"] },
+    { setor: "Comercial", cargos: ["Vendedor", "Gerente Vendas", "Executivo de Contas", "SDR"] }
 ];
+
+const TIPOS_ERRO = [
+    "Marcação Ímpar", "Falta Injustificada", "Atraso Excessivo", 
+    "Batida Duplicada", "Intervalo < 1h", "Ponto Britânico", "Hora Extra N/A"
+];
+
+// Gera horários coerentes com o tipo de erro sorteado
+const gerarHorariosPorErro = (erro) => {
+    let base = { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' };
+    switch(erro) {
+        case "Falta Injustificada": return { e: '---', si: '---', vi: '---', s: '---' };
+        case "Marcação Ímpar":
+            const chaves = ['e', 'si', 'vi', 's'];
+            base[chaves[Math.floor(Math.random() * chaves.length)]] = '---';
+            return base;
+        case "Atraso Excessivo":
+            base.e = ['09:45', '10:30', '11:15', '10:00', '10:50'][Math.floor(Math.random() * 5)];
+            return base;
+        case "Batida Duplicada":
+            return { e: '08:00', si: '08:02', vi: '12:00', s: '17:00' };
+        case "Intervalo < 1h":
+            base.vi = ['12:35', '12:40', '12:45'][Math.floor(Math.random() * 3)];
+            return base;
+        case "Hora Extra N/A":
+            base.s = ['19:30', '20:15', '21:00', '22:45', '23:10'][Math.floor(Math.random() * 5)];
+            return base;
+        default: return base;
+    }
+};
 
 export default function DevTools() {
   const navigate = useNavigate();
@@ -229,16 +237,59 @@ export default function DevTools() {
     }
   };
 
+  // --- NOVA LÓGICA DE GERAÇÃO GLOBAL PARA RH ---
   const gerarCasosRH = async () => {
-    const rhRef = ref(db, 'rh/erros_ponto');
-    await set(rhRef, null); 
-    const updates = {};
-    MOCKS_RH.forEach(mock => {
-      const newKey = push(rhRef).key;
-      updates[newKey] = { ...mock, status: "Pendente", createdAt: Date.now() };
-    });
-    await update(rhRef, updates);
-    addLog(`🚨 ${MOCKS_RH.length} Casos de Ponto RH gerados.`);
+    try {
+      const snap = await get(ref(db, 'users'));
+      if (!snap.exists()) return addLog("❌ Nenhum utilizador encontrado no banco de dados.");
+
+      const usuarios = snap.val();
+      const rhRef = ref(db, 'rh/erros_ponto');
+      
+      // Apagamos os casos antigos para não acumular lixo
+      await set(rhRef, null); 
+      
+      const updates = {};
+      let totalGerados = 0;
+
+      // Percorre todos os utilizadores da plataforma
+      Object.keys(usuarios).forEach(uid => {
+        const u = usuarios[uid];
+        const setor = (u.setor || '').toLowerCase();
+        const role = (u.role || '').toLowerCase();
+        
+        // Se a pessoa for do RH ou Administrador, gera a fila dela!
+        if (setor.includes('rh') || setor.includes('recursos humanos') || role === 'admin' || role === 'dev') {
+          // Gera 12 casos dinâmicos para esta pessoa específica
+          for (let i = 0; i < 12; i++) {
+            const nome = NOMES[Math.floor(Math.random() * NOMES.length)];
+            const sobrenome = SOBRENOMES[Math.floor(Math.random() * SOBRENOMES.length)];
+            const dept = DEPARTAMENTOS[Math.floor(Math.random() * DEPARTAMENTOS.length)];
+            const cargo = dept.cargos[Math.floor(Math.random() * dept.cargos.length)];
+            const erro = TIPOS_ERRO[Math.floor(Math.random() * TIPOS_ERRO.length)];
+            const pontos = gerarHorariosPorErro(erro);
+
+            const newKey = push(rhRef).key;
+            updates[newKey] = {
+                nome: `${nome} ${sobrenome}`,
+                cargo: cargo,
+                setor: dept.setor,
+                erro: erro,
+                pontos: pontos,
+                donoUid: uid, // 🔒 Vincula o caso ao UID do avaliador
+                status: "Pendente",
+                createdAt: Date.now()
+            };
+            totalGerados++;
+          }
+        }
+      });
+
+      await update(rhRef, updates);
+      addLog(`🚨 ${totalGerados} Casos dinâmicos gerados para todas as contas de RH/Admin.`);
+    } catch (e) {
+      addLog(`❌ Erro ao gerar casos RH: ${e.message}`);
+    }
   };
 
   const limparCasosRH = async () => {
@@ -249,7 +300,7 @@ export default function DevTools() {
         updates['chats/geral'] = null;
         await update(ref(db), updates);
         localStorage.removeItem('mocksAtivos');
-        addLog("🗑️ Casos RH e Histórico de Chats excluídos.");
+        addLog("🗑️ TODOS os Casos RH e Histórico de Chats excluídos.");
     } catch (e) {
         addLog(`❌ Erro: ${e.message}`);
     }
@@ -355,13 +406,13 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD RH */}
+          {/* CARD RH (ATUALIZADO) */}
           <div className="dev-card destaque-rh">
             <div className="card-icon">👮</div>
-            <h3>Gestão RH (Mocks)</h3>
-            <p>Gera os 28 funcionários fictícios.</p>
+            <h3>Gestão RH (Global)</h3>
+            <p>Gera casos únicos p/ todos do RH.</p>
             <div className="dev-actions">
-              <button className="btn-gen" onClick={gerarCasosRH}>+ Gerar 28 Casos</button>
+              <button className="btn-gen" onClick={gerarCasosRH}>+ Gerar Casos Dinâmicos</button>
               <button className="btn-del" onClick={limparCasosRH}>🗑️ Limpar Casos & Chats</button>
             </div>
           </div>
@@ -421,7 +472,7 @@ export default function DevTools() {
             </div>
           </div>
 
-          {/* CARD CONCILIAÇÃO ATUALIZADO */}
+          {/* CARD CONCILIAÇÃO */}
           <div className="dev-card" style={{borderTopColor: '#3b82f6'}}>
             <div className="card-icon" style={{background: '#3b82f6'}}>🏦</div>
             <h3>Conciliação (Caos)</h3>

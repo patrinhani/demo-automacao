@@ -2,60 +2,187 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import Logo from '../../components/Logo';
+import { motion, AnimatePresence } from 'framer-motion';
 import './AberturaDev.css';
 
 export default function AberturaDev() {
   const navigate = useNavigate();
-  // Puxamos o isDev para bloquear intrusos
   const { isDev, user } = useUser();
+  
+  const [phase, setPhase] = useState('intro');
   const [bootSequence, setBootSequence] = useState(0);
 
-  // Efeito de digitação/carregamento sequencial
+  const dispararSequenciaDeBoot = () => {
+    if (phase !== 'intro') return;
+
+    setPhase('glitch');
+
+    setTimeout(() => {
+      setPhase('terminal');
+      
+      setTimeout(() => setBootSequence(1), 1000);
+      setTimeout(() => setBootSequence(2), 2500);
+      setTimeout(() => setBootSequence(3), 4000);
+      setTimeout(() => setBootSequence(4), 5000);
+    }, 400);
+  };
+
   useEffect(() => {
-    if (!isDev) return; // Se não for dev, nem roda a animação
+    if (!isDev) return;
 
-    const timers = [
-      setTimeout(() => setBootSequence(1), 1000),
-      setTimeout(() => setBootSequence(2), 2500),
-      setTimeout(() => setBootSequence(3), 4000),
-      setTimeout(() => setBootSequence(4), 5000),
-    ];
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        dispararSequenciaDeBoot();
+      }
+    };
 
-    return () => timers.forEach(clearTimeout);
-  }, [isDev]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, isDev]);
 
-  // Bloqueio de Segurança: Se não for Dev, redireciona na hora
   if (!isDev) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return (
-    <div className="abertura-layout">
-      <div className="scanline"></div>
+    <div className="abertura-layout" onClick={dispararSequenciaDeBoot}>
       
-      <div className="terminal-container">
-        <div className="logo-glitch">
-          <Logo lightMode={true} size={1.5} />
-        </div>
-        
-        <div className="terminal-lines">
-          <p className="line">TechCorp Enterprise OS v2.4.1</p>
-          <p className="line">Establishing secure connection...</p>
-          
-          {bootSequence >= 1 && <p className="line success">[OK] User Authentication Verified: {user?.displayName || 'DEV_MASTER'}</p>}
-          {bootSequence >= 2 && <p className="line warning">[WAIT] Loading RPA Modules & Financial Mocks...</p>}
-          {bootSequence >= 3 && <p className="line success">[OK] Database Synced. Systems Online.</p>}
-          
-          {bootSequence >= 4 && (
-            <div className="start-sequence fade-in">
-              <p className="system-ready">SYSTEM READY</p>
-              <button className="btn-boot" onClick={() => navigate('/dashboard')}>
-                INICIALIZAR DEMONSTRAÇÃO 🚀
-              </button>
-            </div>
-          )}
-        </div>
+      {/* Elementos de Fundo - Grelha 3D e Sombras */}
+      <div className="cyber-grid-container">
+        <div className="cyber-grid"></div>
       </div>
+      <div className="vignette-overlay"></div>
+      <div className="scanline"></div>
+
+      <AnimatePresence mode="wait">
+        {/* === FASE 1: INTRO COM HUD RINGS E GRELHA === */}
+        {phase === 'intro' && (
+          <motion.div 
+            key="intro"
+            className="intro-screen"
+            exit={{ opacity: 0, scale: 1.5, filter: "blur(15px)", transition: { duration: 0.4 } }}
+          >
+            <motion.div 
+              className="big-logo-container"
+              animate={{ y: [0, -15, 0] }}
+              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+            >
+              
+              {/* Anéis Tecnológicos (HUD) a rodar no fundo */}
+              <div className="sci-fi-rings">
+                <motion.div className="ring ring-1" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} />
+                <motion.div className="ring ring-2" animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} />
+                <motion.div className="ring ring-3" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} />
+              </div>
+
+              {/* Logo Central */}
+              <motion.div
+                initial={{ scale: 0, filter: "brightness(3)", rotate: -90 }}
+                animate={{ scale: 1, filter: "brightness(1)", rotate: 0 }}
+                transition={{ type: "spring", bounce: 0.5, duration: 1.8 }}
+                style={{ zIndex: 10 }}
+              >
+                <Logo lightMode={true} size={4} iconOnly={true} />
+              </motion.div>
+
+              <motion.h1 
+                className="intro-title"
+                initial={{ opacity: 0, y: 30, letterSpacing: "50px" }}
+                animate={{ opacity: 1, y: 0, letterSpacing: "20px" }}
+                transition={{ delay: 0.8, duration: 1.2, type: "spring" }}
+              >
+                TECHCORP
+              </motion.h1>
+
+              <motion.div 
+                className="status-bar"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "300px" }}
+                transition={{ delay: 1.5, duration: 1 }}
+              >
+                <span className="status-text">CORE_SYS: ONLINE</span>
+                <span className="status-text">ENV: PRODUCTION</span>
+              </motion.div>
+              
+              <motion.div 
+                className="blink-prompt"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ delay: 2.5, repeat: Infinity, duration: 1.2, times: [0, 0.2, 1] }}
+              >
+                 [&nbsp; OVERRIDE REQUIRED: PRESS ENTER TO INITIALIZE &nbsp;]
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* === FASE 2: GLITCH (Ficou mais digital) === */}
+        {phase === 'glitch' && (
+          <motion.div 
+            key="glitch"
+            className="glitch-screen"
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0, 1, 0.8, 1, 0], 
+              clipPath: [
+                "inset(10% 0 80% 0)", 
+                "inset(50% 0 20% 0)", 
+                "inset(0 0 0 0)", 
+                "inset(80% 0 10% 0)"
+              ],
+              backgroundColor: ["transparent", "#0ea5e9", "#ef4444", "#a855f7", "transparent"]
+            }}
+            transition={{ duration: 0.4, ease: "circIn" }}
+          />
+        )}
+
+        {/* === FASE 3: TERMINAL AVANÇADO === */}
+        {phase === 'terminal' && (
+          <motion.div 
+            key="terminal"
+            className="terminal-container"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.8, rotateX: 20 }}
+            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+            transition={{ type: "spring", bounce: 0.3, duration: 0.8 }}
+          >
+            <div className="terminal-header">
+               <div className="terminal-dots">
+                 <span></span><span></span><span></span>
+               </div>
+               <div className="terminal-title">sysadmin@{user?.displayName?.replace(' ','').toLowerCase() || 'dev'}: ~</div>
+               <div className="terminal-info">SEC: ENCRYPTED</div>
+            </div>
+
+            <div className="terminal-body">
+              <motion.p className="line" initial={{opacity: 0, x: -20}} animate={{opacity: 1, x: 0}}>Initializing TechCorp Enterprise OS v2.4.1...</motion.p>
+              <motion.p className="line" initial={{opacity: 0, x: -20}} animate={{opacity: 1, x: 0}} transition={{delay: 0.2}}>Connecting to secure mainframe [192.168.0.104]...</motion.p>
+              
+              {bootSequence >= 1 && <motion.p className="line success" initial={{opacity: 0}} animate={{opacity: 1}}>&gt; Handshake success. User {user?.displayName || 'DEV_MASTER'} verified.</motion.p>}
+              {bootSequence >= 2 && <motion.p className="line warning" initial={{opacity: 0}} animate={{opacity: 1}}>&gt; Injecting RPA Modules & Fetching Financial Mocks...</motion.p>}
+              {bootSequence >= 3 && <motion.p className="line success" initial={{opacity: 0}} animate={{opacity: 1}}>&gt; Database Synced. All Systems Nominal.</motion.p>}
+              
+              {bootSequence >= 4 && (
+                <motion.div 
+                  className="start-sequence"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="radar-box">
+                     <div className="radar-sweep"></div>
+                  </div>
+                  <div className="start-actions">
+                    <p className="system-ready">ACCESS GRANTED</p>
+                    <button className="btn-boot" onClick={() => navigate('/dashboard')}>
+                      START DEMO [ EXECUTE ]
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

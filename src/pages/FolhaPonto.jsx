@@ -7,57 +7,6 @@ import Logo from '../components/Logo';
 import { useAlert } from '../contexts/AlertContext'; 
 import './FolhaPonto.css';
 
-// --- MOTOR DE ALEATORIEDADE (MOCKS DINÂMICOS) ---
-const NOMES = ["Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gabriel", "Helena", "Igor", "Juliana", "Lucas", "Mariana", "Nicolas", "Olívia", "Pedro", "Rafael", "Sofia", "Tiago", "Vinícius", "Vitória"];
-const SOBRENOMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho", "Almeida"];
-
-const DEPARTAMENTOS = [
-    { setor: "TI", cargos: ["Dev. Júnior", "Dev Fullstack", "Suporte N2", "Segurança Info", "P.O.", "UX Designer", "DevOps"] },
-    { setor: "Financeiro", cargos: ["Analista Fin.", "Controller", "Auxiliar Financeiro", "Especialista Fiscal"] },
-    { setor: "RH", cargos: ["Assistente RH", "Analista RH", "BP RH", "Recrutador"] },
-    { setor: "Comercial", cargos: ["Vendedor", "Gerente Vendas", "Executivo de Contas", "SDR"] }
-];
-
-const TIPOS_ERRO = [
-    "Marcação Ímpar", "Falta Injustificada", "Atraso Excessivo", 
-    "Batida Duplicada", "Intervalo < 1h", "Ponto Britânico", "Hora Extra N/A"
-];
-
-// Gera horários coerentes com o tipo de erro sorteado
-const gerarHorariosPorErro = (erro) => {
-    let base = { e: '08:00', si: '12:00', vi: '13:00', s: '17:00' };
-    
-    switch(erro) {
-        case "Falta Injustificada": 
-            return { e: '---', si: '---', vi: '---', s: '---' };
-        case "Marcação Ímpar":
-            const chaves = ['e', 'si', 'vi', 's'];
-            const chaveFaltando = chaves[Math.floor(Math.random() * chaves.length)];
-            base[chaveFaltando] = '---';
-            return base;
-        case "Atraso Excessivo":
-            const atrasos = ['09:45', '10:30', '11:15', '10:00', '10:50'];
-            base.e = atrasos[Math.floor(Math.random() * atrasos.length)];
-            return base;
-        case "Batida Duplicada":
-            base.si = '08:02'; 
-            base.vi = '12:00';
-            base.s = '17:00';
-            return base;
-        case "Intervalo < 1h":
-            const retornosAdiantados = ['12:35', '12:40', '12:45'];
-            base.vi = retornosAdiantados[Math.floor(Math.random() * retornosAdiantados.length)];
-            return base;
-        case "Hora Extra N/A":
-            const horasExtras = ['19:30', '20:15', '21:00', '22:45', '23:10'];
-            base.s = horasExtras[Math.floor(Math.random() * horasExtras.length)];
-            return base;
-        case "Ponto Britânico":
-        default: 
-            return base;
-    }
-};
-
 export default function FolhaPonto() {
   const navigate = useNavigate();
   const { showAlert, showConfirm, showToast } = useAlert(); 
@@ -69,17 +18,15 @@ export default function FolhaPonto() {
   const [dataHoje, setDataHoje] = useState(new Date());
   
   // Controle de Abas
-  const [abaAtiva, setAbaAtiva] = useState('meu_ponto'); // 'meu_ponto', 'ajustes', 'gestao_rh'
-  const [subAbaGestao, setSubAbaGestao] = useState('auditoria'); // 'auditoria', 'aprovacoes'
+  const [abaAtiva, setAbaAtiva] = useState('meu_ponto'); 
+  const [subAbaGestao, setSubAbaGestao] = useState('auditoria'); 
   
   const [isRH, setIsRH] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
   const [listaPendencias, setListaPendencias] = useState([]);
   
-  // Estado para o Modo Apresentação do Robô
   const [modoApresentacaoAtivo, setModoApresentacaoAtivo] = useState(false);
 
-  // Estados do Formulário de Ajuste
   const [dataAjuste, setDataAjuste] = useState('');
   const [tipoMarcacao, setTipoMarcacao] = useState('entrada');
   const [horarioCorreto, setHorarioCorreto] = useState('');
@@ -104,7 +51,6 @@ export default function FolhaPonto() {
       return dataAleatoria.toLocaleDateString('pt-BR');
   };
 
-  // Listener para Flag Global de Apresentação
   useEffect(() => {
     const demoRef = ref(db, 'configuracoes_globais/modo_apresentacao');
     const unsubscribeDemo = onValue(demoRef, (snapshot) => {
@@ -138,7 +84,6 @@ export default function FolhaPonto() {
           }
       });
 
-      // Listener do Ponto do Dia
       const dateKey = getDataKey(new Date());
       const pontoRef = ref(db, `ponto/${currentUser.uid}/${dateKey}`);
       onValue(pontoRef, (snapshot) => {
@@ -151,7 +96,6 @@ export default function FolhaPonto() {
         } : {});
       });
 
-      // Listener dos Ajustes de Ponto
       const ajustesRef = ref(db, 'ajustes_ponto');
       onValue(ajustesRef, (snapshot) => {
         const data = snapshot.val();
@@ -185,7 +129,7 @@ export default function FolhaPonto() {
                   if (item.status === 'Concluido') return false;
                   if (item.hiddenUntil && item.hiddenUntil > Date.now()) return false;
                   
-                  // 🔒 REGRA DE ISOLAMENTO
+                  // 🔒 REGRA DE ISOLAMENTO: Oculta casos que pertencem a outros usuários
                   if (item.donoUid && item.donoUid !== user.uid) return false;
                   
                   return true;
@@ -198,67 +142,7 @@ export default function FolhaPonto() {
       return () => unsubscribe();
   }, [isRH, user]);
 
-  // --- FUNÇÕES DE TESTE (MOCKS ISOLADOS POR USUÁRIO) ---
-  const gerarMeusCasos = async () => {
-    if (!user) return;
-    showToast("A gerar...", "Criando casos 100% dinâmicos para si ⏳");
-    
-    const rhRef = ref(db, 'rh/erros_ponto');
-    const updates = {};
-    
-    // Gera 12 casos únicos a cada clique
-    for (let i = 0; i < 12; i++) {
-      const nome = NOMES[Math.floor(Math.random() * NOMES.length)];
-      const sobrenome = SOBRENOMES[Math.floor(Math.random() * SOBRENOMES.length)];
-      const deptSorteado = DEPARTAMENTOS[Math.floor(Math.random() * DEPARTAMENTOS.length)];
-      const cargo = deptSorteado.cargos[Math.floor(Math.random() * deptSorteado.cargos.length)];
-      const erro = TIPOS_ERRO[Math.floor(Math.random() * TIPOS_ERRO.length)];
-      
-      const pontos = gerarHorariosPorErro(erro);
-      
-      const newKey = push(rhRef).key;
-      updates[newKey] = { 
-          nome: `${nome} ${sobrenome}`,
-          cargo: cargo,
-          setor: deptSorteado.setor,
-          erro: erro,
-          pontos: pontos,
-          donoUid: user.uid, 
-          status: "Pendente", 
-          createdAt: Date.now() 
-      };
-    }
-    
-    await update(rhRef, updates);
-    showToast("Sucesso", "12 casos imprevisíveis foram gerados! ✅");
-  };
 
-  const limparMeusCasos = async () => {
-    if (!user) return;
-    
-    const confirmou = await showConfirm("Atenção", "Deseja limpar todos os casos de teste gerados por si?");
-    if (!confirmou) return;
-
-    try {
-        const snap = await get(ref(db, 'rh/erros_ponto'));
-        const updates = {};
-        
-        if (snap.exists()) {
-            Object.entries(snap.val()).forEach(([key, val]) => {
-                if (val.donoUid === user.uid) {
-                    updates[`rh/erros_ponto/${key}`] = null;
-                }
-            });
-        }
-        
-        await update(ref(db), updates);
-        showToast("Limpeza", "Os seus casos de teste foram removidos! 🧹");
-    } catch (e) {
-        showAlert("Erro", "Falha ao limpar os casos.");
-    }
-  };
-
-  // Função para Disparar Automação RPA (RH)
   const executarAutomacaoRH = async () => {
     if (!user) return;
     const pendentes = listaPendencias.filter(p => p.status !== 'Respondido');
@@ -281,7 +165,6 @@ export default function FolhaPonto() {
     }
   };
 
-  // Funções Ponto Normal
   const registrarPonto = async (tipo) => {
     if (!user) return;
     
@@ -314,7 +197,6 @@ export default function FolhaPonto() {
     }
   };
 
-  // Funções Ajuste de Ponto (Utilizadores Reais)
   const handleSubmitAjuste = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -591,16 +473,6 @@ export default function FolhaPonto() {
                     {/* Sub-aba: Auditoria */}
                     {subAbaGestao === 'auditoria' && (
                         <div className="tabela-rh-wrapper">
-                            
-                            {/* --- BOTÕES DE SIMULAÇÃO AQUI --- */}
-                            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', padding: '0 10px' }}>
-                                <button onClick={gerarMeusCasos} className="btn-approve" style={{fontSize: '11px', padding: '6px 12px', background: '#3b82f6', borderColor: '#2563eb'}}>
-                                    + Gerar Casos (Demonstração)
-                                </button>
-                                <button onClick={limparMeusCasos} className="btn-reject" style={{fontSize: '11px', padding: '6px 12px'}}>
-                                    🗑️ Limpar Meus Casos
-                                </button>
-                            </div>
 
                             {listaPendencias.filter(item => item.status !== 'Respondido').length === 0 ? (
                                 <p style={{color: '#94a3b8', padding: '20px'}}>Nenhuma auditoria pendente no momento.</p>

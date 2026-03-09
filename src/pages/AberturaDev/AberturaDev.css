@@ -2,51 +2,225 @@
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-color: #020617; /* Fundo super escuro */
+  background-color: #020617; 
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
   color: #38bdf8;
+  cursor: crosshair; 
 }
 
-/* Efeito de TV antiga/Terminal */
+/* =========================================
+   EFEITOS DE AMBIENTE (CENÁRIO)
+   ========================================= */
+.vignette-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at center, transparent 30%, #020617 90%);
+  pointer-events: none;
+  z-index: 5;
+}
+
 .scanline {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 10px;
-  background: rgba(56, 189, 248, 0.1);
-  opacity: 0.4;
-  animation: scan 4s linear infinite;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(56, 189, 248, 0.05) 50%, rgba(56, 189, 248, 0.05));
+  background-size: 100% 4px;
   pointer-events: none;
   z-index: 50;
+  opacity: 0.6;
 }
 
+/* O GRANDE SEGREDO: A GRELHA 3D EM MOVIMENTO */
+.cyber-grid-container {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  perspective: 600px;
+  z-index: 1;
+}
+
+.cyber-grid {
+  position: absolute;
+  width: 200%; height: 200%;
+  bottom: -50%; left: -50%;
+  background-image: 
+    linear-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.15) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: rotateX(75deg);
+  animation: moveGrid 10s linear infinite;
+  transform-origin: center top;
+}
+
+@keyframes moveGrid {
+  0% { transform: rotateX(75deg) translateY(0); }
+  100% { transform: rotateX(75deg) translateY(60px); }
+}
+
+/* =========================================
+   FASE 1: INTRO (HUD E ANÉIS)
+   ========================================= */
+.intro-screen {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+}
+
+.big-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* ANÉIS TECNOLÓGICOS */
+.sci-fi-rings {
+  position: absolute;
+  top: -60px; /* Ajuste para centrar perfeitamente com a logo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 300px;
+  height: 300px;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.ring-1 {
+  width: 100%; height: 100%;
+  border: 2px solid transparent;
+  border-top: 2px solid #38bdf8;
+  border-bottom: 2px dashed rgba(56, 189, 248, 0.4);
+  filter: drop-shadow(0 0 10px #38bdf8);
+}
+
+.ring-2 {
+  width: 130%; height: 130%;
+  border: 1px solid transparent;
+  border-left: 2px solid #a855f7;
+  border-right: 2px dashed rgba(168, 85, 247, 0.4);
+}
+
+.ring-3 {
+  width: 70%; height: 70%;
+  border: 1px dashed #34d399;
+  opacity: 0.5;
+}
+
+.intro-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin: 140px 0 0 0; /* Espaço para os anéis */
+  color: #fff;
+  text-shadow: 0 0 25px rgba(56, 189, 248, 0.9);
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(56, 189, 248, 0.3);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 5px 20px;
+  margin-top: 20px;
+  background: rgba(56, 189, 248, 0.05);
+}
+
+.status-text {
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: #34d399;
+}
+
+.blink-prompt {
+  margin-top: 60px;
+  color: #facc15; /* Cor de alerta */
+  font-size: 0.85rem;
+  letter-spacing: 4px;
+  background: rgba(250, 204, 21, 0.1);
+  padding: 10px 20px;
+  border: 1px dashed rgba(250, 204, 21, 0.5);
+  text-transform: uppercase;
+}
+
+/* =========================================
+   FASE 2: GLITCH
+   ========================================= */
+.glitch-screen {
+  position: absolute;
+  width: 100%; height: 100%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* =========================================
+   FASE 3: TERMINAL (MODERNO)
+   ========================================= */
 .terminal-container {
   width: 80%;
   max-width: 800px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid #1e293b;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #334155;
   border-radius: 8px;
-  padding: 40px;
-  box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.15);
+  z-index: 20;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
-.logo-glitch {
-  margin-bottom: 30px;
+.terminal-header {
   display: flex;
-  justify-content: center;
-  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+  justify-content: space-between;
+  align-items: center;
+  background: #0f172a;
+  padding: 10px 20px;
+  border-bottom: 1px solid #334155;
 }
 
-.terminal-lines .line {
+.terminal-dots {
+  display: flex;
+  gap: 8px;
+}
+.terminal-dots span {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.terminal-dots span:nth-child(1) { background: #ef4444; }
+.terminal-dots span:nth-child(2) { background: #facc15; }
+.terminal-dots span:nth-child(3) { background: #22c55e; }
+
+.terminal-title {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.terminal-info {
+  color: #34d399;
+  font-size: 0.7rem;
+  border: 1px solid #34d399;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.terminal-body {
+  padding: 30px;
+}
+
+.terminal-body .line {
   margin: 10px 0;
-  font-size: 1.1rem;
-  opacity: 0;
-  animation: typeLine 0.1s forwards;
+  font-size: 1.05rem;
+  color: #e2e8f0;
 }
 
 .line.success { color: #34d399; }
@@ -54,61 +228,65 @@
 
 .start-sequence {
   margin-top: 40px;
-  text-align: center;
+  display: flex;
+  gap: 20px;
+  align-items: center;
   border-top: 1px dashed #334155;
   padding-top: 30px;
 }
 
+/* Um mini-radar decorativo para preencher o terminal */
+.radar-box {
+  width: 60px; height: 60px;
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  background: rgba(56, 189, 248, 0.1);
+}
+.radar-sweep {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 30px; height: 30px;
+  background: linear-gradient(45deg, rgba(56, 189, 248, 0.8), transparent);
+  transform-origin: 0 0;
+  animation: radarSpin 2s linear infinite;
+}
+@keyframes radarSpin {
+  100% { transform: rotate(360deg); }
+}
+
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .system-ready {
-  font-size: 2rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  letter-spacing: 5px;
-  color: #f8fafc;
-  text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-  margin-bottom: 20px;
-  animation: blink 2s infinite;
+  letter-spacing: 4px;
+  color: #22c55e;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  margin: 0;
 }
 
 .btn-boot {
-  background: transparent;
+  background: rgba(56, 189, 248, 0.1);
   color: #38bdf8;
-  border: 2px solid #38bdf8;
-  padding: 15px 30px;
-  font-size: 1.2rem;
-  font-family: inherit;
+  border: 1px solid #38bdf8;
+  padding: 12px 30px;
+  font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) inset;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .btn-boot:hover {
   background: #38bdf8;
-  color: #0f172a;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
-}
-
-.fade-in {
-  opacity: 0;
-  animation: fadeIn 1s ease-in forwards;
-}
-
-/* Animações */
-@keyframes scan {
-  0% { top: -10%; }
-  100% { top: 110%; }
-}
-
-@keyframes typeLine {
-  to { opacity: 1; }
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes fadeIn {
-  to { opacity: 1; }
+  color: #020617;
+  box-shadow: 0 0 20px #38bdf8;
 }
