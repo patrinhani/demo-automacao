@@ -15,8 +15,12 @@ export default function Sidebar() {
   
   const { 
     simulatedRole, simulatedSetor, switchProfile, 
-    isDev, isAdmin, isFinanceiro, isRH, isGestor, userSetor 
+    isDev, isAdmin, isFinanceiro, isRH, isGestor, userSetor, realRole 
   } = useUser();
+
+  // REGRA DE OURO (CEOs e Devs): Somente eles podem ver Reembolsos
+  const roleAtiva = simulatedRole || realRole;
+  const isSuperAdmin = roleAtiva === 'admin' || roleAtiva === 'dev';
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -85,7 +89,7 @@ export default function Sidebar() {
             
             {/* NOVO BOTÃO DA TELA DE APRESENTAÇÃO */}
             <button onClick={() => handleNavigation('/apresentacao')} style={{ width:'100%', background: '#a855f7', border:'1px solid #a855f7', color:'#fff', fontSize:'11px', padding:'8px 5px', borderRadius:'4px', marginTop: '15px', fontWeight: 'bold', textTransform: 'uppercase', boxShadow: '0 0 10px rgba(168, 85, 247, 0.4)' }}>
-               🎬 Iniciar Apresentação
+                🎬 Iniciar Apresentação
             </button>
           </div>
         )}
@@ -123,8 +127,15 @@ export default function Sidebar() {
           {/* === AUTO-SERVIÇO === */}
           <div className="nav-section">
             <span className="nav-title">Minhas Finanças</span>
-            <button className={`nav-item ${isActive('/solicitacao')}`} onClick={() => handleNavigation('/solicitacao')}><span className="icon">💸</span> Solicitar Reembolso</button>
-            <button className={`nav-item ${isActive('/status-reembolso')}`} onClick={() => handleNavigation('/status-reembolso')}><span className="icon">📊</span> Meus Reembolsos</button>
+            
+            {/* TRAVA DOS REEMBOLSOS APLICADA AQUI */}
+            {isSuperAdmin && (
+              <>
+                <button className={`nav-item ${isActive('/solicitacao')}`} onClick={() => handleNavigation('/solicitacao')}><span className="icon">💸</span> Solicitar Reembolso</button>
+                <button className={`nav-item ${isActive('/status-reembolso')}`} onClick={() => handleNavigation('/status-reembolso')}><span className="icon">📊</span> Meus Reembolsos</button>
+              </>
+            )}
+            
             <button className={`nav-item ${isActive('/holerite')}`} onClick={() => handleNavigation('/holerite')}><span className="icon">📄</span> Holerite</button>
           </div>
 

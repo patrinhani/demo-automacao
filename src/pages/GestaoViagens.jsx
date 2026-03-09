@@ -5,34 +5,31 @@ import jsPDF from 'jspdf';
 import Logo from '../components/Logo';
 import './GestaoViagens.css'; 
 
-// --- IMPORTAÇÕES DO FIREBASE ---
-import { db, auth } from '../firebase';
+// --- IMPORTAÇÕES DO FIREBASE E CONTEXTO ---
+import { db } from '../firebase';
 import { ref, push, onValue } from "firebase/database";
-import { onAuthStateChanged } from "firebase/auth";
+import { useUser } from '../contexts/UserContext'; // <-- Importamos o super contexto!
 
 export default function GestaoViagens() {
   const navigate = useNavigate();
+  // Agora usamos a inteligência do Contexto (que traz o Nome certo e respeita o DevTools)
+  const { user, uidAtivo } = useUser(); 
+  
   const [activeTab, setActiveTab] = useState('minhas_viagens'); 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const printRef = useRef();
   
   const [voucherParaImpressao, setVoucherParaImpressao] = useState(null);
-  const [user, setUser] = useState(null);
   const [viagens, setViagens] = useState([]);
 
-  // Estado para o Modal de Alerta
   const [alerta, setAlerta] = useState({ visivel: false, tipo: '', titulo: '', mensagem: '' });
 
-  // --- EFEITO PARA CARREGAR DADOS DO FIREBASE ---
+  // --- EFEITO PARA CARREGAR DADOS (Atualizado para escutar o UID do Contexto) ---
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        
-        const viagensRef = ref(db, `viagens/${currentUser.uid}`);
-        
-        onValue(viagensRef, (snapshot) => {
+    if (uidAtivo) {
+        const viagensRef = ref(db, `viagens/${uidAtivo}`);
+        const unsub = onValue(viagensRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
             const listaViagens = Object.keys(data).map(key => ({
@@ -44,14 +41,11 @@ export default function GestaoViagens() {
             setViagens([]);
           }
         });
-      } else {
-        setUser(null);
-        setViagens([]); 
-      }
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
+        return () => unsub();
+    } else {
+        setViagens([]);
+    }
+  }, [uidAtivo]);
 
   const [formData, setFormData] = useState({
     projeto: '', centro_custo: '', motivo: '', origem: '', destino: '', data_ida: '', data_volta: '',
@@ -60,7 +54,6 @@ export default function GestaoViagens() {
 
   const handleInputChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
   
-  // --- VALIDAÇÃO DE ETAPAS (NÃO DEIXA AVANÇAR VAZIO) ---
   const handleNextStep = () => {
     if (step === 1) {
       if (!formData.motivo.trim() || !formData.centro_custo.trim()) {
@@ -79,7 +72,6 @@ export default function GestaoViagens() {
         return;
       }
       
-      // Validação extra: Data de volta não pode ser antes da ida
       if (new Date(formData.data_volta) < new Date(formData.data_ida)) {
         setAlerta({
           visivel: true, tipo: 'erro', titulo: 'Datas Inválidas',
@@ -95,15 +87,15 @@ export default function GestaoViagens() {
 
   // --- SUBMIT FINAL ---
   const handleSubmit = (e) => {
-    e.preventDefault(); // Impede o recarregamento da página
+    e.preventDefault(); 
 
-    // Dupla verificação caso alguém tente burlar apertando Enter na Etapa 3
     if (!formData.motivo || !formData.origem || !formData.destino) {
         setAlerta({ visivel: true, tipo: 'erro', titulo: 'Atenção', mensagem: 'Preencha todos os campos obrigatórios.'});
         return;
     }
 
-    if (!user) {
+    // Validação usando o uidAtivo do sistema em vez do firebase cru
+    if (!user || !uidAtivo) {
       setAlerta({
         visivel: true, tipo: 'erro', titulo: 'Sessão Expirada',
         mensagem: 'Usuário não identificado. Faça login novamente.'
@@ -124,10 +116,15 @@ export default function GestaoViagens() {
       custo: 'A Calcular', 
       voo: 'A Definir', 
       hotel: formData.precisa_hotel === 'sim' ? (formData.hotel_pref || 'A Definir') : '-',
-      createdAt: Date.now() 
+      createdAt: Date.now(),
+      
+      // 🚀 MÁGICA AQUI: Puxando o nome inteligente que vem do banco de dados/DevTools
+      userId: uidAtivo,
+      userEmail: user.email || '',
+      nome: user.displayName || 'Colaborador'
     };
 
-    push(ref(db, `viagens/${user.uid}`), novaViagem)
+    push(ref(db, `viagens/${uidAtivo}`), novaViagem)
       .then(() => {
         setLoading(false);
         setAlerta({
@@ -152,6 +149,19 @@ export default function GestaoViagens() {
       });
   };
 
+  const gerarVoucher = (trip) => {
+      setVoucherParaImpressao(trip);
+      setTimeout(() => {
+          html2canvas(printRef.current).then(canvas => {
+              const imgData = canvas.toDataURL('image/png');
+              const pdf = new jsPDF();
+              pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+              pdf.save(`Voucher_${trip.id}.pdf`);
+              setVoucherParaImpressao(null);
+          });
+      }, 500);
+  };
+
   return (
     <div className="viagens-layout">
       
@@ -165,7 +175,7 @@ export default function GestaoViagens() {
           <span style={{color:'white', marginLeft:'10px', fontWeight: 'bold', fontSize: '1.2rem'}}>Viagens</span>
         </div>
         <div className="tech-profile" onClick={() => navigate('/dashboard')}>
-          <span style={{color:'#94a3b8', fontSize:'0.9rem'}}>Voltar ao Menu ↩</span>
+          <span style={{color:'#94a3b8', fontSize:'0.9rem', cursor:'pointer'}}>Voltar ao Menu ↩</span>
         </div>
       </header>
 
@@ -180,7 +190,6 @@ export default function GestaoViagens() {
           <button className={`travel-tab-glass ${activeTab === 'nova_solicitacao' ? 'active' : ''}`} onClick={() => setActiveTab('nova_solicitacao')}>➕ Nova Solicitação</button>
         </div>
 
-        {/* ABA 1: LISTA */}
         {activeTab === 'minhas_viagens' && (
           <div className="trip-grid-tech" style={{animation: 'fadeIn 0.5s', width: '100%', maxWidth: '1000px'}}>
             {viagens.length === 0 ? (
@@ -213,7 +222,6 @@ export default function GestaoViagens() {
           </div>
         )}
 
-        {/* ABA 2: WIZARD */}
         {activeTab === 'nova_solicitacao' && (
           <div className="wizard-glass-container" style={{animation: 'fadeIn 0.5s', width: '100%', maxWidth: '800px'}}>
             <div className="wizard-steps-neon">
@@ -225,7 +233,6 @@ export default function GestaoViagens() {
               {step === 1 && "Dados do Projeto"} {step === 2 && "Logística & Datas"} {step === 3 && "Revisão Final"}
             </div>
 
-            {/* PREVENÇÃO DO ENTER: Se apertar enter, ele avança a etapa em vez de dar submit direto */}
             <form 
               onSubmit={handleSubmit} 
               onKeyDown={(e) => {
@@ -266,7 +273,6 @@ export default function GestaoViagens() {
                 {step > 1 ? <button type="button" className="btn-glass-secondary" onClick={prevStep}>Anterior</button> : <div></div>}
                 
                 {step < 3 ? (
-                  // SUBSTITUÍDO: Agora chama handleNextStep para validar antes de avançar
                   <button type="button" className="btn-neon-primary" onClick={handleNextStep}>Próximo</button>
                 ) : (
                   <button type="submit" className="btn-neon-primary" disabled={loading}>{loading ? 'Enviando...' : 'Confirmar Solicitação'}</button>
@@ -301,7 +307,7 @@ export default function GestaoViagens() {
                 <Logo lightMode={true} size={1.2} />
                 <div style={{textAlign:'right'}}><h1 className="voucher-title">Voucher de Viagem</h1><p>#{voucherParaImpressao.id}</p></div>
             </div>
-            <div className="voucher-section"><div className="voucher-sec-title">DADOS</div><div className="voucher-sec-content"><div className="v-item"><strong>Nome</strong><span>COLABORADOR</span></div><div className="v-item"><strong>Status</strong><span>CONFIRMADO</span></div></div></div>
+            <div className="voucher-section"><div className="voucher-sec-title">DADOS</div><div className="voucher-sec-content"><div className="v-item"><strong>Nome</strong><span>{user?.displayName?.toUpperCase()}</span></div><div className="v-item"><strong>Status</strong><span>CONFIRMADO</span></div></div></div>
             <div className="voucher-section"><div className="voucher-sec-title">ITINERÁRIO</div><div className="voucher-sec-content"><div className="v-item"><strong>Origem</strong><span>{voucherParaImpressao.origem}</span></div><div className="v-item"><strong>Destino</strong><span>{voucherParaImpressao.destino}</span></div><div className="v-item"><strong>Voo</strong><span>{voucherParaImpressao.voo}</span></div></div></div>
             <div style={{marginTop:'50px',textAlign:'center'}}>TechCorp Travel Solutions</div>
         </div>

@@ -4,11 +4,19 @@ import { db, auth } from '../firebase';
 import { ref, onValue, update, get } from 'firebase/database';
 import Logo from '../components/Logo';
 import { useAlert } from '../contexts/AlertContext'; 
+import { useUser } from '../contexts/UserContext'; 
 import './GestaoReembolsos.css';
 
 export default function GestaoAprovacoes() {
   const navigate = useNavigate();
-  const { showToast, showAlert } = useAlert(); // Mantemos apenas o Toast para a notificação de sucesso
+  const { showToast, showAlert } = useAlert(); 
+  
+  // PEGANDO DIRETAMENTE AS STRINGS DO DEVTOOLS PARA NÃO FALHAR
+  const { realRole, simulatedRole } = useUser(); 
+  const roleAtiva = simulatedRole || realRole;
+  
+  // REGRA DE OURO: Somente Admin (ou Dev, para vocês não se trancarem fora) podem ver
+  const isSuperAdmin = roleAtiva === 'admin' || roleAtiva === 'dev';
   
   const [abaAtiva, setAbaAtiva] = useState('ferias');
   const [dados, setDados] = useState([]);
@@ -23,11 +31,6 @@ export default function GestaoAprovacoes() {
     const checkUser = async () => {
       const user = auth.currentUser;
       if (!user) return navigate('/');
-      
-      const userRef = ref(db, `users/${user.uid}`);
-      get(userRef).then((snapshot) => {
-          // Lógica de proteção opcional mantida
-      });
     };
     checkUser();
   }, [navigate]);
@@ -39,6 +42,13 @@ export default function GestaoAprovacoes() {
 
   // 2. BUSCA INTELIGENTE DE DADOS
   useEffect(() => {
+    // 🔒 TRAVA DE SEGURANÇA ATIVA DO DEVTOOLS
+    // Se o usuário não for CEO/Dev e tentar acessar reembolsos, é chutado para a aba de Férias.
+    if (abaAtiva === 'reembolsos' && !isSuperAdmin) {
+        setAbaAtiva('ferias');
+        return;
+    }
+
     setLoading(true);
     setDados([]); 
     
@@ -86,7 +96,7 @@ export default function GestaoAprovacoes() {
     });
 
     return () => unsubscribe();
-  }, [abaAtiva]);
+  }, [abaAtiva, isSuperAdmin]);
 
   // 3. ABRE O MODAL LOCAL
   const handleAvaliarClick = (item, decisao) => {
@@ -121,9 +131,10 @@ export default function GestaoAprovacoes() {
       let updateData = {};
       const user = auth.currentUser;
 
+      // Usando "avaliadoPor" como combinamos na correção visual
       if (abaAtiva === 'viagens') {
           itemRef = ref(db, `viagens/${item.uidOriginal}/${item.firebaseKey}`);
-          updateData = { status: isAprovando ? 'APROVADO' : 'REJEITADO', aprovadoPor: user.email, dataAprovacao: new Date().toISOString() };
+          updateData = { status: isAprovando ? 'APROVADO' : 'REJEITADO', avaliadoPor: user.email, dataAvaliacao: new Date().toISOString() };
           if (!isAprovando) updateData.observacao = motivo;
       } else if (abaAtiva === 'reembolsos') {
           itemRef = ref(db, `reembolsos/${item.firebaseKey}`);
@@ -169,7 +180,11 @@ export default function GestaoAprovacoes() {
             <button onClick={() => setAbaAtiva('ferias')} style={estiloAba(abaAtiva === 'ferias')}>🏖 Férias</button>
             <button onClick={() => setAbaAtiva('viagens')} style={estiloAba(abaAtiva === 'viagens')}>✈ Viagens</button>
             <button onClick={() => setAbaAtiva('helpdesk')} style={estiloAba(abaAtiva === 'helpdesk')}>🎧 Helpdesk</button>
-            <button onClick={() => setAbaAtiva('reembolsos')} style={estiloAba(abaAtiva === 'reembolsos')}>💰 Reembolsos</button>
+            
+            {/* O BOTÃO SÓ APARECE SE O USUÁRIO FOR O CEO/DEV */}
+            {isSuperAdmin && (
+              <button onClick={() => setAbaAtiva('reembolsos')} style={estiloAba(abaAtiva === 'reembolsos')}>💰 Reembolsos</button>
+            )}
         </div>
 
         {loading ? (

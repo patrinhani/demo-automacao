@@ -3,78 +3,134 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import { db } from '../firebase';
 import { ref, get } from 'firebase/database';
+import { useUser } from '../contexts/UserContext'; 
+import { useAlert } from '../contexts/AlertContext'; 
 import './HistoricoSolicitacoes.css';
 
 export default function HistoricoSolicitacoes() {
   const navigate = useNavigate();
+  const { user, uidAtivo, isAdmin, isGestor } = useUser(); 
+  const { showAlert } = useAlert();
+  
   const [listaCompleta, setListaCompleta] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('todos');
 
+  // --- 1. SEGURANÇA: BLOQUEIO DE ACESSO ---
   useEffect(() => {
+    if (user && !isAdmin && !isGestor) {
+      showAlert("Acesso Negado", "Apenas Administradores e Gestores podem acessar o Histórico Geral.");
+      navigate('/dashboard');
+    }
+  }, [user, isAdmin, isGestor, navigate, showAlert]);
+
+  // --- 2. BUSCA DE DADOS E FILTRAGEM ---
+  useEffect(() => {
+    if (!user || (!isAdmin && !isGestor)) return;
+
     const carregarDados = async () => {
       try {
         setLoading(true);
 
-        // 1. Mapear Usuários (ID -> Nome) para saber quem aprovou
         const usersSnap = await get(ref(db, 'users'));
         const usersMap = {};
+        const subordinados = []; 
+
         if (usersSnap.exists()) {
             usersSnap.forEach((child) => {
                 const dados = child.val();
-                usersMap[child.key] = dados.nome || "Usuário";
+                const childUid = child.key;
+                usersMap[childUid] = dados.nome || "Usuário";
+                
+                if (dados.gestorId === uidAtivo || dados.gestor === user.nome) {
+                    subordinados.push(childUid);
+                }
             });
         }
 
-        // 2. Buscar TUDO (Inclusive os Reembolsos antigos)
         const [feriasSnap, viagensSnap, helpdeskSnap, reembolsosSnap] = await Promise.all([
             get(ref(db, 'solicitacoes/ferias')),
-            get(ref(db, 'solicitacoes/viagens')),
+            get(ref(db, 'viagens')), 
             get(ref(db, 'solicitacoes/helpdesk')),
-            get(ref(db, 'reembolsos')) // <--- Faltava isso!
+            get(ref(db, 'reembolsos'))
         ]);
 
         let itens = [];
 
-        // Função para normalizar os dados (pois o reembolso tem campos diferentes)
-        const processar = (snap, tipo) => {
-            if (snap.exists()) {
-                Object.entries(snap.val()).forEach(([id, dados]) => {
-                    // Normalização de campos
-                    const dataCriacao = dados.createdAt || dados.data_criacao || new Date().toISOString();
-                    const nomeSolicitante = dados.solicitanteNome || dados.nome || 'Desconhecido';
-                    const cargoSolicitante = dados.solicitanteCargo || (dados.matricula ? `Mat: ${dados.matricula}` : 'Colaborador');
-                    
-                    itens.push({
-                        id,
-                        tipo, // 'Férias', 'Reembolso', etc.
-                        originalData: dados, // Guarda os dados brutos se precisar
-                        
-                        // Campos Padronizados
-                        data: new Date(dataCriacao),
-                        solicitante: nomeSolicitante,
-                        cargo: cargoSolicitante,
-                        status: dados.status || 'pendente',
-                        
-                        // Quem aprovou?
-                        aprovadorNome: dados.avaliadoPor ? usersMap[dados.avaliadoPor] : null,
-                        
-                        // Detalhes específicos para exibição
-                        detalhePrincipal: getDetalhePrincipal(tipo, dados),
-                        detalheSecundario: getDetalheSecundario(tipo, dados)
+        const processar = (snap, tipo, isAninhado = false) => {
+            if (!snap.exists()) return;
+
+            const processarItem = (id, dados, uidPai = null) => {
+                const reqUserId = dados.userId || dados.uid || dados.idUsuario || uidPai || null;
+
+                if (isGestor && !isAdmin) {
+                    if (reqUserId !== uidAtivo && !subordinados.includes(reqUserId)) {
+                        return; 
+                    }
+                }
+
+                const dataCriacao = dados.createdAt || dados.data_criacao || new Date().toISOString();
+                
+                // MÁGICA AQUI: Pega o nome e converte o e-mail em nome caso seja necessário
+                let nomeSolicitante = dados.solicitanteNome || dados.nome || (uidPai ? usersMap[uidPai] : 'Desconhecido');
+                
+                if (nomeSolicitante && typeof nomeSolicitante === 'string' && nomeSolicitante.includes('@')) {
+                    // Pega tudo antes do @ e coloca a primeira letra maiúscula
+                    nomeSolicitante = nomeSolicitante.split('@')[0];
+                    nomeSolicitante = nomeSolicitante.charAt(0).toUpperCase() + nomeSolicitante.slice(1);
+                }
+
+                const cargoSolicitante = dados.solicitanteCargo || (dados.matricula ? `Mat: ${dados.matricula}` : 'Colaborador');
+                
+                const idAprovador = dados.avaliadoPor || dados.aprovadoPor || dados.atendidoPor || dados.resolvidoPor || dados.responsavelId || dados.responsavel;
+
+                let nomeAprovador = null;
+                const statusAtual = (dados.status || 'pendente').toLowerCase();
+                
+                if (idAprovador && usersMap[idAprovador]) {
+                    nomeAprovador = usersMap[idAprovador]; 
+                } else if (idAprovador && typeof idAprovador === 'string') {
+                    nomeAprovador = idAprovador; 
+                } else if (['aprovado', 'concluído', 'concluido', 'resolvido'].includes(statusAtual)) {
+                    nomeAprovador = "Sistema / Gestão"; 
+                }
+
+                itens.push({
+                    id,
+                    tipo, 
+                    originalData: dados, 
+                    data: new Date(dataCriacao),
+                    solicitante: nomeSolicitante,
+                    cargo: cargoSolicitante,
+                    status: dados.status || 'pendente',
+                    aprovadorNome: nomeAprovador,
+                    detalhePrincipal: getDetalhePrincipal(tipo, dados),
+                    detalheSecundario: getDetalheSecundario(tipo, dados)
+                });
+            };
+
+            if (isAninhado) {
+                Object.entries(snap.val()).forEach(([uid, viagensDoUsuario]) => {
+                    Object.entries(viagensDoUsuario).forEach(([idViagem, dadosViagem]) => {
+                        processarItem(idViagem, dadosViagem, uid);
                     });
+                });
+            } else {
+                Object.entries(snap.val()).forEach(([id, dados]) => {
+                    processarItem(id, dados);
                 });
             }
         };
 
         processar(feriasSnap, 'Férias');
-        processar(viagensSnap, 'Viagens');
+        processar(viagensSnap, 'Viagens', true); 
         processar(helpdeskSnap, 'Helpdesk');
-        processar(reembolsosSnap, 'Reembolso'); // <--- Processa os antigos
+        
+        if (isAdmin) {
+            processar(reembolsosSnap, 'Reembolso'); 
+        }
 
-        // Ordenar do mais recente para o mais antigo
         itens.sort((a, b) => b.data - a.data);
-
         setListaCompleta(itens);
       } catch (error) {
         console.error("Erro ao carregar histórico:", error);
@@ -84,20 +140,19 @@ export default function HistoricoSolicitacoes() {
     };
 
     carregarDados();
-  }, []);
+  }, [user, uidAtivo, isAdmin, isGestor]);
 
-  // --- HELPERS DE TEXTO ---
   const getDetalhePrincipal = (tipo, d) => {
       if (tipo === 'Férias') return `${d.dias} dias`;
-      if (tipo === 'Viagens') return `${d.origem} ➝ ${d.destino}`;
-      if (tipo === 'Helpdesk') return d.assunto;
+      if (tipo === 'Viagens') return `${d.origem || '?'} ➝ ${d.destino || '?'}`;
+      if (tipo === 'Helpdesk') return d.assunto || d.titulo || 'Chamado';
       if (tipo === 'Reembolso') return `R$ ${d.valor}`;
       return '---';
   };
 
   const getDetalheSecundario = (tipo, d) => {
-      if (tipo === 'Férias') return `Início: ${new Date(d.inicio).toLocaleDateString('pt-BR')}`;
-      if (tipo === 'Viagens') return d.motivo;
+      if (tipo === 'Férias') return `Início: ${d.inicio ? new Date(d.inicio).toLocaleDateString('pt-BR') : '?'}`;
+      if (tipo === 'Viagens') return d.motivo || 'Viagem Corporativa';
       if (tipo === 'Helpdesk') return `Prioridade: ${d.prioridade}`;
       if (tipo === 'Reembolso') return d.motivo;
       return '---';
@@ -105,15 +160,23 @@ export default function HistoricoSolicitacoes() {
 
   const getStatusColor = (status) => {
       const s = status.toLowerCase();
-      if (s === 'aprovado' || s === 'concluído') return 'status-success';
-      if (s === 'rejeitado' || s === 'negado') return 'status-danger';
+      if (s === 'aprovado' || s === 'concluído' || s === 'concluido' || s === 'resolvido') return 'status-success';
+      if (s === 'rejeitado' || s === 'negado' || s === 'cancelado') return 'status-danger';
       return 'status-warning';
   };
 
-  // Filtragem visual
   const itensVisiveis = filtro === 'todos' 
     ? listaCompleta 
-    : listaCompleta.filter(item => item.tipo.toLowerCase() === filtro.toLowerCase());
+    : listaCompleta.filter(item => {
+        const tipoNormalizado = item.tipo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return tipoNormalizado === filtro.toLowerCase();
+      });
+
+  const abasFiltro = isAdmin 
+    ? ['todos', 'ferias', 'viagens', 'helpdesk', 'reembolso']
+    : ['todos', 'ferias', 'viagens', 'helpdesk'];
+
+  if (user && !isAdmin && !isGestor) return null;
 
   return (
     <div className="historico-layout">
@@ -124,7 +187,6 @@ export default function HistoricoSolicitacoes() {
         <div className="header-left">
            <div style={{transform: 'scale(0.8)'}}><Logo /></div>
            <span className="divider">|</span>
-           {/* <span className="page-title">Historico de Aprovações</span> */}
         </div>
         <button className="tech-back-btn" onClick={() => navigate('/dashboard')}>
           Voltar ↩
@@ -137,9 +199,8 @@ export default function HistoricoSolicitacoes() {
             <p>Visualizando registros de <strong>{listaCompleta.length}</strong> operações.</p>
         </div>
 
-        {/* Filtros */}
         <div className="filter-tabs">
-            {['todos', 'ferias', 'viagens', 'helpdesk', 'reembolso'].map((f) => (
+            {abasFiltro.map((f) => (
                 <button 
                     key={f} 
                     className={`filter-tab ${filtro === f ? 'active' : ''}`}
