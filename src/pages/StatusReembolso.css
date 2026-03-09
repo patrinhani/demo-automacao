@@ -144,26 +144,29 @@
   width: 100%;
 }
 
-/* LINHAS DE FUNDO E PREENCHIMENTO */
-.timeline-line-bg, .timeline-line-fill {
+/* LINHAS DE FUNDO (DESKTOP) */
+.timeline-line-bg {
   position: absolute;
-  top: 23px; /* Centro exato da bolinha (25px) menos metade da linha (2px) */
-  left: 50px; /* Alinha com o centro da primeira bolinha */
-  right: 50px; /* Alinha com o centro da última bolinha */
+  top: 23px;
+  left: 50px;
+  right: 50px;
   height: 4px;
-  z-index: 0; /* Atrás de tudo */
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 0;
   border-radius: 4px;
 }
 
-.timeline-line-bg {
-  background: rgba(255, 255, 255, 0.1);
-  width: auto;
-}
-
+/* LINHAS DE PREENCHIMENTO (CRESCE DENTRO DO FUNDO) */
 .timeline-line-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%; /* Respeita a altura de 4px do pai */
+  width: var(--progress); 
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-orange));
   box-shadow: 0 0 15px var(--neon-orange);
-  transition: width 1s ease-in-out;
+  transition: all 1s ease-in-out;
+  border-radius: 4px;
 }
 
 /* O CONTAINER DE CADA PASSO */
@@ -194,12 +197,10 @@
   
   margin-bottom: 12px; 
   box-sizing: border-box;
-  position: relative; /* Necessário para o z-index funcionar */
+  position: relative;
 }
 
 /* --- ESTADOS DAS BOLINHAS --- */
-
-/* 1. Concluído */
 .timeline-step.completed .step-circle {
   border-color: var(--neon-blue);
   color: var(--neon-blue);
@@ -208,35 +209,25 @@
   z-index: 5;
 }
 
-/* =========================================================
-   2. ATIVO (AGORA COM ANEL GIRATÓRIO)
-   ========================================================= */
 .timeline-step.active .step-circle {
-  /* Preenchimento Sólido */
   background: var(--neon-orange) !important;
   color: #ffffff !important;
   border: none !important;
-  
-  /* Brilho interno e externo */
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-  
-  /* Z-Index alto para cobrir a linha */
   z-index: 10 !important;
 }
 
-/* O Anel que Gira (Pseudo-elemento) */
 .timeline-step.active .step-circle::after {
   content: '';
   position: absolute;
-  top: -6px; left: -6px; right: -6px; bottom: -6px; /* Tamanho maior que a bola */
+  top: -6px; left: -6px; right: -6px; bottom: -6px;
   border-radius: 50%;
   border: 2px solid transparent;
-  border-top-color: var(--neon-orange); /* Apenas um pedaço do anel tem cor */
+  border-top-color: var(--neon-orange);
   border-right-color: var(--neon-orange);
-  animation: rotateRing 1.5s linear infinite; /* Animação de rotação */
+  animation: rotateRing 1.5s linear infinite;
 }
 
-/* 3. Pendente */
 .timeline-step.pending .step-circle {
   opacity: 0.4;
   border-color: #fff;
@@ -251,7 +242,7 @@
   color: #fff;
   text-align: center;
   line-height: 1.2;
-  margin-top: 5px; /* Espaço seguro */
+  margin-top: 5px;
   display: block;
 }
 
@@ -264,7 +255,6 @@
   margin-top: 4px;
 }
 
-/* Cores específicas para os textos ativos */
 .timeline-step.active .step-label {
   color: var(--neon-orange);
   text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
@@ -314,20 +304,29 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Mobile */
+/* =========================================================
+   MOBILE (CELULAR) - LINHA VERTICAL CORRIGIDA
+   ========================================================= */
 @media (max-width: 600px) {
   .timeline-tech { flex-direction: column; align-items: flex-start; padding-left: 20px; height: auto; margin-bottom: 20px; gap: 0; }
   
-  /* Linha Vertical no Mobile */
-  .timeline-line-bg, .timeline-line-fill { 
+  /* LINHA DE FUNDO MOBILE */
+  .timeline-line-bg { 
     width: 4px; 
     height: auto; 
-    bottom: 50px; 
+    bottom: 45px; 
     left: 43px; 
     top: 25px; 
     right: auto; 
   }
-  .timeline-line-fill { transition: height 1s ease; }
+
+  /* LINHA DE PREENCHIMENTO MOBILE (Cresce em altura, dentro do pai) */
+  .timeline-line-fill { 
+    width: 100% !important; /* Respeita a largura de 4px do pai */
+    height: var(--progress) !important; /* Puxa o progresso para a altura */
+    left: 0; 
+    top: 0; 
+  }
 
   .timeline-step { flex-direction: row; width: 100%; margin-bottom: 30px; align-items: center; }
   .step-circle { margin-bottom: 0; margin-right: 15px; }
@@ -424,9 +423,9 @@
    ========================================= */
 .success-icon-tech.reprovado {
   background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #ef4444;
-  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3) !important;
   animation: pulseError 2s infinite;
 }
 
@@ -437,8 +436,8 @@
 }
 
 .timeline-line-fill.reprovado {
-  background: #ef4444;
-  box-shadow: 0 0 15px #ef4444;
+  background: #ef4444 !important;
+  box-shadow: 0 0 15px #ef4444 !important;
 }
 
 .timeline-step.reprovado .step-circle {

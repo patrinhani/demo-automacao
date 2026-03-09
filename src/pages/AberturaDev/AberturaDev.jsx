@@ -51,6 +51,16 @@ export default function AberturaDev() {
       <div className="cyber-grid-container">
         <div className="cyber-grid"></div>
       </div>
+      
+      {/* NOVO: Partículas Tecnológicas Flutuantes (Versão Neon Chamativa) */}
+      <div className="floating-tech-elements">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className={`tech-element el-${i}`}>
+            {['{ }', '</>', '01', 'sys', '[]', '||', '=>', 'NaN'][i % 8]}
+          </div>
+        ))}
+      </div>
+
       <div className="vignette-overlay"></div>
       <div className="scanline"></div>
 

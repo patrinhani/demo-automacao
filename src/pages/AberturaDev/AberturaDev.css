@@ -290,3 +290,87 @@
   color: #020617;
   box-shadow: 0 0 20px #38bdf8;
 }
+
+/* =========================================
+   ELEMENTOS FLUTUANTES (BACKGROUND FILLER)
+   ========================================= */
+/* ... [Mantenha todo o CSS anterior até à secção dos botões btn-boot] ... */
+
+/* =========================================
+   ELEMENTOS FLUTUANTES (BACKGROUND FILLER NEON)
+   ========================================= */
+.floating-tech-elements {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  overflow: hidden;
+  z-index: 2; /* Acima da grelha, abaixo da vignette escurecida */
+  pointer-events: none;
+}
+
+.tech-element {
+  position: absolute;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-weight: 800;
+  animation: floatNeonUp linear infinite;
+  bottom: -10%; 
+  opacity: 0;
+  /* Efeito base de brilho neon */
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+}
+
+/* Distribuindo cores da sua paleta TechCorp para as partículas */
+.tech-element:nth-child(3n) { color: #38bdf8; }   /* Cyan vibrante */
+.tech-element:nth-child(3n+1) { color: #a855f7; } /* Roxo tecnológico */
+.tech-element:nth-child(3n+2) { color: #34d399; } /* Verde terminal */
+
+/* Efeito Cinematic: Profundidade de campo (Blur) */
+.tech-element:nth-child(even) { filter: blur(2px); z-index: 1; }
+.tech-element:nth-child(5n) { filter: blur(5px); z-index: 3; font-size: 2.5rem !important; } /* Parecem estar muito perto da lente */
+
+/* Animação com pulsar de opacidade e movimento dinâmico */
+@keyframes floatNeonUp {
+  0% {
+    bottom: -10%;
+    opacity: 0;
+    transform: translateY(0) scale(0.8) rotate(0deg);
+  }
+  15% {
+    opacity: 0.7; /* Ficam bem visíveis */
+    transform: scale(1.1) rotate(5deg);
+  }
+  50% {
+    opacity: 0.3; /* Pulsam para baixo */
+    transform: scale(0.9) rotate(-5deg);
+  }
+  85% {
+    opacity: 0.8; /* Pulsam para cima perto do fim */
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    bottom: 110%;
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8) rotate(20deg);
+  }
+}
+
+/* Posições, tamanhos e velocidades para 20 partículas */
+.el-0  { left: 8%;  animation-duration: 18s; animation-delay: 0s;  font-size: 1.5rem; }
+.el-1  { left: 22%; animation-duration: 22s; animation-delay: 2s;  font-size: 0.9rem; }
+.el-2  { left: 38%; animation-duration: 25s; animation-delay: 5s;  font-size: 1.2rem; }
+.el-3  { left: 55%; animation-duration: 15s; animation-delay: 1s;  font-size: 1.0rem; }
+.el-4  { left: 70%; animation-duration: 28s; animation-delay: 4s;  font-size: 0.8rem; }
+.el-5  { left: 85%; animation-duration: 19s; animation-delay: 7s;  font-size: 1.8rem; }
+.el-6  { left: 15%; animation-duration: 24s; animation-delay: 9s;  font-size: 1.1rem; }
+.el-7  { left: 32%; animation-duration: 17s; animation-delay: 3s;  font-size: 1.3rem; }
+.el-8  { left: 62%; animation-duration: 21s; animation-delay: 8s;  font-size: 0.9rem; }
+.el-9  { left: 78%; animation-duration: 16s; animation-delay: 2s;  font-size: 1.6rem; }
+.el-10 { left: 5%;  animation-duration: 26s; animation-delay: 10s; font-size: 1.0rem; }
+.el-11 { left: 45%; animation-duration: 20s; animation-delay: 1s;  font-size: 0.7rem; }
+.el-12 { left: 75%; animation-duration: 19s; animation-delay: 5s;  font-size: 1.2rem; }
+.el-13 { left: 92%; animation-duration: 23s; animation-delay: 3s;  font-size: 1.1rem; }
+.el-14 { left: 50%; animation-duration: 15s; animation-delay: 8s;  font-size: 1.4rem; }
+.el-15 { left: 28%; animation-duration: 27s; animation-delay: 11s; font-size: 1.7rem; }
+.el-16 { left: 68%; animation-duration: 18s; animation-delay: 6s;  font-size: 0.8rem; }
+.el-17 { left: 88%; animation-duration: 21s; animation-delay: 4s;  font-size: 1.3rem; }
+.el-18 { left: 12%; animation-duration: 29s; animation-delay: 12s; font-size: 1.1rem; }
+.el-19 { left: 42%; animation-duration: 16s; animation-delay: 0s;  font-size: 1.5rem; }

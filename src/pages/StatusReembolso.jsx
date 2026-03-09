@@ -46,14 +46,10 @@ export default function StatusReembolso() {
     return `R$ ${val}`;
   };
 
-  // --- RENDERIZAÇÃO DA TELA DE DETALHES ---
   if (solicitacaoSelecionada) {
-    // Busca a versão mais atualizada direto da lista do Firebase (Tempo Real)
     const dados = listaSolicitacoes.find(req => req.id === solicitacaoSelecionada.id) || solicitacaoSelecionada;
-
     const statusNormalizado = String(dados.status).toLowerCase();
     
-    // VERIFICAÇÃO ATUALIZADA: Aceita "rejeitado" ou "reprovado"
     const isAnalise = statusNormalizado === 'em_analise';
     const isAprovado = statusNormalizado === 'aprovado';
     const isPago = statusNormalizado === 'pago';
@@ -78,7 +74,6 @@ export default function StatusReembolso() {
         <div className="status-container-tech">
           <div className="status-card-glass">
             
-            {/* ÍCONE PRINCIPAL DINÂMICO */}
             <div className={`success-icon-tech ${isReprovado ? 'reprovado' : ''}`}>
               {isReprovado ? '✕' : isPago ? '💲' : '✓'}
             </div>
@@ -95,15 +90,15 @@ export default function StatusReembolso() {
             <h3 style={{color: '#fff', marginBottom: '30px', fontSize: '1.2rem'}}>Acompanhamento</h3>
             
             <div className="timeline-tech">
-              <div className="timeline-line-bg"></div>
               
-              {/* Barra de Progresso Dinâmica */}
-              <div 
-                className={`timeline-line-fill ${isReprovado ? 'reprovado' : ''}`} 
-                style={{ width: isPago ? '100%' : isAprovado ? '66%' : isReprovado ? '66%' : '33%' }}
-              ></div>
+              {/* CORREÇÃO AQUI: A linha de preenchimento agora fica DENTRO da linha de fundo */}
+              <div className="timeline-line-bg">
+                <div 
+                  className={`timeline-line-fill ${isReprovado ? 'reprovado' : ''}`}
+                  style={{ '--progress': isPago ? '100%' : isAprovado ? '66.6%' : isReprovado ? '66.6%' : '33.3%' }}
+                ></div>
+              </div>
 
-              {/* ETAPA 1: ENVIADO */}
               <div className="timeline-step completed">
                 <div className="step-circle">✓</div>
                 <div>
@@ -114,7 +109,6 @@ export default function StatusReembolso() {
                 </div>
               </div>
 
-              {/* ETAPA 2: ANÁLISE */}
               <div className={`timeline-step ${isAnalise ? 'active' : 'completed'}`}>
                 <div className="step-circle">{!isAnalise ? '✓' : '2'}</div>
                 <div>
@@ -123,7 +117,6 @@ export default function StatusReembolso() {
                 </div>
               </div>
 
-              {/* ETAPA 3: APROVAÇÃO / REJEIÇÃO */}
               <div className={`timeline-step ${isReprovado ? 'reprovado' : (isAprovado || isPago) ? 'completed' : 'pending'}`}>
                 <div className="step-circle">
                   {isReprovado ? '✕' : (isAprovado || isPago) ? '✓' : '3'}
@@ -136,7 +129,6 @@ export default function StatusReembolso() {
                 </div>
               </div>
 
-              {/* ETAPA 4: PAGAMENTO */}
               <div className={`timeline-step ${isPago ? 'completed' : (isAprovado ? 'active' : 'pending')}`} style={isReprovado ? { opacity: 0.3 } : {}}>
                 <div className="step-circle">4</div>
                 <div>
@@ -171,7 +163,6 @@ export default function StatusReembolso() {
     );
   }
 
-  // --- RENDERIZAÇÃO DA LISTA (Padrão) ---
   return (
     <div className="tech-layout-status">
       <div className="ambient-light light-1"></div>
@@ -206,7 +197,6 @@ export default function StatusReembolso() {
           <div className="lista-cards-tech">
             {listaSolicitacoes.map((item) => {
               const statusDb = String(item.status).toLowerCase();
-              // Se for 'rejeitado', aplica a classe 'reprovado' do CSS para ficar vermelho
               const cssClass = (statusDb === 'rejeitado' || statusDb === 'reprovado') ? 'reprovado' : statusDb;
 
               return (
