@@ -15,7 +15,6 @@ const TEAM_FIXO = [
 const mensagensProcessadasPelaIA = new Set();
 
 // --- FILA GLOBAL DE REQUISIÇÕES (PROMISE QUEUE) ---
-// Garante que NUNCA faremos duas requisições simultâneas para a API
 let filaGlobalIA = Promise.resolve();
 
 const enfileirarIA = (tarefaAsync) => {
@@ -25,8 +24,6 @@ const enfileirarIA = (tarefaAsync) => {
         } catch(e) {
             console.error("Erro na fila da IA:", e);
         }
-        // 🛑 RESPIRAÇÃO OBRIGATÓRIA: Força um atraso de 5 segundos após CADA requisição.
-        // O plano gratuito permite ~15 RPM (1 a cada 4s). Isso garante que nunca ultrapassamos a cota de tempo.
         await new Promise(resolve => setTimeout(resolve, 5000));
     });
 };
@@ -40,16 +37,14 @@ const fetchComRetry = async (url, options, maxTentativas = 4) => {
         
         if (response.status !== 429) return response; 
         
-        // Se batermos no teto (429), lemos o tempo que o Google exige que esperemos
         const responseClone = response.clone();
         try {
             const data = await responseClone.json();
             const errMsg = data?.error?.message || data?.error || '';
             
-            // Procura a frase "retry in Xs" na resposta do erro
             const match = typeof errMsg === 'string' && errMsg.match(/retry in (\d+\.?\d*)s/i);
             if (match && match[1]) {
-                tempoEspera = (parseFloat(match[1]) * 1000) + 2000; // Soma 2 segundos de margem de segurança
+                tempoEspera = (parseFloat(match[1]) * 1000) + 2000; 
             }
         } catch (e) {
             console.error("Não foi possível ler o tempo de espera do Google. Usando padrão.");
@@ -70,6 +65,7 @@ export default function ChatInterno() {
   const [user, setUser] = useState(null);
   
   const [todosUsuarios, setTodosUsuarios] = useState([]);
+  const [historicoUsuarios, setHistoricoUsuarios] = useState([]); // <-- NOVO: Mantém usuários mockados salvos
   const [usuariosExibidos, setUsuariosExibidos] = useState([]);
   
   const [canalAtivo, setCanalAtivo] = useState({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' });
@@ -156,7 +152,7 @@ export default function ChatInterno() {
       }
   }, [location.state]);
 
-  // 3. MONITORAR MENSAGENS E NÃO LIDAS
+  // 3. MONITORAR MENSAGENS E NÃO LIDAS (AQUI SALVAMOS QUEM JÁ CONVERSOU COM VOCÊ)
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
@@ -165,6 +161,7 @@ export default function ChatInterno() {
       const data = snapshot.val();
       const novasInteracoes = {};
       const novasNaoLidas = { ...naoLidas };
+      const novosHistorico = []; // <-- NOVO
 
       if (data) {
           Object.keys(data).forEach((chatId) => {
@@ -175,6 +172,17 @@ export default function ChatInterno() {
                   const outroId = chatId.replace(user.uid, '').replace('_', '');
 
                   novasInteracoes[outroId] = ultimaMsg.timestamp;
+
+                  // <-- NOVO: Resgata a pessoa pelas mensagens antigas para ela não sumir
+                  const msgDoOutro = msgs.slice().reverse().find(m => m.uid === outroId);
+                  if (msgDoOutro) {
+                      novosHistorico.push({
+                          id: outroId,
+                          nome: msgDoOutro.usuario,
+                          cargo: 'Colaborador (Histórico)',
+                          isMock: true // Mantém true para ficar com o visual de IA/Mock
+                      });
+                  }
 
                   if (ultimaMsg.uid !== user.uid && canalAtivo.id !== outroId) {
                     const lastRead = Number(localStorage.getItem(`last_read_${outroId}`) || 0);
@@ -192,13 +200,22 @@ export default function ChatInterno() {
       }
       setUltimasInteracoes(novasInteracoes);
       setNaoLidas(novasNaoLidas);
+      setHistoricoUsuarios(novosHistorico); // <-- NOVO
     });
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // 4. FILTRO
+  // 4. FILTRO (AGORA JUNTA OS USUÁRIOS DO BANCO COM OS DO HISTÓRICO)
   useEffect(() => {
-      let lista = todosUsuarios.filter(u => {
+      // Cria um mapa para juntar os usuários reais/mocks com os resgatados do histórico sem duplicar
+      const mapUsuarios = new Map();
+      todosUsuarios.forEach(u => mapUsuarios.set(u.id, u));
+      historicoUsuarios.forEach(u => {
+          if (!mapUsuarios.has(u.id)) mapUsuarios.set(u.id, u);
+      });
+      const listaCombinada = Array.from(mapUsuarios.values());
+
+      let lista = listaCombinada.filter(u => {
           if (termoBusca) {
               const t = termoBusca.toLowerCase();
               return (u.nome && u.nome.toLowerCase().includes(t)) || 
@@ -215,7 +232,7 @@ export default function ChatInterno() {
       });
 
       setUsuariosExibidos(lista);
-  }, [todosUsuarios, ultimasInteracoes, termoBusca, canalAtivo]);
+  }, [todosUsuarios, historicoUsuarios, ultimasInteracoes, termoBusca, canalAtivo]);
 
   // 5. CARREGAR CONVERSA
   useEffect(() => {
@@ -250,14 +267,20 @@ export default function ChatInterno() {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
   }, [mensagens, iaDigitando]);
 
-  // --- 6. AUTO-REPLY DO ROBÔ (AGORA COM FILA GLOBAL) ---
+  // --- 6. AUTO-REPLY DO ROBÔ ---
   useEffect(() => {
       if (!user || canalAtivo.id === 'geral' || mensagens.length === 0) return;
 
       const ultimaMsg = mensagens[mensagens.length - 1];
       if (ultimaMsg.uid !== user.uid) return; 
 
-      const usuarioAtual = todosUsuarios.find(u => u.id === canalAtivo.id);
+      // Busca na nossa lista combinada
+      const mapUsuarios = new Map();
+      todosUsuarios.forEach(u => mapUsuarios.set(u.id, u));
+      historicoUsuarios.forEach(u => {
+          if (!mapUsuarios.has(u.id)) mapUsuarios.set(u.id, u);
+      });
+      const usuarioAtual = Array.from(mapUsuarios.values()).find(u => u.id === canalAtivo.id);
       
       if (usuarioAtual && usuarioAtual.isMock === true) {
           const mockId = usuarioAtual.id;
@@ -267,11 +290,11 @@ export default function ChatInterno() {
 
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
+          
+          // <-- NOVO: Pegando o seu nome real para passar para a IA
+          const meuNome = user.displayName || user.email.split('@')[0] || "RH";
 
-          // ENFILEIRA A TAREFA (Garante que só roda 1 por vez, esperando a anterior)
           enfileirarIA(async () => {
-              
-              // Só ativa a animação quando chega a vez dela na fila!
               setIaDigitando(true);
 
               try {
@@ -298,14 +321,16 @@ export default function ChatInterno() {
                       }
                   });
 
+                  // <-- NOVO PROMPT: Regras estritas de nomes implementadas
                   const instrucaoSistema = `Você é ${mockNome}, um funcionário brasileiro da empresa TechCorp. 
-O RH está falando com você no chat interno da empresa. O problema sinalizado com o seu ponto é: ${erroTipo}.
+O(a) profissional de RH, chamado(a) ${meuNome}, está falando com você no chat interno da empresa. O problema sinalizado com o seu ponto é: ${erroTipo}.
 Seus horários registrados nesse dia foram: Entrada: ${pontosReais.e || '---'}, Ida Almoço: ${pontosReais.si || '---'}, Volta Almoço: ${pontosReais.vi || '---'}, Saída: ${pontosReais.s || '---'}.
 Regras inquebráveis:
-1. Fale com naturalidade, use português do Brasil coloquial de escritório (ex: "putz", "foi mal", "beleza", "vou ajustar").
-2. Tente dar uma desculpa realista, ou assumir o erro, dialogando com a mensagem do RH. Mantenha o contexto.
-3. Nunca diga que é uma IA ou um modelo de linguagem. Você é um funcionário real.
-4. IMPORTANTE: Conclua sempre os seus pensamentos e termine as frases. NUNCA deixe uma frase pela metade.`;
+1. Seu nome é estritamente ${mockNome}. Você está conversando com ${meuNome}. Dirija-se a essa pessoa pelo nome correto sempre que for necessário.
+2. Fale com naturalidade, use português do Brasil coloquial de escritório (ex: "putz", "foi mal", "beleza", "vou ajustar").
+3. Tente dar uma desculpa realista, ou assumir o erro, dialogando com a mensagem do RH. Mantenha o contexto.
+4. Nunca diga que é uma IA ou um modelo de linguagem. Você é um funcionário real.
+5. IMPORTANTE: Conclua sempre os seus pensamentos e termine as frases. NUNCA deixe uma frase pela metade.`;
 
                   let textoFinal = "Opa, tive um imprevisto. Pode me ajudar a ajustar?"; 
 
@@ -355,7 +380,7 @@ Regras inquebráveis:
               }
           });
       }
-  }, [mensagens, canalAtivo, user, todosUsuarios]);
+  }, [mensagens, canalAtivo, user, todosUsuarios, historicoUsuarios]);
 
   // 7. ENVIAR 
   const enviarMensagem = async (e) => {
@@ -395,7 +420,6 @@ Regras inquebráveis:
 
       setMenuAberto(false);
       
-      // LIBERA O INPUT CASO TROQUE DE CHAT ENQUANTO A IA PENSAVA
       setIaDigitando(false); 
   };
 
@@ -505,7 +529,6 @@ Regras inquebráveis:
               </div>
             ))}
 
-            {/* ANIMAÇÃO DE DIGITANDO RENDERIZADA CONDICIONALMENTE */}
             {iaDigitando && canalAtivo.isMock && (
               <div className="message-bubble other">
                 <div className="msg-content typing-indicator-bubble">

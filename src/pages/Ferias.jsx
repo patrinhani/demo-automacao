@@ -65,6 +65,28 @@ export default function Ferias() {
     }
   }, [dataInicio, dias]);
 
+  // Função para formatar o número de telefone (apenas números e formato correto)
+  const handleContatoChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+
+    // Limita a 11 dígitos (DDD + 9 números)
+    if (value.length > 11) {
+      value = value.slice(0, 11);
+    }
+
+    // Aplica a formatação (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+    if (value.length > 2) {
+      value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+    }
+    if (value.length > 9) {
+      value = value.replace(/(\d{5})(\d{4})$/, "$1-$2");
+    } else if (value.length > 6) {
+      value = value.replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+    }
+
+    setContato(value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -191,7 +213,14 @@ export default function Ferias() {
                     </div>
                     <div className="form-group-tech" style={{flex: 1}}>
                         <label>Emergência *</label>
-                        <input type="text" placeholder="(DD) Telefone" value={contato} onChange={(e) => setContato(e.target.value)} required />
+                        <input 
+                            type="text" 
+                            placeholder="(11) 99999-9999" 
+                            value={contato} 
+                            onChange={handleContatoChange} 
+                            maxLength="15"
+                            required 
+                        />
                     </div>
                   </div>
 

@@ -273,7 +273,7 @@ export default function PortalCliente() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // FUNÇÃO GENÉRICA DE DOWNLOAD
+  // FUNÇÃO GENÉRICA DE DOWNLOAD (Mantida ativa apenas para os Modelos do RH)
   const baixarDocumento = (chaveConteudo, nomeArquivo) => {
     const conteudo = DOCS_CONTENT[chaveConteudo];
     if (!conteudo) return alert("Erro: Documento não encontrado.");
@@ -312,7 +312,7 @@ export default function PortalCliente() {
               </div>
               
               <div className="doc-list">
-                {/* DOC 1: Respostas Prontas */}
+                {/* DOC 1: Respostas Prontas - O ÚNICO PERMITIDO */}
                 <div className="doc-card">
                   <div className="doc-icon">📄</div>
                   <div className="doc-info">
@@ -328,15 +328,13 @@ export default function PortalCliente() {
                   </div>
                 </div>
 
-                {/* DOC 2: Política Reembolso */}
+                {/* DOC 2: Política Reembolso - BLOQUEADO */}
                 <div className="doc-card">
                   <div className="doc-icon">⚖️</div>
                   <div className="doc-info">
                     <h3>Política de Reembolso</h3>
                     <p>Regras para KM, Alimentação e Hotéis.</p>
-                    <button className="btn-download" onClick={() => baixarDocumento('reembolso_rh', 'Politica_Reembolso_2026.doc')}>
-                       ⬇ Baixar Documento
-                    </button>
+                    <span className="badge-lock" style={{ opacity: 0.7, cursor: 'not-allowed' }}>🔒 Download Indisponível</span>
                   </div>
                 </div>
               </div>
@@ -349,15 +347,13 @@ export default function PortalCliente() {
                 <h2>Tecnologia (TI)</h2>
               </div>
               <div className="doc-list">
-                {/* DOC 3: Manual Segurança */}
+                {/* DOC 3: Manual Segurança - BLOQUEADO */}
                 <div className="doc-card">
                   <div className="doc-icon">🔒</div>
                   <div className="doc-info">
                     <h3>Manual de Segurança</h3>
                     <p>Boas práticas de senhas e VPN.</p>
-                    <button className="btn-download" onClick={() => baixarDocumento('seguranca_ti', 'Manual_Seguranca_TI.doc')}>
-                       ⬇ Baixar Documento
-                    </button>
+                    <span className="badge-lock" style={{ opacity: 0.7, cursor: 'not-allowed' }}>🔒 Download Indisponível</span>
                   </div>
                 </div>
               </div>
@@ -370,15 +366,13 @@ export default function PortalCliente() {
                 <h2>Financeiro</h2>
               </div>
               <div className="doc-list">
-                {/* DOC 4: Centro de Custo */}
+                {/* DOC 4: Centro de Custo - BLOQUEADO */}
                 <div className="doc-card">
                   <div className="doc-icon">📊</div>
                   <div className="doc-info">
                     <h3>Centros de Custo</h3>
                     <p>Tabela de códigos para rateio.</p>
-                    <button className="btn-download" onClick={() => baixarDocumento('centro_custo_fin', 'Tabela_Centros_Custo.doc')}>
-                       ⬇ Baixar Documento
-                    </button>
+                    <span className="badge-lock" style={{ opacity: 0.7, cursor: 'not-allowed' }}>🔒 Download Indisponível</span>
                   </div>
                 </div>
               </div>

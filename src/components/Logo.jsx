@@ -1,26 +1,37 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-// Aceita props 'size', 'lightMode' e agora 'iconOnly' para esconder o texto
 export default function Logo({ size = 1, lightMode = false, iconOnly = false }) {
   const scale = size;
   const navigate = useNavigate();
+  const location = useLocation(); // <-- Adicionado para pegar a rota atual
   
   const primaryColor = lightMode ? "#0ea5e9" : "#3b82f6";
   const secondaryColor = lightMode ? "#7c3aed" : "#8b5cf6";
   const textColor = lightMode ? "#1e293b" : "#ffffff";
 
+  // Define as rotas onde o clique na logo não deve fazer nada
+  const rotasBloqueadas = ['/', '/trocar-senha'];
+  const isBloqueado = rotasBloqueadas.includes(location.pathname);
+
+  // Função que gerencia o clique
+  const handleLogoClick = () => {
+    if (!isBloqueado) {
+      navigate('/dashboard');
+    }
+  };
+
   return (
     <div 
-      onClick={() => navigate('/dashboard')}
-      title="Voltar para a Tela Inicial"
+      onClick={handleLogoClick}
+      title={isBloqueado ? "TechCorp Solutions" : "Voltar para a Tela Inicial"}
       style={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: '10px', 
         transform: `scale(${scale})`, 
-        transformOrigin: 'center center', // Melhor centralização
-        cursor: 'pointer'
+        transformOrigin: 'center center', 
+        cursor: isBloqueado ? 'default' : 'pointer' // Tira a "mãozinha" nas telas bloqueadas
       }}
     >
       

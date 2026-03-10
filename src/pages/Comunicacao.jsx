@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <-- Adicionado o Link
 import Logo from '../components/Logo';
 import './Comunicacao.css';
 
@@ -283,28 +283,28 @@ export default function Comunicacao() {
                 </div>
                 <ul className="tech-quick-links">
                   
-                  {/* Link 1: Navega para a página interna fictícia (MANTIDO) */}
+                  {/* Link 1: Alterado para <Link> do react-router-dom */}
                   <li>
-                    <a href="#" onClick={(e) => { e.preventDefault(); navigate('/portal-cliente'); }}>
+                    <Link to="/portal-cliente">
                       Documentações do Colaborador
-                    </a>
+                    </Link>
                   </li>
 
-                  {/* Link NOVO: Abre o Modal de Documentações / POP (ADICIONADO) */}
+                  {/* Link NOVO: Abre o Modal de Documentações / POP (Mantido com onClick pois abre modal) */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); setShowModalDocs(true); }}>
                       Manuais e Procedimentos (POP)
                     </a>
                   </li>
 
-                  {/* Link 2: Abre o LinkedIn real em nova aba (MANTIDO) */}
+                  {/* Link 2: Abre o LinkedIn real em nova aba (Mantido com a href original pois é link externo) */}
                   <li>
                     <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
                       LinkedIn Oficial
                     </a>
                   </li>
 
-                  {/* Link 3: Abre o Modal de Ética (MANTIDO) */}
+                  {/* Link 3: Abre o Modal de Ética (Mantido com onClick pois abre modal) */}
                   <li>
                     <a href="#" onClick={(e) => { e.preventDefault(); setShowModalEtica(true); }}>
                       Código de Ética e Conduta
