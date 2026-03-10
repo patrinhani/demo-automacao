@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/(dashboard|tarefas|ferias|historico-solicitacoes|aprovacoes-gerais|cadastro-usuario|conciliacao|solicitacao|folha-ponto|holerite|gerar-nota|comunicacao|helpdesk|reservas|viagens|perfil|banco)",
+      "source": "/(dashboard|tarefas|ferias|historico-solicitacoes|aprovacoes-gerais|cadastro-usuario|conciliacao|solicitacao|folha-ponto|holerite|gerar-nota|comunicacao|helpdesk|reservas|viagens|perfil|banco|portal-cliente)",
       "destination": "/index.html"
     }
   ]
