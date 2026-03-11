@@ -4,7 +4,7 @@ import { db, auth } from '../../firebase';
 import { ref, push, set, get, update } from 'firebase/database';
 import Logo from '../../components/Logo';
 import { useUser } from '../../contexts/UserContext';
-import { useAlert } from '../../contexts/AlertContext'; // <-- Importado o AlertContext
+import { useAlert } from '../../contexts/AlertContext'; 
 import './DevTools.css';
 
 // --- MOTOR DE ALEATORIEDADE PARA RH ---
@@ -49,7 +49,7 @@ const gerarHorariosPorErro = (erro) => {
 
 export default function DevTools() {
   const navigate = useNavigate();
-  const { showAlert, showConfirm } = useAlert(); // <-- Inicializado o hook do alerta
+  const { showAlert, showConfirm } = useAlert(); 
   
   // --- CONTEXTO DE USUÁRIO (Simulação) ---
   const { 
@@ -124,7 +124,6 @@ export default function DevTools() {
   const limparPonto = () => { set(ref(db, `ponto/${userProfile.uid}`), null); addLog("🗑️ Ponto pessoal limpo."); };
 
   const limparHistoricoPontoUnificado = async () => {
-    // <-- Substituído o window.confirm nativo
     const confirmou = await showConfirm("Atenção", "⚠️ ATENÇÃO: Isso apagará o ponto pessoal E os registros de erro (RH). Continuar?");
     if (!confirmou) return;
     
@@ -216,28 +215,51 @@ export default function DevTools() {
     }
   };
 
+  // --- ATUALIZADO: Limpa o usuário no ERP e no Banco ---
   const limparUsuarioEspecifico = async (uidAlvo, nomeAlvo) => {
     try {
-      await set(ref(db, `users/${uidAlvo}/financeiro/faturas`), null);
-      addLog(`🗑️ Faturas limpas para a conta: ${nomeAlvo}`);
+      const updates = {};
+      // 1. Apaga as faturas da conciliação
+      updates[`users/${uidAlvo}/financeiro/faturas`] = null;
+      
+      // 2. Busca e apaga as transações do extrato bancário desse usuário
+      const snapBanco = await get(ref(db, 'banco_mock/transacoes'));
+      if (snapBanco.exists()) {
+        const transacoes = snapBanco.val();
+        Object.keys(transacoes).forEach(key => {
+          if (transacoes[key].uid === uidAlvo) {
+            updates[`banco_mock/transacoes/${key}`] = null;
+          }
+        });
+      }
+
+      await update(ref(db), updates);
+      
+      addLog(`🗑️ Faturas e Extrato limpos para a conta: ${nomeAlvo}`);
       setUsuariosComDados(prev => prev.filter(u => u.uid !== uidAlvo));
     } catch (e) {
       addLog(`❌ Erro ao limpar conta ${nomeAlvo}: ${e.message}`);
     }
   };
 
+  // --- ATUALIZADO: Limpa todos no ERP e no Banco ---
   const limparTodos = async () => {
-    // <-- Substituído o window.confirm nativo
-    const confirmou = await showConfirm("Atenção", "Apagar faturas de TODOS os usuários listados?");
+    const confirmou = await showConfirm("Atenção", "Apagar faturas E extratos de TODOS os usuários listados?");
     if (!confirmou) return;
 
     try {
       const updates = {};
+      
+      // 1. Apaga as faturas de cada usuário listado
       usuariosComDados.forEach(u => {
         updates[`users/${u.uid}/financeiro/faturas`] = null;
       });
+      
+      // 2. Apaga TODO o extrato bancário (de todos os usuários)
+      updates['banco_mock/transacoes'] = null;
+
       await update(ref(db), updates);
-      addLog("🗑️ Faturas limpas para TODOS os usuários.");
+      addLog("🗑️ Faturas e Extratos limpos para TODOS os usuários.");
       setUsuariosComDados([]);
     } catch (e) {
       addLog(`❌ Erro ao limpar todos: ${e.message}`);
@@ -313,8 +335,8 @@ export default function DevTools() {
     }
   };
 
+  // --- ATUALIZADO: Wipeout geral agora inclui banco_mock ---
   const limparTudo = async () => {
-    // <-- Substituído o window.confirm nativo
     const confirmou = await showConfirm("Atenção", "⚠️ TEM CERTEZA? ISSO APAGARÁ TUDO!");
     if(!confirmou) return;
 
@@ -327,6 +349,7 @@ export default function DevTools() {
     updates[`rh/erros_ponto`] = null;
     updates[`users/${userProfile.uid}/financeiro/faturas`] = null;
     updates[`users/${userProfile.uid}/financeiro/extrato`] = null;
+    updates['banco_mock'] = null; // <-- ADICIONADO AQUI
     updates['chats/direto'] = null; 
     updates['chats/geral'] = null;  
     updates['users'] = null;

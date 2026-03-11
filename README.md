@@ -122,8 +122,8 @@ VITE_FIREBASE_APP_ID="seu-app-id"
 Inicie o servidor
 
 Bash
-npm run dev
-Acesse: http://localhost:5173
+vercel dev
+Acesse: http://localhost:3000
 
 ## 🎓 Contexto & Desenvolvimento
 
