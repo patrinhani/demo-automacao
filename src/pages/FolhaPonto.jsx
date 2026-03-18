@@ -37,18 +37,40 @@ export default function FolhaPonto() {
   const getDataKey = (date) => date.toISOString().split('T')[0];
 
   const gerarDataInconsistencia = (item) => {
+      // 1. Evita loop do React na mesma sessão
       if (item._visualDate) return item._visualDate;
+      
       const isCurrentUser = user && item.id === user?.uid;
       const isYan = item.nome && item.nome.toLowerCase().includes('yan');
 
       if (isCurrentUser || isYan) {
-          return new Date().toLocaleDateString('pt-BR');
+          const hojeStr = new Date().toLocaleDateString('pt-BR');
+          item._visualDate = hojeStr;
+          return hojeStr;
       }
       
+      // 2. Chave estável baseada no Nome + Erro (Ignora mudanças de ID no banco)
+      const nomeParaCache = item.nome ? item.nome.replace(/\s+/g, '_') : item.id;
+      const erroParaCache = item.erro ? item.erro.replace(/\s+/g, '_') : 'erro';
+      const cacheKey = `mock_date_fixo_${nomeParaCache}_${erroParaCache}`;
+      
+      const dataEmCache = localStorage.getItem(cacheKey);
+      
+      if (dataEmCache) {
+          item._visualDate = dataEmCache;
+          return dataEmCache;
+      }
+
+      // 3. Se for a primeira vez que esse usuário+erro aparece, gera a data e guarda no cache
       const hoje = new Date();
       const diasAtras = Math.floor(Math.random() * 15) + 1; 
       const dataAleatoria = new Date(hoje.setDate(hoje.getDate() - diasAtras));
-      return dataAleatoria.toLocaleDateString('pt-BR');
+      const novaDataStr = dataAleatoria.toLocaleDateString('pt-BR');
+      
+      localStorage.setItem(cacheKey, novaDataStr);
+      item._visualDate = novaDataStr;
+      
+      return novaDataStr;
   };
 
   useEffect(() => {
@@ -231,7 +253,6 @@ export default function FolhaPonto() {
   };
 
   const reprovarAjuste = async (ajuste) => {
-    // Chamamos o prompt diretamente para evitar choque de modais!
     const motivo = await showPrompt('Reprovar Ajuste', `Por favor, digite o motivo da reprovação para o pedido de ${ajuste.userName}:`);
     
     if (motivo && motivo.trim() !== '') {
@@ -244,7 +265,7 @@ export default function FolhaPonto() {
       } catch (error) {
         showAlert('Erro', 'Não foi possível reprovar o ajuste.');
       }
-    } else if (motivo !== null) { // null = utilizador cancelou
+    } else if (motivo !== null) {
         showAlert('Aviso', 'É necessário preencher um motivo para reprovar.');
     }
   };
@@ -266,7 +287,6 @@ export default function FolhaPonto() {
   };
 
   const reprovarPontoMock = async (id) => {
-      // Chamamos o prompt diretamente para evitar choque de modais!
       const motivo = await showPrompt('Motivo da Reprovação', 'Motivo da reprovação do ajuste sugerido pelo chat:');
       
       if (motivo && motivo.trim() !== '') {
@@ -480,8 +500,8 @@ export default function FolhaPonto() {
                                     <tbody>
                                         {listaPendencias.filter(item => item.status !== 'Respondido').map(item => {
                                             const dataVisual = gerarDataInconsistencia(item);
-                                            item._visualDate = dataVisual;
-
+                                            item._visualDate = dataVisual; // Apenas garantindo cache de react tbm
+                                            
                                             let pontosVisuais = item.pontos || { e:'---', si:'---', vi:'---', s:'---' };
                                             
                                             return (
@@ -565,6 +585,7 @@ export default function FolhaPonto() {
 
                                             {listaPendencias.filter(item => item.status === 'Respondido').map(item => {
                                                 const dataVisual = gerarDataInconsistencia(item);
+                                                item._visualDate = dataVisual; // <--- ADICIONE ESTA LINHA AQUI!
                                                 
                                                 let pontosVisuais = item.pontos || {};
                                                 if (item.erro !== 'Atraso Excessivo' && item.erro !== 'Falta Injustificada') {

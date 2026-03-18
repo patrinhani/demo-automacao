@@ -63,9 +63,10 @@ export default function ChatInterno() {
   const location = useLocation(); 
   
   const [user, setUser] = useState(null);
+  const [userName, setUserName] = useState(''); // <-- NOVO: Estado para guardar o nome real
   
   const [todosUsuarios, setTodosUsuarios] = useState([]);
-  const [historicoUsuarios, setHistoricoUsuarios] = useState([]); // <-- NOVO: Mantém usuários mockados salvos
+  const [historicoUsuarios, setHistoricoUsuarios] = useState([]); 
   const [usuariosExibidos, setUsuariosExibidos] = useState([]);
   
   const [canalAtivo, setCanalAtivo] = useState({ id: 'geral', nome: '📢 Geral', desc: 'Mural Corporativo' });
@@ -82,11 +83,22 @@ export default function ChatInterno() {
   const processedInitialState = useRef(false);
   const scrollRef = useRef(null);
 
-  // 1. AUTH
+  // 1. AUTH (Atualizado para buscar o nome real no banco)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) setUser(currentUser);
-      else navigate('/');
+      if (currentUser) {
+          setUser(currentUser);
+          
+          // Busca o nome real do usuário no banco de dados
+          get(ref(db, `users/${currentUser.uid}`)).then((snapshot) => {
+              if (snapshot.exists()) {
+                  setUserName(snapshot.val().nome || '');
+              }
+          });
+      }
+      else {
+          navigate('/');
+      }
     });
     return () => unsubscribe();
   }, [navigate]);
@@ -135,7 +147,7 @@ export default function ChatInterno() {
     });
 
     return () => unsubscribe();
-  }, [user]); 
+  }, [user, location.state]); 
 
   // 2.5 PROCESSAR ESTADO INICIAL
   useEffect(() => {
@@ -152,7 +164,7 @@ export default function ChatInterno() {
       }
   }, [location.state]);
 
-  // 3. MONITORAR MENSAGENS E NÃO LIDAS (AQUI SALVAMOS QUEM JÁ CONVERSOU COM VOCÊ)
+  // 3. MONITORAR MENSAGENS E NÃO LIDAS 
   useEffect(() => {
     if (!user) return;
     const chatsRef = ref(db, 'chats/direto');
@@ -161,7 +173,7 @@ export default function ChatInterno() {
       const data = snapshot.val();
       const novasInteracoes = {};
       const novasNaoLidas = { ...naoLidas };
-      const novosHistorico = []; // <-- NOVO
+      const novosHistorico = []; 
 
       if (data) {
           Object.keys(data).forEach((chatId) => {
@@ -173,14 +185,13 @@ export default function ChatInterno() {
 
                   novasInteracoes[outroId] = ultimaMsg.timestamp;
 
-                  // <-- NOVO: Resgata a pessoa pelas mensagens antigas para ela não sumir
                   const msgDoOutro = msgs.slice().reverse().find(m => m.uid === outroId);
                   if (msgDoOutro) {
                       novosHistorico.push({
                           id: outroId,
                           nome: msgDoOutro.usuario,
                           cargo: 'Colaborador (Histórico)',
-                          isMock: true // Mantém true para ficar com o visual de IA/Mock
+                          isMock: true 
                       });
                   }
 
@@ -200,14 +211,13 @@ export default function ChatInterno() {
       }
       setUltimasInteracoes(novasInteracoes);
       setNaoLidas(novasNaoLidas);
-      setHistoricoUsuarios(novosHistorico); // <-- NOVO
+      setHistoricoUsuarios(novosHistorico); 
     });
     return () => unsubscribe();
   }, [user, canalAtivo.id]); 
 
-  // 4. FILTRO (AGORA JUNTA OS USUÁRIOS DO BANCO COM OS DO HISTÓRICO)
+  // 4. FILTRO 
   useEffect(() => {
-      // Cria um mapa para juntar os usuários reais/mocks com os resgatados do histórico sem duplicar
       const mapUsuarios = new Map();
       todosUsuarios.forEach(u => mapUsuarios.set(u.id, u));
       historicoUsuarios.forEach(u => {
@@ -261,7 +271,7 @@ export default function ChatInterno() {
       }
     });
     return () => unsubscribe();
-  }, [canalAtivo, user]); 
+  }, [canalAtivo, user, naoLidas]); 
 
   useEffect(() => { 
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
@@ -274,7 +284,6 @@ export default function ChatInterno() {
       const ultimaMsg = mensagens[mensagens.length - 1];
       if (ultimaMsg.uid !== user.uid) return; 
 
-      // Busca na nossa lista combinada
       const mapUsuarios = new Map();
       todosUsuarios.forEach(u => mapUsuarios.set(u.id, u));
       historicoUsuarios.forEach(u => {
@@ -291,8 +300,8 @@ export default function ChatInterno() {
           const mockNome = usuarioAtual.nome.replace('👤 ', '');
           const meuId = user.uid;
           
-          // <-- NOVO: Pegando o seu nome real para passar para a IA
-          const meuNome = user.displayName || user.email.split('@')[0] || "RH";
+          // <-- NOVO: Usa o nome real carregado do banco
+          const meuNome = userName || user.displayName || user.email.split('@')[0] || "RH";
 
           enfileirarIA(async () => {
               setIaDigitando(true);
@@ -321,7 +330,6 @@ export default function ChatInterno() {
                       }
                   });
 
-                  // <-- NOVO PROMPT: Regras estritas de nomes implementadas
                   const instrucaoSistema = `Você é ${mockNome}, um funcionário brasileiro da empresa TechCorp. 
 O(a) profissional de RH, chamado(a) ${meuNome}, está falando com você no chat interno da empresa. O problema sinalizado com o seu ponto é: ${erroTipo}.
 Seus horários registrados nesse dia foram: Entrada: ${pontosReais.e || '---'}, Ida Almoço: ${pontosReais.si || '---'}, Volta Almoço: ${pontosReais.vi || '---'}, Saída: ${pontosReais.s || '---'}.
@@ -380,7 +388,8 @@ Regras inquebráveis:
               }
           });
       }
-  }, [mensagens, canalAtivo, user, todosUsuarios, historicoUsuarios]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mensagens, canalAtivo, user, todosUsuarios, historicoUsuarios, userName]);
 
   // 7. ENVIAR 
   const enviarMensagem = async (e) => {
@@ -392,7 +401,7 @@ Regras inquebráveis:
         : `chats/direto/${[user.uid, canalAtivo.id].sort().join('_')}`;
     
     await set(push(ref(db, path)), {
-      usuario: user.displayName || user.email.split('@')[0],
+      usuario: userName || user.displayName || user.email.split('@')[0], // <-- Usa o nome real do banco
       uid: user.uid,
       texto: novaMensagem,
       timestamp: Date.now(),
@@ -419,7 +428,6 @@ Regras inquebráveis:
       localStorage.setItem(`last_read_${u.id}`, agora);
 
       setMenuAberto(false);
-      
       setIaDigitando(false); 
   };
 
@@ -427,9 +435,16 @@ Regras inquebráveis:
   
   const formatarNome = (n) => {
     if (!n) return 'User';
-    const nomeLimpo = n.replace('👤 ', '').trim();
+    let nomeLimpo = n.replace('👤 ', '').trim();
+
+    // <-- NOVO: Regra retroativa para disfarçar mensagens que já estão no banco como "yan.rodrigues"
+    if (nomeLimpo.toLowerCase() === 'yan.rodrigues') {
+        nomeLimpo = 'Yan Moisés Rodrigues';
+    }
+
     const partes = nomeLimpo.split(' ');
     if (partes.length > 1) {
+        // Retorna o Primeiro e o Último nome (Ex: Yan Rodrigues)
         return `${partes[0]} ${partes[partes.length - 1]}`;
     }
     return partes[0];
@@ -456,7 +471,7 @@ Regras inquebráveis:
         <aside className={`chat-sidebar ${menuAberto ? 'menu-aberto' : ''}`}>
           <div className="sidebar-title">
             Conversas
-            {menuAberto && <span onClick={() => setMenuAberto(false)} style={{float:'right'}}>✕</span>}
+            {menuAberto && <span onClick={() => setMenuAberto(false)} style={{float:'right', cursor:'pointer'}}>✕</span>}
           </div>
           
           <div className="chat-search-wrapper">
